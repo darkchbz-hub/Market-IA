@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MarketZone | Marketplace digital</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body data-page="home">
+    <div class="top-strip">
+      <p>Version HTML conectada al backend de MarketZone</p>
+    </div>
+
+    <header class="site-header">
+      <div class="header-main container">
+        <a href="./index.html" class="brand">
+          <span class="brand__badge">MZ</span>
+          <span>
+            <strong>MarketZone</strong>
+            <small>Apps, packs y servicios web</small>
+          </span>
+        </a>
+
+        <form class="header-search js-search-form">
+          <input class="js-header-search" type="search" placeholder="Buscar suscripciones, packs o servicios" />
+          <button type="submit">Buscar</button>
+        </form>
+
+        <nav class="header-links">
+          <a href="./cuenta.html" class="js-account-link">Mi cuenta</a>
+          <a href="./carrito.html" class="cart-pill">Carrito <span class="js-cart-count">0</span></a>
+        </nav>
+      </div>
+
+      <nav class="category-nav container">
+        <a href="./catalogo.html">Todo</a>
+        <a href="./catalogo.html?category=apps">Apps IA</a>
+        <a href="./catalogo.html?category=packs">Packs</a>
+        <a href="./catalogo.html?category=webs">Servicios web</a>
+        <a href="./contacto.html">Contacto</a>
+      </nav>
+    </header>
+
+    <main class="container page-stack">
+      <section class="hero">
+        <article class="hero__content">
+          <p class="eyebrow">Marketplace digital</p>
+          <h1>Compra suscripciones, herramientas IA y servicios web desde una sola tienda.</h1>
+          <p>
+            Una vitrina limpia y clara, pensada como marketplace tipo Amazon o Mercado Libre para vender productos
+            digitales con confianza.
+          </p>
+          <div class="hero__actions">
+            <a href="./catalogo.html" class="button button--primary">Ver catalogo</a>
+            <a href="./cuenta.html" class="button button--light">Crear cuenta</a>
+          </div>
+        </article>
+
+        <aside class="hero__panel">
+          <div class="hero__metric">
+            <span>Metodos de pago</span>
+            <strong>Stripe, PayPal y Mercado Pago</strong>
+          </div>
+          <div class="hero__metric">
+            <span>Backend real</span>
+            <strong>Usuarios, carrito, ordenes y admin</strong>
+          </div>
+          <div class="hero__metric">
+            <span>Version HTML</span>
+            <strong>Lista para subir sin compilar</strong>
+          </div>
+        </aside>
+      </section>
+
+      <section class="section-block">
+        <div class="section-head">
+          <div>
+            <p class="section-label">Explora rapido</p>
+            <h2>Categorias destacadas</h2>
+          </div>
+        </div>
+
+        <div class="category-grid">
+          <a class="category-card" href="./catalogo.html?category=apps">
+            <strong>Apps IA</strong>
+            <span>Chatbots, asistentes, productividad y automatizacion.</span>
+          </a>
+          <a class="category-card" href="./catalogo.html?category=packs">
+            <strong>Packs</strong>
+            <span>Combos listos para creadores, ventas y agencias.</span>
+          </a>
+          <a class="category-card" href="./catalogo.html?category=webs">
+            <strong>Servicios web</strong>
+            <span>Landings, tiendas completas y soluciones digitales.</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="section-block">
+        <div class="section-head">
+          <div>
+            <p class="section-label">Top productos</p>
+            <h2>Lo mas vendido</h2>
+          </div>
+          <a href="./catalogo.html" class="button button--light">Ver todo</a>
+        </div>
+
+        <div class="product-grid js-featured-products"></div>
+      </section>
+
+      <section class="info-grid">
+        <article class="info-card">
+          <p class="section-label">Ventajas</p>
+          <h3>Catalogo con busqueda y filtros</h3>
+          <p>Tu cliente encuentra rapido lo que quiere comprar y puede guardarlo en su carrito.</p>
+        </article>
+        <article class="info-card">
+          <p class="section-label">Cuenta</p>
+          <h3>Registro, login y perfil</h3>
+          <p>La app full-stack ya esta preparada para usuarios, historial, direccion y ordenes.</p>
+        </article>
+        <article class="info-card">
+          <p class="section-label">Atencion</p>
+          <h3>Chat, pagos y panel admin</h3>
+          <p>La base del sistema ya existe para escalar a una tienda completa.</p>
+        </article>
+      </section>
+
+      <section class="payment-strip">
+        <div>
+          <p class="section-label">Pagos aceptados</p>
+          <h2>Metodos listos para integrar</h2>
+        </div>
+        <div class="payment-badges">
+          <span>Stripe</span>
+          <span>PayPal</span>
+          <span>Mercado Pago</span>
+          <span>Transferencia</span>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div>
+          <strong>MarketZone</strong>
+          <p>Marketplace para vender suscripciones IA, servicios digitales y productos web.</p>
+        </div>
+        <div>
+          <strong>Paginas</strong>
+          <a href="./catalogo.html">Catalogo</a>
+          <a href="./carrito.html">Carrito</a>
+          <a href="./cuenta.html">Cuenta</a>
+        </div>
+        <div>
+          <strong>Contacto</strong>
+          <a href="./contacto.html">Soporte y ventas</a>
+          <a href="mailto:ventas@marketzone.mx">ventas@marketzone.mx</a>
+        </div>
+      </div>
+    </footer>
+
+    <script src="./config.js"></script>
+    <script src="./script.js"></script>
+  </body>
+</html>

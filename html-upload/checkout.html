@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Checkout | MarketZone</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body data-page="checkout">
+    <div class="top-strip">
+      <p>Checkout conectado al backend y a tus proveedores de pago</p>
+    </div>
+
+    <header class="site-header">
+      <div class="header-main container">
+        <a href="./index.html" class="brand">
+          <span class="brand__badge">MZ</span>
+          <span>
+            <strong>MarketZone</strong>
+            <small>Apps, packs y servicios web</small>
+          </span>
+        </a>
+
+        <form class="header-search js-search-form">
+          <input class="js-header-search" type="search" placeholder="Buscar suscripciones, packs o servicios" />
+          <button type="submit">Buscar</button>
+        </form>
+
+        <nav class="header-links">
+          <a href="./cuenta.html" class="js-account-link">Mi cuenta</a>
+          <a href="./carrito.html" class="cart-pill">Carrito <span class="js-cart-count">0</span></a>
+        </nav>
+      </div>
+
+      <nav class="category-nav container">
+        <a href="./catalogo.html">Catalogo</a>
+        <a href="./catalogo.html?category=apps">Apps IA</a>
+        <a href="./catalogo.html?category=packs">Packs</a>
+        <a href="./catalogo.html?category=webs">Servicios web</a>
+        <a href="./contacto.html">Contacto</a>
+      </nav>
+    </header>
+
+    <main class="container page-stack">
+      <section class="section-block">
+        <div class="section-head">
+          <div>
+            <p class="section-label">Checkout</p>
+            <h1>Confirma tu direccion y elige como quieres pagar</h1>
+          </div>
+        </div>
+      </section>
+
+      <section class="checkout-layout js-checkout-layout"></section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div>
+          <strong>MarketZone</strong>
+          <p>Marketplace para suscripciones IA, packs y servicios web.</p>
+        </div>
+        <div>
+          <strong>Paginas</strong>
+          <a href="./index.html">Inicio</a>
+          <a href="./catalogo.html">Catalogo</a>
+          <a href="./carrito.html">Carrito</a>
+        </div>
+        <div>
+          <strong>Contacto</strong>
+          <a href="./contacto.html">Soporte</a>
+          <a href="mailto:ventas@marketzone.mx">ventas@marketzone.mx</a>
+        </div>
+      </div>
+    </footer>
+
+    <script src="./config.js"></script>
+    <script src="./script.js"></script>
+  </body>
+</html>

@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: marketzone
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install
+    preDeployCommand: npm run db:setup
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 24.14.0
+      - key: DATABASE_URL
+        fromDatabase:
+          name: marketzone-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_EMAIL
+        value: admin@marketzone.mx
+      - key: PAYPAL_ENV
+        value: sandbox
+databases:
+  - name: marketzone-db
+    plan: free
+    databaseName: marketzone
+    user: marketzone
