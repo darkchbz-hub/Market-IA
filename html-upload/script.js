@@ -40,18 +40,17 @@ function clearAuthSession() {
 async function apiRequest(path, options = {}) {
   const { method = "GET", body, auth = false } = options;
   const headers = new Headers();
+  const token = getToken();
 
   if (body !== undefined) {
     headers.set("Content-Type", "application/json");
   }
 
-  if (auth) {
-    const token = getToken();
+  if (auth && !token) {
+    throw new Error("Necesitas iniciar sesion.");
+  }
 
-    if (!token) {
-      throw new Error("Necesitas iniciar sesion.");
-    }
-
+  if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
