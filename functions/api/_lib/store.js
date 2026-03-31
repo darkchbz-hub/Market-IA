@@ -269,7 +269,7 @@ export async function ensureDatabase(env) {
   if (!bootstrapPromise) {
     bootstrapPromise = (async () => {
       for (const statement of schemaStatements) {
-        await env.DB.exec(statement);
+        await env.DB.prepare(statement.trim()).run();
       }
 
       await seedDatabase(env.DB, env);
