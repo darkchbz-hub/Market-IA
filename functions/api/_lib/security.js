@@ -60,7 +60,7 @@ async function derivePasswordHash(password, salt, iterations) {
 }
 
 export async function hashPassword(password) {
-  const iterations = 210000;
+  const iterations = 100000;
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const hash = await derivePasswordHash(password, salt, iterations);
 
@@ -76,7 +76,7 @@ export async function verifyPassword(password, storedHash) {
 
   const iterations = Number(iterationsText);
 
-  if (!Number.isFinite(iterations) || iterations < 100000) {
+  if (!Number.isFinite(iterations) || iterations < 50000 || iterations > 100000) {
     return false;
   }
 
