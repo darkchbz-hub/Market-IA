@@ -63,87 +63,96 @@ const seedProducts = [
   }
 ];
 
-const schemaSql = `
-CREATE TABLE IF NOT EXISTS users (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  role TEXT NOT NULL DEFAULT 'customer',
-  nombre TEXT NOT NULL,
-  email TEXT NOT NULL UNIQUE,
-  password_hash TEXT NOT NULL,
-  direccion TEXT NOT NULL DEFAULT '{}',
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS products (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  slug TEXT NOT NULL UNIQUE,
-  nombre TEXT NOT NULL,
-  descripcion TEXT NOT NULL,
-  precio REAL NOT NULL,
-  stock INTEGER NOT NULL DEFAULT 0,
-  categoria TEXT NOT NULL,
-  tags TEXT NOT NULL DEFAULT '[]',
-  imagenes TEXT NOT NULL DEFAULT '[]',
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS cart_items (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL,
-  product_id INTEGER NOT NULL,
-  cantidad INTEGER NOT NULL DEFAULT 1,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE(user_id, product_id)
-);
-
-CREATE TABLE IF NOT EXISTS orders (
-  id TEXT PRIMARY KEY,
-  user_id INTEGER NOT NULL,
-  total REAL NOT NULL,
-  estado TEXT NOT NULL,
-  proveedor_pago TEXT NOT NULL,
-  direccion TEXT NOT NULL DEFAULT '{}',
-  payment_reference TEXT,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS order_items (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  order_id TEXT NOT NULL,
-  product_id INTEGER NOT NULL,
-  nombre TEXT NOT NULL,
-  precio REAL NOT NULL,
-  cantidad INTEGER NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS payments (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  order_id TEXT NOT NULL,
-  provider TEXT NOT NULL,
-  status TEXT NOT NULL,
-  external_id TEXT,
-  approval_url TEXT,
-  payload TEXT,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS search_history (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL,
-  busqueda TEXT NOT NULL,
-  fecha TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS product_views (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL,
-  product_id INTEGER NOT NULL,
-  fecha TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-`;
+const schemaStatements = [
+  `
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      role TEXT NOT NULL DEFAULT 'customer',
+      nombre TEXT NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      direccion TEXT NOT NULL DEFAULT '{}',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `,
+  `
+    CREATE TABLE IF NOT EXISTS products (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      slug TEXT NOT NULL UNIQUE,
+      nombre TEXT NOT NULL,
+      descripcion TEXT NOT NULL,
+      precio REAL NOT NULL,
+      stock INTEGER NOT NULL DEFAULT 0,
+      categoria TEXT NOT NULL,
+      tags TEXT NOT NULL DEFAULT '[]',
+      imagenes TEXT NOT NULL DEFAULT '[]',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `,
+  `
+    CREATE TABLE IF NOT EXISTS cart_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      product_id INTEGER NOT NULL,
+      cantidad INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, product_id)
+    )
+  `,
+  `
+    CREATE TABLE IF NOT EXISTS orders (
+      id TEXT PRIMARY KEY,
+      user_id INTEGER NOT NULL,
+      total REAL NOT NULL,
+      estado TEXT NOT NULL,
+      proveedor_pago TEXT NOT NULL,
+      direccion TEXT NOT NULL DEFAULT '{}',
+      payment_reference TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `,
+  `
+    CREATE TABLE IF NOT EXISTS order_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_id TEXT NOT NULL,
+      product_id INTEGER NOT NULL,
+      nombre TEXT NOT NULL,
+      precio REAL NOT NULL,
+      cantidad INTEGER NOT NULL
+    )
+  `,
+  `
+    CREATE TABLE IF NOT EXISTS payments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_id TEXT NOT NULL,
+      provider TEXT NOT NULL,
+      status TEXT NOT NULL,
+      external_id TEXT,
+      approval_url TEXT,
+      payload TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `,
+  `
+    CREATE TABLE IF NOT EXISTS search_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      busqueda TEXT NOT NULL,
+      fecha TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `,
+  `
+    CREATE TABLE IF NOT EXISTS product_views (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      product_id INTEGER NOT NULL,
+      fecha TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `
+];
 
 let bootstrapPromise;
 
@@ -259,7 +268,10 @@ export async function ensureDatabase(env) {
 
   if (!bootstrapPromise) {
     bootstrapPromise = (async () => {
-      await env.DB.exec(schemaSql);
+      for (const statement of schemaStatements) {
+        await env.DB.exec(statement);
+      }
+
       await seedDatabase(env.DB, env);
     })().catch((error) => {
       bootstrapPromise = undefined;
