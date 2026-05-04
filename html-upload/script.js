@@ -37,6 +37,27 @@ function clearAuthSession() {
   localStorage.removeItem(userKey);
 }
 
+function getCurrentPageTarget() {
+  const path = window.location.pathname.split("/").pop() || "index.html";
+  return `${path}${window.location.search}${window.location.hash}`;
+}
+
+function getNextTarget() {
+  const params = new URLSearchParams(window.location.search);
+  const next = params.get("next") || "";
+
+  if (!next || next.includes("cuenta.html")) {
+    return "";
+  }
+
+  return next;
+}
+
+function redirectToAccountGate() {
+  const next = encodeURIComponent(getCurrentPageTarget());
+  window.location.replace(`./cuenta.html?next=${next}`);
+}
+
 async function apiRequest(path, options = {}) {
   const { method = "GET", body, auth = false } = options;
   const headers = new Headers();
@@ -188,6 +209,44 @@ async function loadAdminProducts() {
   return payload.items.map(normalizeProduct);
 }
 
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error(`No se pudo leer el archivo ${file.name}.`));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function readFilesAsDataUrls(fileList) {
+  return Promise.all(fileList.map((file) => readFileAsDataUrl(file)));
+}
+
+function renderImagePreview(container, images, emptyMessage = "Todavia no cargaste imagenes.") {
+  container.innerHTML = "";
+
+  if (!images.length) {
+    container.innerHTML = `<p class="muted">${emptyMessage}</p>`;
+    return;
+  }
+
+  const grid = document.createElement("div");
+  grid.className = "admin-image-preview";
+
+  images.forEach((image, index) => {
+    const figure = document.createElement("figure");
+    figure.className = "admin-image-card";
+    figure.innerHTML = `
+      <img src="${image}" alt="Vista previa ${index + 1}" />
+      <figcaption>Imagen ${index + 1}</figcaption>
+    `;
+    grid.appendChild(figure);
+  });
+
+  container.appendChild(grid);
+}
+
 function serializeAdminProductForm(form) {
   const formData = new FormData(form);
 
@@ -197,8 +256,7 @@ function serializeAdminProductForm(form) {
     categoria: String(formData.get("categoria") || "").trim(),
     precio: Number(formData.get("precio") || 0),
     stock: Number(formData.get("stock") || 0),
-    tags: String(formData.get("tags") || "").trim(),
-    imagenes: String(formData.get("imagenes") || "").trim()
+    tags: String(formData.get("tags") || "").trim()
   };
 }
 
@@ -247,9 +305,13 @@ async function renderAdminPanel(container) {
           <input name="tags" type="text" placeholder="ia, premium, productividad" />
         </label>
         <label>
-          Imagenes
-          <textarea name="imagenes" rows="3" placeholder="Una URL por linea o separadas por coma"></textarea>
+          Imagenes desde tu computadora
+          <input name="imagenesArchivos" type="file" accept="image/*" multiple />
         </label>
+        <div class="admin-upload-note">
+          <strong>Tip:</strong> si eliges nuevas imagenes al editar, reemplazaran las actuales.
+        </div>
+        <div class="js-admin-image-preview"></div>
         <div class="button-row">
           <button type="submit" class="button button--primary js-admin-submit">Guardar producto</button>
           <button type="button" class="button button--light js-admin-reset">Nuevo producto</button>
@@ -283,19 +345,51 @@ async function renderAdminPanel(container) {
   const form = container.querySelector(".js-admin-form");
   const resetButton = container.querySelector(".js-admin-reset");
   const clearButton = container.querySelector(".js-admin-clear");
+  const fileInput = form.querySelector('[name="imagenesArchivos"]');
+  const imagePreview = container.querySelector(".js-admin-image-preview");
+
+  renderImagePreview(imagePreview, [], "Sube imagenes para ver la vista previa del producto.");
 
   function resetAdminForm() {
     form.reset();
+    form.dataset.currentImages = "[]";
     form.querySelector('[name="productId"]').value = "";
     form.querySelector(".js-admin-submit").textContent = "Guardar producto";
+    renderImagePreview(imagePreview, [], "Sube imagenes para ver la vista previa del producto.");
   }
+
+  fileInput.addEventListener("change", async () => {
+    const files = Array.from(fileInput.files || []);
+
+    if (!files.length) {
+      const currentImages = JSON.parse(form.dataset.currentImages || "[]");
+      renderImagePreview(imagePreview, currentImages, "Sube imagenes para ver la vista previa del producto.");
+      return;
+    }
+
+    try {
+      const previews = await readFilesAsDataUrls(files);
+      renderImagePreview(imagePreview, previews, "Sube imagenes para ver la vista previa del producto.");
+    } catch (error) {
+      setSectionMessage(".page-stack", error.message, true);
+    }
+  });
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const productId = form.querySelector('[name="productId"]').value;
     const payload = serializeAdminProductForm(form);
+    const files = Array.from(fileInput.files || []);
 
     try {
+      if (files.length) {
+        payload.imagenes = await readFilesAsDataUrls(files);
+      } else if (productId) {
+        payload.imagenes = JSON.parse(form.dataset.currentImages || "[]");
+      } else {
+        payload.imagenes = [];
+      }
+
       if (productId) {
         await apiRequest(`/admin/products/${productId}`, {
           method: "PUT",
@@ -349,7 +443,9 @@ async function renderAdminPanel(container) {
       form.querySelector('[name="stock"]').value = String(product.stock);
       form.querySelector('[name="descripcion"]').value = product.descripcion;
       form.querySelector('[name="tags"]').value = product.tags.join(", ");
-      form.querySelector('[name="imagenes"]').value = product.imagenes.join("\n");
+      form.dataset.currentImages = JSON.stringify(product.imagenes);
+      fileInput.value = "";
+      renderImagePreview(imagePreview, product.imagenes, "Sube imagenes para ver la vista previa del producto.");
       form.querySelector(".js-admin-submit").textContent = "Actualizar producto";
       form.scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -831,6 +927,14 @@ async function renderAccountPage() {
     return;
   }
 
+  if (!getToken()) {
+    const nextTarget = getNextTarget();
+
+    if (nextTarget) {
+      setSectionMessage(".page-stack", "Primero crea tu cuenta o inicia sesion para entrar a la tienda.");
+    }
+  }
+
   registerForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const formData = new FormData(registerForm);
@@ -861,6 +965,13 @@ async function renderAccountPage() {
 
       setSectionMessage(".page-stack", "Cuenta creada y enlazada con la app real.");
       registerForm.reset();
+      const nextTarget = getNextTarget();
+
+      if (nextTarget) {
+        window.location.href = nextTarget;
+        return;
+      }
+
       const dashboard = await loadAccountDashboard();
       renderAccountDashboard(dashboard);
       await refreshHeaderState();
@@ -885,6 +996,13 @@ async function renderAccountPage() {
       setAuthSession(payload);
       loginForm.reset();
       setSectionMessage(".page-stack", "Sesion iniciada.");
+      const nextTarget = getNextTarget();
+
+      if (nextTarget) {
+        window.location.href = nextTarget;
+        return;
+      }
+
       const dashboard = await loadAccountDashboard();
       renderAccountDashboard(dashboard);
       await refreshHeaderState();
@@ -1186,11 +1304,22 @@ function bindHeaderSearch() {
 }
 
 async function init() {
+  const page = document.body.dataset.page;
+
+  if (page !== "account" && !getToken()) {
+    redirectToAccountGate();
+    return;
+  }
+
   bindHeaderSearch();
   await hydrateSession();
-  await refreshHeaderState();
 
-  const page = document.body.dataset.page;
+  if (page !== "account" && !getStoredUser()) {
+    redirectToAccountGate();
+    return;
+  }
+
+  await refreshHeaderState();
 
   if (page === "home") {
     await renderHomePage();

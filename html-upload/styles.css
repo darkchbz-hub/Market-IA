@@ -26,6 +26,13 @@ body {
   color: #111827;
 }
 
+body[data-page="account"] {
+  background:
+    radial-gradient(circle at top left, rgba(52, 131, 250, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(255, 241, 89, 0.34), transparent 22%),
+    linear-gradient(180deg, #eef4ff 0%, #f8fafc 22%, #f3f4f6 100%);
+}
+
 img {
   display: block;
   max-width: 100%;
@@ -589,6 +596,97 @@ textarea {
   align-items: start;
 }
 
+.auth-shell {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 22px;
+  align-items: stretch;
+}
+
+.auth-hero-card {
+  display: grid;
+  gap: 18px;
+  padding: 28px;
+  border-radius: 28px;
+  background:
+    linear-gradient(145deg, rgba(17, 24, 39, 0.97), rgba(30, 41, 59, 0.96)),
+    #111827;
+  color: #fff;
+  box-shadow: 0 30px 70px rgba(15, 23, 42, 0.24);
+}
+
+.auth-hero-card .section-label,
+.auth-hero-card .auth-copy,
+.auth-hero-card .auth-feature span {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.auth-hero-card h1 {
+  margin: 0;
+  font-size: clamp(2.4rem, 3vw + 1rem, 4.2rem);
+  line-height: 1.02;
+  max-width: 12ch;
+}
+
+.auth-copy {
+  max-width: 52ch;
+  line-height: 1.7;
+}
+
+.auth-feature-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.auth-feature {
+  display: grid;
+  gap: 6px;
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.auth-panel-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.auth-card {
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+}
+
+.auth-card__head {
+  display: grid;
+  gap: 6px;
+}
+
+.auth-card__head h2,
+.auth-card__head p {
+  margin: 0;
+}
+
+.auth-form {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.auth-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .account-panels {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -656,6 +754,41 @@ textarea {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.admin-upload-note {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #eff6ff;
+  color: var(--blue-dark);
+}
+
+.admin-image-preview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-image-card {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+}
+
+.admin-image-card img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.admin-image-card figcaption {
+  font-size: 0.84rem;
+  color: var(--muted);
 }
 
 .admin-product-list {
@@ -797,6 +930,7 @@ textarea {
   .hero,
   .catalog-layout,
   .cart-layout,
+  .auth-shell,
   .account-layout,
   .contact-layout,
   .checkout-layout,
@@ -829,8 +963,13 @@ textarea {
 
   .cart-item,
   .profile-grid,
+  .auth-form-grid,
   .admin-grid {
     grid-template-columns: 1fr;
+  }
+
+  .admin-image-preview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .payment-strip {

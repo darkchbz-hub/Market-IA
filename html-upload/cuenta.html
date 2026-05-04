@@ -8,7 +8,7 @@
   </head>
   <body data-page="account">
     <div class="top-strip">
-      <p>Registro y login conectados con la app real</p>
+      <p>Acceso privado activo: inicia sesion para entrar a toda la tienda</p>
     </div>
 
     <header class="site-header">
@@ -42,75 +42,100 @@
     </header>
 
     <main class="container page-stack">
-      <section class="section-block">
-        <div class="section-head">
-          <div>
-            <p class="section-label">Cuenta</p>
-            <h1>Registro, login y panel de cuenta</h1>
-          </div>
-        </div>
-      </section>
-
-      <section class="account-layout js-account-layout">
-        <article class="info-card">
-          <p class="section-label">Beneficio</p>
-          <h2>Guarda tu carrito, tus ordenes y administra tu tienda</h2>
-          <p>
-            Si entras con la cuenta administradora, desde esta misma pagina podras crear, editar y borrar productos.
+      <section class="auth-shell">
+        <article class="auth-hero-card">
+          <p class="section-label">Acceso privado</p>
+          <h1>Entra a una tienda mas limpia, segura y mucho mas moderna.</h1>
+          <p class="auth-copy">
+            Toda la experiencia ahora se desbloquea con cuenta. Guarda tu carrito, revisa tus compras y, si eres admin,
+            sube productos con imagenes desde tu computadora.
           </p>
+
+          <div class="auth-feature-list">
+            <div class="auth-feature">
+              <strong>Compra con confianza</strong>
+              <span>Tu carrito, direccion y ordenes quedan ligadas a tu cuenta real.</span>
+            </div>
+            <div class="auth-feature">
+              <strong>Panel administrador</strong>
+              <span>Publica, edita y elimina productos sin tocar codigo ni URLs manuales.</span>
+            </div>
+            <div class="auth-feature">
+              <strong>Pagos listos</strong>
+              <span>La tienda queda preparada para Mercado Pago, PayPal y tarjetas.</span>
+            </div>
+          </div>
         </article>
 
-        <div class="account-panels">
-          <form class="form-card js-register-form">
-            <h3>Crear cuenta</h3>
-            <label>
-              Nombre
-              <input name="nombre" type="text" required />
-            </label>
-            <label>
-              Email
-              <input name="email" type="email" required />
-            </label>
-            <label>
-              Contrasena
-              <input name="password" type="password" minlength="8" required />
-            </label>
-            <label>
-              Calle
-              <input name="calle" type="text" />
-            </label>
-            <label>
-              Ciudad
-              <input name="ciudad" type="text" />
-            </label>
-            <label>
-              Estado
-              <input name="estado" type="text" />
-            </label>
-            <label>
-              Codigo postal
-              <input name="cp" type="text" />
-            </label>
-            <label>
-              Pais
-              <input name="pais" type="text" value="MX" />
-            </label>
-            <button type="submit" class="button button--primary">Crear cuenta</button>
-          </form>
+        <div class="auth-panel-stack">
+          <section class="auth-card auth-card--register">
+            <div class="auth-card__head">
+              <p class="section-label">Nuevo usuario</p>
+              <h2>Crea tu cuenta</h2>
+              <p>Hazlo una vez y ya podras entrar a toda la web.</p>
+            </div>
 
-          <form class="form-card js-login-form">
-            <h3>Iniciar sesion</h3>
-            <label>
-              Email
-              <input name="email" type="email" required />
-            </label>
-            <label>
-              Contrasena
-              <input name="password" type="password" required />
-            </label>
-            <button type="submit" class="button button--primary">Entrar</button>
-            <button type="button" class="button button--light js-logout-button">Cerrar sesion</button>
-          </form>
+            <form class="form-card auth-form js-register-form">
+              <label>
+                Nombre
+                <input name="nombre" type="text" required />
+              </label>
+              <label>
+                Email
+                <input name="email" type="email" required />
+              </label>
+              <label>
+                Contrasena
+                <input name="password" type="password" minlength="8" required />
+              </label>
+              <div class="auth-form-grid">
+                <label>
+                  Calle
+                  <input name="calle" type="text" />
+                </label>
+                <label>
+                  Ciudad
+                  <input name="ciudad" type="text" />
+                </label>
+                <label>
+                  Estado
+                  <input name="estado" type="text" />
+                </label>
+                <label>
+                  Codigo postal
+                  <input name="cp" type="text" />
+                </label>
+              </div>
+              <label>
+                Pais
+                <input name="pais" type="text" value="MX" />
+              </label>
+              <button type="submit" class="button button--primary">Crear cuenta y entrar</button>
+            </form>
+          </section>
+
+          <section class="auth-card auth-card--login">
+            <div class="auth-card__head">
+              <p class="section-label">Ya tienes cuenta</p>
+              <h2>Inicia sesion</h2>
+              <p>Accede a tu tienda, tu historial y tu panel si eres administrador.</p>
+            </div>
+
+            <form class="form-card auth-form js-login-form">
+              <label>
+                Email
+                <input name="email" type="email" required />
+              </label>
+              <label>
+                Contrasena
+                <input name="password" type="password" required />
+              </label>
+              <div class="button-row">
+                <button type="submit" class="button button--primary">Entrar ahora</button>
+                <button type="button" class="button button--light js-logout-button">Cerrar sesion</button>
+              </div>
+            </form>
+          </section>
         </div>
       </section>
 
