@@ -8,7 +8,7 @@
   </head>
   <body data-page="catalog">
     <div class="top-strip">
-      <p>Catalogo HTML enlazado con la API real</p>
+      <p data-content="catalog.topStrip">Encuentra productos digitales con pagos seguros y compra protegida</p>
     </div>
 
     <header class="site-header">
@@ -45,56 +45,71 @@
       <section class="section-block">
         <div class="section-head">
           <div>
-            <p class="section-label">Catalogo</p>
-            <h1>Encuentra el producto ideal</h1>
+            <p class="section-label" data-content="catalog.label">Catalogo</p>
+            <h1 data-content="catalog.title">Encuentra el producto ideal</h1>
           </div>
-          <p class="muted">Usa los filtros para refinar el catalogo como en un marketplace real.</p>
+          <div class="catalog-toolbar">
+            <p class="muted" data-content="catalog.description">Descubre apps IA, packs y servicios web desde un solo lugar.</p>
+            <button type="button" class="button button--light catalog-filter-button js-filter-toggle" aria-expanded="false" aria-controls="catalog-filters">
+              <span class="hamburger-lines" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+              </span>
+              Filtros
+            </button>
+          </div>
         </div>
       </section>
 
       <section class="catalog-layout">
-        <aside class="filters-card">
-          <h3>Filtros</h3>
-          <label>
-            Buscar
-            <input id="catalog-search" type="search" placeholder="Ej. ChatGPT, landing o pack" />
-          </label>
-          <label>
-            Categoria
-            <select id="catalog-category">
-              <option value="">Todas</option>
-              <option value="apps">Apps IA</option>
-              <option value="packs">Packs</option>
-              <option value="webs">Servicios web</option>
-            </select>
-          </label>
-          <label>
-            Precio minimo
-            <input id="catalog-min" type="number" min="0" step="0.01" />
-          </label>
-          <label>
-            Precio maximo
-            <input id="catalog-max" type="number" min="0" step="0.01" />
-          </label>
-          <label>
-            Ordenar por
-            <select id="catalog-sort">
-              <option value="featured">Destacados</option>
-              <option value="price-asc">Menor precio</option>
-              <option value="price-desc">Mayor precio</option>
-              <option value="name">Nombre</option>
-            </select>
-          </label>
-          <div class="button-row">
-            <button id="catalog-apply" type="button" class="button button--primary">Aplicar</button>
-            <button id="catalog-clear" type="button" class="button button--light">Limpiar</button>
-          </div>
-        </aside>
+        <div class="filters-overlay js-filter-overlay" hidden>
+          <aside class="filters-card filters-card--drawer" id="catalog-filters">
+            <div class="filters-head">
+              <h3>Filtros</h3>
+              <button type="button" class="button button--light js-filter-close">Cerrar</button>
+            </div>
+            <label>
+              Buscar
+              <input id="catalog-search" type="search" placeholder="Ej. ChatGPT, landing o pack" />
+            </label>
+            <label>
+              Categoria
+              <select id="catalog-category">
+                <option value="">Todas</option>
+                <option value="apps">Apps IA</option>
+                <option value="packs">Packs</option>
+                <option value="webs">Servicios web</option>
+              </select>
+            </label>
+            <label>
+              Precio minimo
+              <input id="catalog-min" type="number" min="0" step="0.01" />
+            </label>
+            <label>
+              Precio maximo
+              <input id="catalog-max" type="number" min="0" step="0.01" />
+            </label>
+            <label>
+              Ordenar por
+              <select id="catalog-sort">
+                <option value="featured">Destacados</option>
+                <option value="price-asc">Menor precio</option>
+                <option value="price-desc">Mayor precio</option>
+                <option value="name">Nombre</option>
+              </select>
+            </label>
+            <div class="button-row">
+              <button id="catalog-apply" type="button" class="button button--primary">Aplicar</button>
+              <button id="catalog-clear" type="button" class="button button--light">Limpiar</button>
+            </div>
+          </aside>
+        </div>
 
         <div class="catalog-results">
           <div class="section-head">
             <div>
-              <p class="section-label">Resultados</p>
+              <p class="section-label" data-content="catalog.resultsLabel">Resultados</p>
               <h2 class="js-catalog-title">Productos</h2>
             </div>
             <p class="muted js-catalog-meta"></p>

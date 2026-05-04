@@ -22,6 +22,7 @@ import {
   getOrderById,
   getOrderWithItems,
   getProductById,
+  getSiteContent,
   getUserByEmail,
   getUserById,
   getUserDashboard,
@@ -33,6 +34,7 @@ import {
   savePaymentRecord,
   serializeUser,
   setCartItem,
+  updateSiteContent,
   updateProduct,
   updateUserAddress
 } from "./_lib/store.js";
@@ -223,6 +225,10 @@ export async function onRequest(context) {
       return json(result);
     }
 
+    if (first === "site-content" && request.method === "GET") {
+      return json(await getSiteContent(db));
+    }
+
     if (first === "cart" && !second && request.method === "GET") {
       const user = await authenticate(request, env, db);
       return json(await getCartState(db, user.id));
@@ -349,6 +355,15 @@ export async function onRequest(context) {
       await deleteProduct(db, Number(third));
       return json({
         ok: true
+      });
+    }
+
+    if (first === "admin" && second === "site-content" && third && request.method === "PUT") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      const body = await readJson(request);
+      return json({
+        section: await updateSiteContent(db, third, body)
       });
     }
 

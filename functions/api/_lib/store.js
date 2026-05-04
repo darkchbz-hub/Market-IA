@@ -1,6 +1,35 @@
 import { hashPassword } from "./security.js";
 
 const seedProducts = [];
+const defaultSiteContent = {
+  home: {
+    topStrip: "Pagos seguros, acceso privado y garantia en cada compra",
+    heroEyebrow: "Marketplace digital",
+    heroTitle: "Compra suscripciones, herramientas IA y servicios web desde una sola tienda.",
+    heroDescription:
+      "Una vitrina limpia y clara para encontrar productos digitales, comprar con confianza y volver cuando quieras.",
+    primaryButton: "Ver catalogo",
+    secondaryButton: "Crear cuenta",
+    categoriesLabel: "Explora rapido",
+    categoriesTitle: "Categorias destacadas",
+    featuredLabel: "Top productos",
+    featuredTitle: "Lo mas vendido",
+    infoOneTitle: "Catalogo con busqueda y filtros",
+    infoOneText: "Tus clientes encuentran rapido lo que quieren y guardan sus favoritos en su cuenta.",
+    infoTwoTitle: "Cuenta privada y segura",
+    infoTwoText: "Cada compra, historial y direccion queda guardado dentro del perfil del usuario.",
+    infoThreeTitle: "Pagos y control total",
+    infoThreeText: "Vende desde una sola tienda y administra tu contenido desde el panel interno."
+  },
+  catalog: {
+    topStrip: "Encuentra productos digitales con pagos seguros y compra protegida",
+    label: "Catalogo",
+    title: "Encuentra el producto ideal",
+    description: "Descubre apps IA, packs y servicios web desde un solo lugar.",
+    resultsLabel: "Resultados",
+    allMeta: "Mostrando todo el catalogo"
+  }
+};
 
 const schemaStatements = [
   `
@@ -89,6 +118,13 @@ const schemaStatements = [
       user_id INTEGER NOT NULL,
       product_id INTEGER NOT NULL,
       fecha TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `,
+  `
+    CREATE TABLE IF NOT EXISTS site_content (
+      clave TEXT PRIMARY KEY,
+      valor TEXT NOT NULL,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `
 ];
@@ -209,6 +245,22 @@ async function seedDatabase(db, env) {
         })
       )
       .run();
+  }
+
+  for (const [key, value] of Object.entries(defaultSiteContent)) {
+    const existing = await db.prepare("SELECT clave FROM site_content WHERE clave = ?").bind(key).first();
+
+    if (!existing) {
+      await db
+        .prepare(
+          `
+          INSERT INTO site_content (clave, valor)
+          VALUES (?, ?)
+        `
+        )
+        .bind(key, JSON.stringify(value))
+        .run();
+    }
   }
 }
 
@@ -743,4 +795,46 @@ export async function getUserDashboard(db, userId) {
       }))
     }
   };
+}
+
+export async function getSiteContent(db) {
+  const result = await db.prepare("SELECT clave, valor FROM site_content").all();
+  const content = structuredClone(defaultSiteContent);
+
+  for (const row of result.results || []) {
+    content[row.clave] = {
+      ...(content[row.clave] || {}),
+      ...parseJson(row.valor, {})
+    };
+  }
+
+  return content;
+}
+
+export async function updateSiteContent(db, sectionKey, input) {
+  const key = String(sectionKey || "").trim();
+
+  if (!Object.prototype.hasOwnProperty.call(defaultSiteContent, key)) {
+    throw new Error("La seccion que intentas editar no existe.");
+  }
+
+  const nextValue = {
+    ...defaultSiteContent[key],
+    ...(input && typeof input === "object" ? input : {})
+  };
+
+  await db
+    .prepare(
+      `
+      INSERT INTO site_content (clave, valor, updated_at)
+      VALUES (?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(clave) DO UPDATE SET
+        valor = excluded.valor,
+        updated_at = CURRENT_TIMESTAMP
+    `
+    )
+    .bind(key, JSON.stringify(nextValue))
+    .run();
+
+  return nextValue;
 }

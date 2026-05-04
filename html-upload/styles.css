@@ -26,6 +26,10 @@ body {
   color: #111827;
 }
 
+body.has-drawer-open {
+  overflow: hidden;
+}
+
 body[data-page="account"] {
   background:
     radial-gradient(circle at top left, rgba(52, 131, 250, 0.18), transparent 28%),
@@ -413,13 +417,59 @@ textarea {
 }
 
 .catalog-layout {
-  grid-template-columns: 290px 1fr;
+  grid-template-columns: 1fr;
   align-items: start;
 }
 
 .filters-card {
   display: grid;
   gap: 14px;
+}
+
+.filters-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(15, 23, 42, 0.42);
+  padding: 20px;
+}
+
+.filters-card--drawer {
+  width: min(380px, calc(100vw - 28px));
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  margin-left: auto;
+}
+
+.filters-head,
+.catalog-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.catalog-toolbar {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.catalog-filter-button {
+  min-width: 132px;
+}
+
+.hamburger-lines {
+  display: inline-grid;
+  gap: 4px;
+  margin-right: 8px;
+}
+
+.hamburger-lines span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
 }
 
 .filters-card h3 {
@@ -654,6 +704,10 @@ textarea {
   gap: 18px;
 }
 
+.auth-shell.is-hidden {
+  display: none;
+}
+
 .auth-card {
   display: grid;
   gap: 16px;
@@ -746,8 +800,24 @@ textarea {
   margin-top: 8px;
 }
 
+.admin-content-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
 .admin-form {
   background: #f8fafc;
+}
+
+.admin-form-title {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-form-title span {
+  color: var(--muted);
+  font-size: 0.94rem;
 }
 
 .admin-grid {
@@ -964,7 +1034,8 @@ textarea {
   .cart-item,
   .profile-grid,
   .auth-form-grid,
-  .admin-grid {
+  .admin-grid,
+  .admin-content-grid {
     grid-template-columns: 1fr;
   }
 

@@ -1,6 +1,36 @@
 const API_URL = window.MARKETZONE_CONFIG?.apiUrl || `${window.location.origin}/api`;
 const tokenKey = "marketzone_html_token";
 const userKey = "marketzone_html_user";
+const defaultSiteContent = {
+  home: {
+    topStrip: "Pagos seguros, acceso privado y garantia en cada compra",
+    heroEyebrow: "Marketplace digital",
+    heroTitle: "Compra suscripciones, herramientas IA y servicios web desde una sola tienda.",
+    heroDescription:
+      "Una vitrina limpia y clara para encontrar productos digitales, comprar con confianza y volver cuando quieras.",
+    primaryButton: "Ver catalogo",
+    secondaryButton: "Crear cuenta",
+    categoriesLabel: "Explora rapido",
+    categoriesTitle: "Categorias destacadas",
+    featuredLabel: "Top productos",
+    featuredTitle: "Lo mas vendido",
+    infoOneTitle: "Catalogo con busqueda y filtros",
+    infoOneText: "Tus clientes encuentran rapido lo que quieren y guardan sus favoritos en su cuenta.",
+    infoTwoTitle: "Cuenta privada y segura",
+    infoTwoText: "Cada compra, historial y direccion queda guardado dentro del perfil del usuario.",
+    infoThreeTitle: "Pagos y control total",
+    infoThreeText: "Vende desde una sola tienda y administra tu contenido desde el panel interno."
+  },
+  catalog: {
+    topStrip: "Encuentra productos digitales con pagos seguros y compra protegida",
+    label: "Catalogo",
+    title: "Encuentra el producto ideal",
+    description: "Descubre apps IA, packs y servicios web desde un solo lugar.",
+    resultsLabel: "Resultados",
+    allMeta: "Mostrando todo el catalogo"
+  }
+};
+let currentSiteContent = defaultSiteContent;
 
 function formatCurrency(value) {
   return new Intl.NumberFormat("es-MX", {
@@ -8,6 +38,15 @@ function formatCurrency(value) {
     currency: "MXN",
     maximumFractionDigits: 2
   }).format(Number(value || 0));
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function getToken() {
@@ -40,6 +79,10 @@ function clearAuthSession() {
 function getCurrentPageTarget() {
   const path = window.location.pathname.split("/").pop() || "index.html";
   return `${path}${window.location.search}${window.location.hash}`;
+}
+
+function getDefaultPostLoginTarget(user = getStoredUser()) {
+  return user?.role === "admin" ? "./cuenta.html" : "./index.html";
 }
 
 function getNextTarget() {
@@ -90,6 +133,33 @@ async function apiRequest(path, options = {}) {
   }
 
   return payload;
+}
+
+async function loadSiteContent() {
+  try {
+    const content = await apiRequest("/site-content");
+    currentSiteContent = {
+      home: { ...defaultSiteContent.home, ...(content.home || {}) },
+      catalog: { ...defaultSiteContent.catalog, ...(content.catalog || {}) }
+    };
+    return currentSiteContent;
+  } catch {
+    currentSiteContent = defaultSiteContent;
+    return currentSiteContent;
+  }
+}
+
+function applySiteContent(content) {
+  document.querySelectorAll("[data-content]").forEach((node) => {
+    const [section, field] = String(node.dataset.content || "").split(".");
+    const value = content?.[section]?.[field];
+
+    if (!value) {
+      return;
+    }
+
+    node.textContent = value;
+  });
 }
 
 function normalizeProduct(product) {
@@ -209,6 +279,25 @@ async function loadAdminProducts() {
   return payload.items.map(normalizeProduct);
 }
 
+async function saveSiteSection(sectionKey, payload) {
+  const response = await apiRequest(`/admin/site-content/${sectionKey}`, {
+    method: "PUT",
+    auth: true,
+    body: payload
+  });
+
+  currentSiteContent = {
+    ...currentSiteContent,
+    [sectionKey]: {
+      ...(currentSiteContent[sectionKey] || {}),
+      ...(response.section || {})
+    }
+  };
+  applySiteContent(currentSiteContent);
+
+  return response.section;
+}
+
 function readFileAsDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -260,8 +349,16 @@ function serializeAdminProductForm(form) {
   };
 }
 
+function serializeSectionForm(form) {
+  const formData = new FormData(form);
+  return Object.fromEntries(Array.from(formData.entries()).map(([key, value]) => [key, String(value || "").trim()]));
+}
+
 async function renderAdminPanel(container) {
   const items = await loadAdminProducts();
+  const content = await loadSiteContent();
+  const homeContent = content.home;
+  const catalogContent = content.catalog;
 
   container.innerHTML = `
     <section class="admin-panel">
@@ -325,8 +422,8 @@ async function renderAdminPanel(container) {
                   (item) => `
                     <article class="admin-product-item" data-product-id="${item.id}">
                       <div>
-                        <strong>${item.nombre}</strong>
-                        <p>${item.categoria} - ${formatCurrency(item.precio)} - Stock ${item.stock}</p>
+                        <strong>${escapeHtml(item.nombre)}</strong>
+                        <p>${escapeHtml(item.categoria)} - ${formatCurrency(item.precio)} - Stock ${item.stock}</p>
                       </div>
                       <div class="admin-actions">
                         <button type="button" class="button button--light" data-action="edit">Editar</button>
@@ -338,6 +435,89 @@ async function renderAdminPanel(container) {
                 .join("")
             : `<div class="empty-state"><h2>No hay productos todavia</h2><p>Agrega el primero para empezar a vender.</p></div>`
         }
+      </div>
+    </section>
+    <section class="admin-panel">
+      <div class="section-head">
+        <div>
+          <p class="section-label">Tu pagina</p>
+          <h3>Edita los textos principales sin tocar codigo</h3>
+        </div>
+      </div>
+      <div class="admin-content-grid">
+        <form class="form-card admin-form js-site-form" data-section="home">
+          <div class="admin-form-title">
+            <strong>Inicio</strong>
+            <span>Portada y mensajes principales</span>
+          </div>
+          <label>
+            Franja superior
+            <input name="topStrip" type="text" value="${escapeHtml(homeContent.topStrip)}" />
+          </label>
+          <label>
+            Etiqueta principal
+            <input name="heroEyebrow" type="text" value="${escapeHtml(homeContent.heroEyebrow)}" />
+          </label>
+          <label>
+            Titulo principal
+            <textarea name="heroTitle" rows="3">${escapeHtml(homeContent.heroTitle)}</textarea>
+          </label>
+          <label>
+            Descripcion principal
+            <textarea name="heroDescription" rows="4">${escapeHtml(homeContent.heroDescription)}</textarea>
+          </label>
+          <div class="admin-grid">
+            <label>
+              Boton principal
+              <input name="primaryButton" type="text" value="${escapeHtml(homeContent.primaryButton)}" />
+            </label>
+            <label>
+              Boton secundario
+              <input name="secondaryButton" type="text" value="${escapeHtml(homeContent.secondaryButton)}" />
+            </label>
+          </div>
+          <label>
+            Titulo de categorias
+            <input name="categoriesTitle" type="text" value="${escapeHtml(homeContent.categoriesTitle)}" />
+          </label>
+          <label>
+            Titulo de productos destacados
+            <input name="featuredTitle" type="text" value="${escapeHtml(homeContent.featuredTitle)}" />
+          </label>
+          <div class="button-row">
+            <button type="submit" class="button button--primary">Guardar inicio</button>
+          </div>
+        </form>
+
+        <form class="form-card admin-form js-site-form" data-section="catalog">
+          <div class="admin-form-title">
+            <strong>Catalogo</strong>
+            <span>Encabezado y mensaje de resultados</span>
+          </div>
+          <label>
+            Franja superior
+            <input name="topStrip" type="text" value="${escapeHtml(catalogContent.topStrip)}" />
+          </label>
+          <label>
+            Etiqueta
+            <input name="label" type="text" value="${escapeHtml(catalogContent.label)}" />
+          </label>
+          <label>
+            Titulo principal
+            <input name="title" type="text" value="${escapeHtml(catalogContent.title)}" />
+          </label>
+          <label>
+            Descripcion
+            <textarea name="description" rows="4">${escapeHtml(catalogContent.description)}</textarea>
+          </label>
+          <label>
+            Etiqueta de resultados
+            <input name="resultsLabel" type="text" value="${escapeHtml(catalogContent.resultsLabel)}" />
+          </label>
+          <div class="button-row">
+            <button type="submit" class="button button--primary">Guardar catalogo</button>
+          </div>
+        </form>
       </div>
     </section>
   `;
@@ -467,6 +647,21 @@ async function renderAdminPanel(container) {
       }
     });
   });
+
+  container.querySelectorAll(".js-site-form").forEach((formNode) => {
+    formNode.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      try {
+        const sectionKey = event.currentTarget.dataset.section;
+        const payload = serializeSectionForm(event.currentTarget);
+        await saveSiteSection(sectionKey, payload);
+        setSectionMessage(".page-stack", "Contenido actualizado correctamente.");
+      } catch (error) {
+        setSectionMessage(".page-stack", error.message, true);
+      }
+    });
+  });
 }
 
 function createProductCard(product) {
@@ -533,6 +728,65 @@ async function renderHomePage() {
     container.innerHTML = "";
     container.appendChild(createStatusBox(`No se pudo conectar a la API. ${error.message}`, true));
   }
+}
+
+function closeCatalogFilters() {
+  const overlay = document.querySelector(".js-filter-overlay");
+  const toggle = document.querySelector(".js-filter-toggle");
+
+  if (!overlay || overlay.hidden) {
+    return;
+  }
+
+  overlay.hidden = true;
+  document.body.classList.remove("has-drawer-open");
+
+  if (toggle) {
+    toggle.setAttribute("aria-expanded", "false");
+  }
+}
+
+function openCatalogFilters() {
+  const overlay = document.querySelector(".js-filter-overlay");
+  const toggle = document.querySelector(".js-filter-toggle");
+
+  if (!overlay) {
+    return;
+  }
+
+  overlay.hidden = false;
+  document.body.classList.add("has-drawer-open");
+
+  if (toggle) {
+    toggle.setAttribute("aria-expanded", "true");
+  }
+}
+
+function bindCatalogDrawer() {
+  const toggle = document.querySelector(".js-filter-toggle");
+  const close = document.querySelector(".js-filter-close");
+  const overlay = document.querySelector(".js-filter-overlay");
+
+  if (!toggle || !close || !overlay) {
+    return;
+  }
+
+  toggle.addEventListener("click", () => {
+    if (overlay.hidden) {
+      openCatalogFilters();
+      return;
+    }
+
+    closeCatalogFilters();
+  });
+
+  close.addEventListener("click", closeCatalogFilters);
+
+  overlay.addEventListener("click", (event) => {
+    if (event.target === overlay) {
+      closeCatalogFilters();
+    }
+  });
 }
 
 function syncCatalogControlsFromUrl() {
@@ -608,7 +862,7 @@ async function applyCatalogFilters() {
     results.innerHTML = "";
     items.forEach((product) => results.appendChild(createProductCard(product)));
     title.textContent = `${payload.pagination.total} productos encontrados`;
-    meta.textContent = category ? `Categoria activa: ${category}` : "Mostrando todo el catalogo";
+    meta.textContent = category ? `Categoria activa: ${category}` : currentSiteContent.catalog.allMeta;
 
     const nextParams = new URLSearchParams();
 
@@ -630,6 +884,7 @@ async function applyCatalogFilters() {
 
     const queryString = nextParams.toString();
     window.history.replaceState({}, "", `${window.location.pathname}${queryString ? `?${queryString}` : ""}`);
+    closeCatalogFilters();
   } catch (error) {
     results.innerHTML = "";
     results.appendChild(createStatusBox(`No se pudo cargar el catalogo. ${error.message}`, true));
@@ -642,6 +897,7 @@ async function renderCatalogPage() {
   }
 
   syncCatalogControlsFromUrl();
+  bindCatalogDrawer();
 
   document.querySelector("#catalog-apply").addEventListener("click", applyCatalogFilters);
   document.querySelector("#catalog-clear").addEventListener("click", () => {
@@ -922,8 +1178,9 @@ async function renderAccountPage() {
   const loginForm = document.querySelector(".js-login-form");
   const logoutButton = document.querySelector(".js-logout-button");
   const profileCard = document.querySelector(".js-profile-card");
+  const authShell = document.querySelector(".js-auth-shell");
 
-  if (!registerForm || !loginForm || !logoutButton || !profileCard) {
+  if (!registerForm || !loginForm || !logoutButton || !profileCard || !authShell) {
     return;
   }
 
@@ -963,7 +1220,7 @@ async function renderAccountPage() {
         setAuthSession({ user: updated.user });
       }
 
-      setSectionMessage(".page-stack", "Cuenta creada correctamente. Ya puedes entrar a toda la tienda.");
+      setSectionMessage(".page-stack", "Cuenta creada correctamente.");
       registerForm.reset();
       const nextTarget = getNextTarget();
 
@@ -972,9 +1229,8 @@ async function renderAccountPage() {
         return;
       }
 
-      const dashboard = await loadAccountDashboard();
-      renderAccountDashboard(dashboard);
       await refreshHeaderState();
+      window.location.href = getDefaultPostLoginTarget(payload.user);
     } catch (error) {
       setSectionMessage(".page-stack", error.message, true);
     }
@@ -1003,9 +1259,8 @@ async function renderAccountPage() {
         return;
       }
 
-      const dashboard = await loadAccountDashboard();
-      renderAccountDashboard(dashboard);
       await refreshHeaderState();
+      window.location.href = getDefaultPostLoginTarget(payload.user);
     } catch (error) {
       setSectionMessage(".page-stack", error.message, true);
     }
@@ -1022,11 +1277,13 @@ async function renderAccountPage() {
   if (getToken()) {
     try {
       const dashboard = await loadAccountDashboard();
+      authShell.classList.add("is-hidden");
       renderAccountDashboard(dashboard);
     } catch (error) {
       setSectionMessage(".page-stack", error.message, true);
     }
   } else {
+    authShell.classList.remove("is-hidden");
     profileCard.className = "profile-card js-profile-card is-hidden";
   }
 }
@@ -1305,11 +1562,14 @@ function bindHeaderSearch() {
 
 async function init() {
   const page = document.body.dataset.page;
+  const siteContent = await loadSiteContent();
 
   if (page !== "account" && !getToken()) {
     redirectToAccountGate();
     return;
   }
+
+  applySiteContent(siteContent);
 
   bindHeaderSearch();
   await hydrateSession();
