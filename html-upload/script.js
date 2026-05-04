@@ -267,10 +267,10 @@ async function renderAdminPanel(container) {
     <section class="admin-panel">
       <div class="section-head">
         <div>
-          <p class="section-label">Administrador</p>
-          <h3>Gestiona el catalogo desde aqui</h3>
+          <p class="section-label">Tu catalogo</p>
+          <h3>Publica y actualiza tus productos</h3>
         </div>
-        <button type="button" class="button button--light js-admin-clear">Borrar catalogo</button>
+        <button type="button" class="button button--light js-admin-clear">Vaciar catalogo</button>
       </div>
       <form class="form-card admin-form js-admin-form">
         <input type="hidden" name="productId" value="" />
@@ -309,7 +309,7 @@ async function renderAdminPanel(container) {
           <input name="imagenesArchivos" type="file" accept="image/*" multiple />
         </label>
         <div class="admin-upload-note">
-          <strong>Tip:</strong> si eliges nuevas imagenes al editar, reemplazaran las actuales.
+          Si subes nuevas imagenes al editar, se reemplazaran las actuales.
         </div>
         <div class="js-admin-image-preview"></div>
         <div class="button-row">
@@ -336,7 +336,7 @@ async function renderAdminPanel(container) {
                   `
                 )
                 .join("")
-            : `<div class="empty-state"><h2>No hay productos todavia</h2><p>Sube el primero desde este panel.</p></div>`
+            : `<div class="empty-state"><h2>No hay productos todavia</h2><p>Agrega el primero para empezar a vender.</p></div>`
         }
       </div>
     </section>
@@ -396,14 +396,14 @@ async function renderAdminPanel(container) {
           auth: true,
           body: payload
         });
-        setSectionMessage(".page-stack", "Producto actualizado.");
+        setSectionMessage(".page-stack", "Cambios guardados correctamente.");
       } else {
         await apiRequest("/admin/products", {
           method: "POST",
           auth: true,
           body: payload
         });
-        setSectionMessage(".page-stack", "Producto creado.");
+        setSectionMessage(".page-stack", "Producto publicado correctamente.");
       }
 
       await renderAdminPanel(container);
@@ -424,7 +424,7 @@ async function renderAdminPanel(container) {
         method: "DELETE",
         auth: true
       });
-      setSectionMessage(".page-stack", "Catalogo eliminado.");
+      setSectionMessage(".page-stack", "Catalogo vaciado correctamente.");
       await renderAdminPanel(container);
     } catch (error) {
       setSectionMessage(".page-stack", error.message, true);
@@ -460,7 +460,7 @@ async function renderAdminPanel(container) {
           method: "DELETE",
           auth: true
         });
-        setSectionMessage(".page-stack", "Producto eliminado.");
+        setSectionMessage(".page-stack", "Producto eliminado correctamente.");
         await renderAdminPanel(container);
       } catch (error) {
         setSectionMessage(".page-stack", error.message, true);
@@ -667,7 +667,7 @@ function renderLoggedOutCart() {
   cartContainer.innerHTML = `
     <div class="empty-state">
       <h2>Inicia sesion para ver tu carrito</h2>
-      <p>El carrito ya esta conectado a tu cuenta real dentro del backend.</p>
+      <p>Tu carrito se guarda en tu cuenta para que sigas comprando cuando quieras.</p>
       <a href="./cuenta.html" class="button button--primary">Entrar a mi cuenta</a>
     </div>
   `;
@@ -789,7 +789,7 @@ async function renderCartPage() {
         <span>Total estimado</span>
         <strong>${formatCurrency(cart.total)}</strong>
       </div>
-      <p class="muted">Este carrito ya pertenece al usuario autenticado dentro del backend.</p>
+      <p class="muted">Tu carrito queda guardado en tu cuenta para que sigas tu compra con seguridad.</p>
       <a class="button button--primary" href="./checkout.html">Continuar a checkout</a>
       <a class="button button--light" href="./catalogo.html">Seguir comprando</a>
     `;
@@ -839,10 +839,10 @@ function renderAccountDashboard(dashboard) {
 
   profileCard.className = "profile-card js-profile-card";
   profileCard.innerHTML = `
-    <p class="section-label">Perfil real</p>
+    <p class="section-label">Tu cuenta</p>
     <h2>${dashboard.user.nombre}</h2>
     <p class="muted">${dashboard.user.email}</p>
-    ${dashboard.user.role === "admin" ? `<div class="status-message">Cuenta administradora activa. Desde aqui puedes publicar y editar productos.</div>` : ""}
+    <p class="muted">Todas tus compras tienen garantia, pagos seguros y seguimiento desde un solo lugar.</p>
     <form class="profile-update-form">
       <div class="profile-grid">
         <label>
@@ -870,15 +870,15 @@ function renderAccountDashboard(dashboard) {
     </form>
     <div class="history-grid">
       <section>
-        <h3>Ordenes</h3>
+        <h3>Tus compras</h3>
         ${ordenesHtml}
       </section>
       <section>
-        <h3>Busquedas</h3>
+        <h3>Lo que buscaste</h3>
         ${busquedasHtml}
       </section>
       <section>
-        <h3>Productos vistos</h3>
+        <h3>Vistos recientemente</h3>
         ${vistosHtml}
       </section>
     </div>
@@ -931,7 +931,7 @@ async function renderAccountPage() {
     const nextTarget = getNextTarget();
 
     if (nextTarget) {
-      setSectionMessage(".page-stack", "Primero crea tu cuenta o inicia sesion para entrar a la tienda.");
+      setSectionMessage(".page-stack", "Crea tu cuenta o inicia sesion para entrar a la tienda.");
     }
   }
 
@@ -963,7 +963,7 @@ async function renderAccountPage() {
         setAuthSession({ user: updated.user });
       }
 
-      setSectionMessage(".page-stack", "Cuenta creada y enlazada con la app real.");
+      setSectionMessage(".page-stack", "Cuenta creada correctamente. Ya puedes entrar a toda la tienda.");
       registerForm.reset();
       const nextTarget = getNextTarget();
 
@@ -995,7 +995,7 @@ async function renderAccountPage() {
 
       setAuthSession(payload);
       loginForm.reset();
-      setSectionMessage(".page-stack", "Sesion iniciada.");
+      setSectionMessage(".page-stack", "Bienvenido de nuevo.");
       const nextTarget = getNextTarget();
 
       if (nextTarget) {
@@ -1015,7 +1015,7 @@ async function renderAccountPage() {
     clearAuthSession();
     profileCard.className = "profile-card js-profile-card is-hidden";
     profileCard.innerHTML = "";
-    setSectionMessage(".page-stack", "Sesion cerrada.");
+    setSectionMessage(".page-stack", "Sesion cerrada correctamente.");
     await refreshHeaderState();
   });
 
@@ -1035,7 +1035,7 @@ function renderCheckoutLoggedOut(layout) {
   layout.innerHTML = `
     <div class="empty-state">
       <h2>Inicia sesion para continuar con tu compra</h2>
-      <p>El checkout esta enlazado con tu usuario y tu carrito real.</p>
+      <p>Tu compra y tus pedidos quedan guardados dentro de tu cuenta.</p>
       <a href="./cuenta.html" class="button button--primary">Ir a mi cuenta</a>
     </div>
   `;
