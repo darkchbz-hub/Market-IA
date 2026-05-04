@@ -8,7 +8,7 @@
   </head>
   <body data-page="contact">
     <div class="top-strip">
-      <p>Web HTML lista para trabajar con tu backend</p>
+      <p data-content="contact.topStrip">Atencion personalizada por WhatsApp</p>
     </div>
 
     <header class="site-header">
@@ -45,8 +45,8 @@
       <section class="section-block">
         <div class="section-head">
           <div>
-            <p class="section-label">Contacto</p>
-            <h1>Atencion, ventas y seguimiento</h1>
+            <p class="section-label" data-content="contact.label">Contacto</p>
+            <h1 data-content="contact.title">Atencion, ventas y seguimiento</h1>
           </div>
         </div>
       </section>
@@ -54,11 +54,12 @@
       <section class="contact-layout">
         <article class="info-card">
           <p class="section-label">Canales</p>
-          <h2>Habla con tu cliente por el medio que prefiera</h2>
+          <h2 data-content="contact.introTitle">Habla con nosotros de forma directa</h2>
+          <p data-content="contact.introText">Resolvemos dudas, damos seguimiento a pagos y te ayudamos con tus productos digitales.</p>
           <ul class="plain-list">
-            <li>Email: <a href="mailto:ventas@marketzone.mx">ventas@marketzone.mx</a></li>
-            <li>WhatsApp: <a href="https://wa.me/5215511111111" target="_blank" rel="noreferrer">+52 55 1111 1111</a></li>
-            <li>Horario: Lunes a sabado de 9:00 a 19:00</li>
+            <li>Email: <a href="mailto:ventas@marketzone.mx" data-content="contact.email">ventas@marketzone.mx</a></li>
+            <li>WhatsApp: <a href="https://wa.me/5215511111111" target="_blank" rel="noreferrer" data-content="contact.whatsappLabel" data-href-content="contact.whatsappUrl">+52 55 1111 1111</a></li>
+            <li>Horario: <span data-content="contact.schedule">Lunes a sabado de 9:00 a 19:00</span></li>
           </ul>
         </article>
 
@@ -84,8 +85,8 @@
             Mensaje
             <textarea rows="5" placeholder="Cuantame que producto te interesa"></textarea>
           </label>
-          <a class="button button--primary" href="mailto:ventas@marketzone.mx?subject=Solicitud%20desde%20MarketZone">
-            Enviar por correo
+          <a class="button button--primary" href="https://wa.me/5215511111111" data-href-content="contact.whatsappUrl" target="_blank" rel="noreferrer">
+            Enviar por WhatsApp
           </a>
         </form>
       </section>

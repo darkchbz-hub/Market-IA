@@ -28,6 +28,24 @@ const defaultSiteContent = {
     description: "Descubre apps IA, packs y servicios web desde un solo lugar.",
     resultsLabel: "Resultados",
     allMeta: "Mostrando todo el catalogo"
+  },
+  contact: {
+    topStrip: "Atencion personalizada por WhatsApp",
+    label: "Contacto",
+    title: "Atencion, ventas y seguimiento",
+    introTitle: "Habla con nosotros de forma directa",
+    introText: "Resolvemos dudas, damos seguimiento a pagos y te ayudamos con tus productos digitales.",
+    email: "ventas@marketzone.mx",
+    whatsappLabel: "+52 55 1111 1111",
+    whatsappUrl: "https://wa.me/5215511111111",
+    schedule: "Lunes a sabado de 9:00 a 19:00"
+  },
+  payment: {
+    whatsappUrl: "https://wa.me/5215511111111",
+    mercadoPagoLabel: "Mercado Pago",
+    paypalLabel: "PayPal",
+    cardLabel: "Tarjeta de credito o debito Visa o Mastercard",
+    note: "Al continuar te abriremos WhatsApp con el resumen para dar seguimiento a tu pago."
   }
 };
 let currentSiteContent = defaultSiteContent;
@@ -47,6 +65,11 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function renderStars(value = 0) {
+  const rating = Math.round(Number(value || 0));
+  return Array.from({ length: 5 }, (_, index) => (index < rating ? "★" : "☆")).join("");
 }
 
 function getToken() {
@@ -140,7 +163,9 @@ async function loadSiteContent() {
     const content = await apiRequest("/site-content");
     currentSiteContent = {
       home: { ...defaultSiteContent.home, ...(content.home || {}) },
-      catalog: { ...defaultSiteContent.catalog, ...(content.catalog || {}) }
+      catalog: { ...defaultSiteContent.catalog, ...(content.catalog || {}) },
+      contact: { ...defaultSiteContent.contact, ...(content.contact || {}) },
+      payment: { ...defaultSiteContent.payment, ...(content.payment || {}) }
     };
     return currentSiteContent;
   } catch {
@@ -159,6 +184,19 @@ function applySiteContent(content) {
     }
 
     node.textContent = value;
+
+    if (node.tagName === "A" && section === "contact" && field === "email") {
+      node.setAttribute("href", `mailto:${value}`);
+    }
+  });
+
+  document.querySelectorAll("[data-href-content]").forEach((node) => {
+    const [section, field] = String(node.dataset.hrefContent || "").split(".");
+    const value = content?.[section]?.[field];
+
+    if (value) {
+      node.setAttribute("href", value);
+    }
   });
 }
 
@@ -173,7 +211,10 @@ function normalizeProduct(product) {
     stock: product.stock,
     imagen: product.imagenes?.[0] || "https://via.placeholder.com/900x675?text=MarketZone",
     imagenes: product.imagenes || [],
-    tags: product.tags || []
+    tags: product.tags || [],
+    caracteristicas: product.caracteristicas || [],
+    ratingPromedio: Number(product.ratingPromedio || 0),
+    ratingTotal: Number(product.ratingTotal || 0)
   };
 }
 
@@ -298,6 +339,16 @@ async function saveSiteSection(sectionKey, payload) {
   return response.section;
 }
 
+async function loadAdminOrders() {
+  const payload = await apiRequest("/admin/orders", { auth: true });
+  return payload.items || [];
+}
+
+async function loadAdminCarts() {
+  const payload = await apiRequest("/admin/carts", { auth: true });
+  return payload.items || [];
+}
+
 function readFileAsDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -345,7 +396,8 @@ function serializeAdminProductForm(form) {
     categoria: String(formData.get("categoria") || "").trim(),
     precio: Number(formData.get("precio") || 0),
     stock: Number(formData.get("stock") || 0),
-    tags: String(formData.get("tags") || "").trim()
+    tags: String(formData.get("tags") || "").trim(),
+    caracteristicas: String(formData.get("caracteristicas") || "").trim()
   };
 }
 
@@ -355,10 +407,12 @@ function serializeSectionForm(form) {
 }
 
 async function renderAdminPanel(container) {
-  const items = await loadAdminProducts();
+  const [items, orders, carts] = await Promise.all([loadAdminProducts(), loadAdminOrders(), loadAdminCarts()]);
   const content = await loadSiteContent();
   const homeContent = content.home;
   const catalogContent = content.catalog;
+  const contactContent = content.contact;
+  const paymentContent = content.payment;
 
   container.innerHTML = `
     <section class="admin-panel">
@@ -402,6 +456,10 @@ async function renderAdminPanel(container) {
           <input name="tags" type="text" placeholder="ia, premium, productividad" />
         </label>
         <label>
+          Caracteristicas
+          <textarea name="caracteristicas" rows="4" placeholder="Una caracteristica por linea"></textarea>
+        </label>
+        <label>
           Imagenes desde tu computadora
           <input name="imagenesArchivos" type="file" accept="image/*" multiple />
         </label>
@@ -434,6 +492,73 @@ async function renderAdminPanel(container) {
                 )
                 .join("")
             : `<div class="empty-state"><h2>No hay productos todavia</h2><p>Agrega el primero para empezar a vender.</p></div>`
+        }
+      </div>
+    </section>
+    <section class="admin-panel">
+      <div class="section-head">
+        <div>
+          <p class="section-label">Ventas</p>
+          <h3>Pedidos y productos por confirmar</h3>
+        </div>
+      </div>
+      <div class="admin-order-list js-admin-order-list">
+        ${
+          orders.length
+            ? orders
+                .map(
+                  (order) => `
+                    <article class="admin-order-item">
+                      <div>
+                        <strong>${escapeHtml(order.usuarioNombre)} - ${formatCurrency(order.total)}</strong>
+                        <p>${escapeHtml(order.usuarioEmail)} - ${escapeHtml(order.proveedorPago)} - ${escapeHtml(order.estado)}</p>
+                      </div>
+                      <div class="history-list">
+                        ${order.items
+                          .map(
+                            (item) => `
+                              <div class="admin-order-product">
+                                <span>${escapeHtml(item.nombre)} x ${item.cantidad}</span>
+                                <button type="button" class="button button--light" data-order-item="${item.id}" data-status="${item.estado === "comprado" ? "pendiente" : "comprado"}">
+                                  ${item.estado === "comprado" ? "✓ Comprado" : "Marcar comprado"}
+                                </button>
+                              </div>
+                            `
+                          )
+                          .join("")}
+                      </div>
+                    </article>
+                  `
+                )
+                .join("")
+            : `<div class="empty-state"><h2>No hay pedidos todavia</h2><p>Cuando alguien envie su pedido por WhatsApp aparecera aqui.</p></div>`
+        }
+      </div>
+    </section>
+    <section class="admin-panel">
+      <div class="section-head">
+        <div>
+          <p class="section-label">Carritos</p>
+          <h3>Productos que los usuarios estan agregando</h3>
+        </div>
+      </div>
+      <div class="admin-order-list">
+        ${
+          carts.length
+            ? carts
+                .map(
+                  (cart) => `
+                    <article class="admin-order-item">
+                      <strong>${escapeHtml(cart.usuarioNombre)} - ${formatCurrency(cart.total)}</strong>
+                      <p class="muted">${escapeHtml(cart.usuarioEmail)}</p>
+                      <div class="history-list">
+                        ${cart.items.map((item) => `<span>${escapeHtml(item.nombre)} x ${item.cantidad}</span>`).join("")}
+                      </div>
+                    </article>
+                  `
+                )
+                .join("")
+            : `<div class="empty-state"><h2>No hay carritos activos</h2><p>Aqui veras lo que agregan antes de comprar.</p></div>`
         }
       </div>
     </section>
@@ -516,6 +641,74 @@ async function renderAdminPanel(container) {
           </label>
           <div class="button-row">
             <button type="submit" class="button button--primary">Guardar catalogo</button>
+          </div>
+        </form>
+
+        <form class="form-card admin-form js-site-form" data-section="contact">
+          <div class="admin-form-title">
+            <strong>Contacto</strong>
+            <span>Datos visibles para soporte y ventas</span>
+          </div>
+          <label>
+            Franja superior
+            <input name="topStrip" type="text" value="${escapeHtml(contactContent.topStrip)}" />
+          </label>
+          <label>
+            Titulo
+            <input name="title" type="text" value="${escapeHtml(contactContent.title)}" />
+          </label>
+          <label>
+            Texto principal
+            <textarea name="introText" rows="4">${escapeHtml(contactContent.introText)}</textarea>
+          </label>
+          <label>
+            Email
+            <input name="email" type="email" value="${escapeHtml(contactContent.email)}" />
+          </label>
+          <label>
+            WhatsApp visible
+            <input name="whatsappLabel" type="text" value="${escapeHtml(contactContent.whatsappLabel)}" />
+          </label>
+          <label>
+            Link de WhatsApp
+            <input name="whatsappUrl" type="url" value="${escapeHtml(contactContent.whatsappUrl)}" />
+          </label>
+          <label>
+            Horario
+            <input name="schedule" type="text" value="${escapeHtml(contactContent.schedule)}" />
+          </label>
+          <div class="button-row">
+            <button type="submit" class="button button--primary">Guardar contacto</button>
+          </div>
+        </form>
+
+        <form class="form-card admin-form js-site-form" data-section="payment">
+          <div class="admin-form-title">
+            <strong>Pagos</strong>
+            <span>Texto y link de seguimiento por WhatsApp</span>
+          </div>
+          <label>
+            Link para seguimiento por WhatsApp
+            <input name="whatsappUrl" type="url" value="${escapeHtml(paymentContent.whatsappUrl)}" />
+          </label>
+          <label>
+            Mercado Pago
+            <input name="mercadoPagoLabel" type="text" value="${escapeHtml(paymentContent.mercadoPagoLabel)}" />
+          </label>
+          <label>
+            PayPal
+            <input name="paypalLabel" type="text" value="${escapeHtml(paymentContent.paypalLabel)}" />
+          </label>
+          <label>
+            Tarjetas
+            <input name="cardLabel" type="text" value="${escapeHtml(paymentContent.cardLabel)}" />
+          </label>
+          <label>
+            Nota en checkout
+            <textarea name="note" rows="3">${escapeHtml(paymentContent.note)}</textarea>
+          </label>
+          <div class="button-row">
+            <button type="submit" class="button button--primary">Guardar pagos</button>
           </div>
         </form>
       </div>
@@ -623,6 +816,7 @@ async function renderAdminPanel(container) {
       form.querySelector('[name="stock"]').value = String(product.stock);
       form.querySelector('[name="descripcion"]').value = product.descripcion;
       form.querySelector('[name="tags"]').value = product.tags.join(", ");
+      form.querySelector('[name="caracteristicas"]').value = product.caracteristicas.join("\n");
       form.dataset.currentImages = JSON.stringify(product.imagenes);
       fileInput.value = "";
       renderImagePreview(imagePreview, product.imagenes, "Sube imagenes para ver la vista previa del producto.");
@@ -641,6 +835,24 @@ async function renderAdminPanel(container) {
           auth: true
         });
         setSectionMessage(".page-stack", "Producto eliminado correctamente.");
+        await renderAdminPanel(container);
+      } catch (error) {
+        setSectionMessage(".page-stack", error.message, true);
+      }
+    });
+  });
+
+  container.querySelectorAll("[data-order-item]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      try {
+        await apiRequest(`/admin/order-items/${button.dataset.orderItem}`, {
+          method: "PATCH",
+          auth: true,
+          body: {
+            estado: button.dataset.status
+          }
+        });
+        setSectionMessage(".page-stack", "Estado del producto actualizado.");
         await renderAdminPanel(container);
       } catch (error) {
         setSectionMessage(".page-stack", error.message, true);
@@ -668,16 +880,13 @@ function createProductCard(product) {
   const article = document.createElement("article");
   article.className = "product-card";
   article.innerHTML = `
-    <div class="product-card__image">
+    <a class="product-card__image" href="./producto.html?id=${product.id}">
       <img src="${product.imagen}" alt="${product.nombre}" />
-    </div>
+    </a>
     <div class="product-card__body">
       <span class="product-card__category">${product.categoria}</span>
-      <h3>${product.nombre}</h3>
-      <p>${product.descripcion}</p>
-      <div class="tag-row">
-        ${product.tags.map((tag) => `<span class="tag">${tag}</span>`).join("")}
-      </div>
+      <h3><a href="./producto.html?id=${product.id}">${product.nombre}</a></h3>
+      <p class="product-rating">${renderStars(product.ratingPromedio)} <span>${product.ratingTotal} opiniones</span></p>
     </div>
     <div class="product-card__footer">
       <div class="product-card__price">
@@ -912,6 +1121,143 @@ async function renderCatalogPage() {
   await applyCatalogFilters();
 }
 
+function renderComments(comments = []) {
+  if (!comments.length) {
+    return `<p class="muted">Todavia no hay comentarios. Tu opinion puede ser la primera.</p>`;
+  }
+
+  return comments
+    .map(
+      (comment) => `
+        <article class="comment-item">
+          <div>
+            <strong>${escapeHtml(comment.usuario)}</strong>
+            <span>${renderStars(comment.rating)}</span>
+          </div>
+          <p>${escapeHtml(comment.comentario)}</p>
+        </article>
+      `
+    )
+    .join("");
+}
+
+async function renderProductPage() {
+  const container = document.querySelector(".js-product-detail");
+
+  if (!container) {
+    return;
+  }
+
+  const productId = new URLSearchParams(window.location.search).get("id");
+
+  if (!productId) {
+    container.appendChild(createStatusBox("No encontramos el producto solicitado.", true));
+    return;
+  }
+
+  try {
+    const payload = await apiRequest(`/products/${productId}`, { auth: Boolean(getToken()) });
+    const product = normalizeProduct(payload.product);
+    const comments = payload.comments || [];
+
+    container.innerHTML = `
+      <article class="product-detail">
+        <div class="product-detail__media">
+          <img src="${product.imagen}" alt="${escapeHtml(product.nombre)}" />
+        </div>
+        <div class="product-detail__info">
+          <a href="./catalogo.html" class="muted">Volver al catalogo</a>
+          <span class="product-card__category">${escapeHtml(product.categoria)}</span>
+          <h1>${escapeHtml(product.nombre)}</h1>
+          <p class="product-rating">${renderStars(product.ratingPromedio)} <span>${product.ratingTotal} opiniones</span></p>
+          <strong class="product-detail__price">${formatCurrency(product.precio)}</strong>
+          <p>${escapeHtml(product.descripcion)}</p>
+          <div class="detail-block">
+            <h3>Caracteristicas</h3>
+            ${
+              product.caracteristicas.length
+                ? `<ul class="plain-list">${product.caracteristicas.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+                : `<p class="muted">Este producto aun no tiene caracteristicas cargadas.</p>`
+            }
+          </div>
+          <div class="tag-row">
+            ${product.tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}
+          </div>
+          <div class="button-row">
+            <button type="button" class="button button--primary js-detail-add">Agregar al carrito</button>
+            <a href="./checkout.html" class="button button--light">Ir a pagar</a>
+          </div>
+        </div>
+      </article>
+      <section class="section-block">
+        <div class="section-head">
+          <div>
+            <p class="section-label">Opiniones</p>
+            <h2>Comentarios y puntuacion</h2>
+          </div>
+        </div>
+        <form class="form-card review-form js-review-form">
+          <label>
+            Calificacion
+            <select name="rating" required>
+              <option value="5">5 estrellas</option>
+              <option value="4">4 estrellas</option>
+              <option value="3">3 estrellas</option>
+              <option value="2">2 estrellas</option>
+              <option value="1">1 estrella</option>
+            </select>
+          </label>
+          <label>
+            Comentario
+            <textarea name="comentario" rows="4" placeholder="Cuenta como te fue con este producto" required></textarea>
+          </label>
+          <button type="submit" class="button button--primary">Publicar comentario</button>
+        </form>
+        <div class="comments-list js-comments-list">${renderComments(comments)}</div>
+      </section>
+    `;
+
+    container.querySelector(".js-detail-add").addEventListener("click", async () => {
+      try {
+        await apiRequest("/cart/items", {
+          method: "POST",
+          auth: true,
+          body: {
+            productId: product.id,
+            cantidad: 1
+          }
+        });
+        await refreshHeaderState();
+        alert(`${product.nombre} se agrego al carrito.`);
+      } catch (error) {
+        alert(error.message);
+      }
+    });
+
+    container.querySelector(".js-review-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const formData = new FormData(event.currentTarget);
+      try {
+        const response = await apiRequest(`/products/${product.id}/comments`, {
+          method: "POST",
+          auth: true,
+          body: {
+            rating: Number(formData.get("rating")),
+            comentario: String(formData.get("comentario") || "").trim()
+          }
+        });
+        event.currentTarget.reset();
+        container.querySelector(".js-comments-list").innerHTML = renderComments(response.comments || []);
+      } catch (error) {
+        setSectionMessage(".page-stack", error.message, true);
+      }
+    });
+  } catch (error) {
+    container.innerHTML = "";
+    container.appendChild(createStatusBox(error.message, true));
+  }
+}
+
 function renderLoggedOutCart() {
   const cartContainer = document.querySelector(".js-cart-items");
   const summary = document.querySelector(".js-cart-summary");
@@ -1071,6 +1417,15 @@ function renderAccountDashboard(dashboard) {
       <div class="history-item">
         <strong>${item.id}</strong>
         <span>${formatCurrency(item.total)} - ${item.estado}</span>
+        ${(item.items || [])
+          .map(
+            (orderItem) => `
+              <small class="${orderItem.estado === "comprado" ? "purchase-ok" : "muted"}">
+                ${orderItem.estado === "comprado" ? "✓ Comprado" : "Pendiente"} - ${escapeHtml(orderItem.nombre)} x ${orderItem.cantidad}
+              </small>
+            `
+          )
+          .join("")}
       </div>
     `
   );
@@ -1300,6 +1655,7 @@ function renderCheckoutLoggedOut(layout) {
 
 function renderCheckoutForm(layout, summary, user) {
   const direccion = user?.direccion || {};
+  const paymentContent = currentSiteContent.payment;
 
   layout.innerHTML = `
     <form class="form-card checkout-card js-checkout-form">
@@ -1329,21 +1685,21 @@ function renderCheckoutForm(layout, summary, user) {
 
       <div class="payment-options">
         <button type="button" class="payment-option is-selected" data-provider="mercadopago">
-          <strong>Mercado Pago</strong>
-          <span>Recomendado para Mexico</span>
+          <strong>${escapeHtml(paymentContent.mercadoPagoLabel)}</strong>
+          <span>Seguimiento por WhatsApp</span>
         </button>
         <button type="button" class="payment-option" data-provider="paypal">
-          <strong>PayPal</strong>
-          <span>Pago externo y captura automatica</span>
+          <strong>${escapeHtml(paymentContent.paypalLabel)}</strong>
+          <span>Seguimiento por WhatsApp</span>
         </button>
         <button type="button" class="payment-option" data-provider="stripe">
-          <strong>Tarjeta credito o debito</strong>
-          <span>Checkout seguro con Stripe</span>
+          <strong>${escapeHtml(paymentContent.cardLabel)}</strong>
+          <span>Visa o Mastercard</span>
         </button>
       </div>
 
-      <p class="muted">Puedes cobrar con Mercado Pago, PayPal o tarjeta de credito y debito.</p>
-      <button type="submit" class="button button--primary">Crear orden y continuar</button>
+      <p class="muted">${escapeHtml(paymentContent.note)}</p>
+      <button type="submit" class="button button--primary">Enviar pedido por WhatsApp</button>
     </form>
 
     <aside class="summary-card">
@@ -1389,53 +1745,10 @@ function renderCheckoutForm(layout, summary, user) {
         }
       });
 
-      if (selectedProvider === "paypal") {
-        const payment = await apiRequest("/payments/paypal/order", {
-          method: "POST",
-          auth: true,
-          body: {
-            orderId: orderPayload.order.id
-          }
-        });
-
-        if (!payment.approvalUrl) {
-          throw new Error("PayPal no devolvio la URL de aprobacion.");
-        }
-
-        window.location.href = payment.approvalUrl;
-        return;
-      }
-
-      if (selectedProvider === "stripe") {
-        const payment = await apiRequest("/payments/stripe/session", {
-          method: "POST",
-          auth: true,
-          body: {
-            orderId: orderPayload.order.id
-          }
-        });
-
-        if (!payment.checkoutUrl) {
-          throw new Error("Stripe no devolvio la URL de checkout.");
-        }
-
-        window.location.href = payment.checkoutUrl;
-        return;
-      }
-
-      const payment = await apiRequest("/payments/mercadopago/preference", {
-        method: "POST",
-        auth: true,
-        body: {
-          orderId: orderPayload.order.id
-        }
-      });
-
-      if (!payment.initPoint) {
-        throw new Error("Mercado Pago no devolvio la URL de pago.");
-      }
-
-      window.location.href = payment.initPoint;
+      const methodLabel = selectedProvider === "paypal" ? paymentContent.paypalLabel : selectedProvider === "stripe" ? paymentContent.cardLabel : paymentContent.mercadoPagoLabel;
+      const itemsText = orderPayload.order.items.map((item) => `${item.cantidad} x ${item.nombre} (${formatCurrency(item.subtotal)})`).join("%0A");
+      const message = `Hola, quiero dar seguimiento a mi pedido ${orderPayload.order.id}.%0AMetodo: ${encodeURIComponent(methodLabel)}%0ATotal: ${encodeURIComponent(formatCurrency(orderPayload.order.total))}%0AProductos:%0A${itemsText}`;
+      window.location.href = `${paymentContent.whatsappUrl}${paymentContent.whatsappUrl.includes("?") ? "&" : "?"}text=${message}`;
     } catch (error) {
       setSectionMessage(".page-stack", error.message, true);
     }
@@ -1587,6 +1900,10 @@ async function init() {
 
   if (page === "catalog") {
     await renderCatalogPage();
+  }
+
+  if (page === "product") {
+    await renderProductPage();
   }
 
   if (page === "cart") {

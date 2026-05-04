@@ -28,6 +28,24 @@ const defaultSiteContent = {
     description: "Descubre apps IA, packs y servicios web desde un solo lugar.",
     resultsLabel: "Resultados",
     allMeta: "Mostrando todo el catalogo"
+  },
+  contact: {
+    topStrip: "Atencion personalizada por WhatsApp",
+    label: "Contacto",
+    title: "Atencion, ventas y seguimiento",
+    introTitle: "Habla con nosotros de forma directa",
+    introText: "Resolvemos dudas, damos seguimiento a pagos y te ayudamos con tus productos digitales.",
+    email: "ventas@marketzone.mx",
+    whatsappLabel: "+52 55 1111 1111",
+    whatsappUrl: "https://wa.me/5215511111111",
+    schedule: "Lunes a sabado de 9:00 a 19:00"
+  },
+  payment: {
+    whatsappUrl: "https://wa.me/5215511111111",
+    mercadoPagoLabel: "Mercado Pago",
+    paypalLabel: "PayPal",
+    cardLabel: "Tarjeta de credito o debito Visa o Mastercard",
+    note: "Al continuar te abriremos WhatsApp con el resumen para dar seguimiento a tu pago."
   }
 };
 
@@ -126,6 +144,16 @@ const schemaStatements = [
       valor TEXT NOT NULL,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
+  `,
+  `
+    CREATE TABLE IF NOT EXISTS product_comments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      rating INTEGER NOT NULL,
+      comentario TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
   `
 ];
 
@@ -186,8 +214,20 @@ export function serializeProduct(row) {
     stock: Number(row.stock),
     categoria: row.categoria,
     tags: parseJson(row.tags, []),
-    imagenes: parseJson(row.imagenes, [])
+    imagenes: parseJson(row.imagenes, []),
+    caracteristicas: parseJson(row.caracteristicas, []),
+    ratingPromedio: Number(row.rating_promedio || 0),
+    ratingTotal: Number(row.rating_total || 0)
   };
+}
+
+async function ensureColumn(db, tableName, columnName, definition) {
+  const columns = await db.prepare(`PRAGMA table_info(${tableName})`).all();
+  const exists = (columns.results || []).some((column) => column.name === columnName);
+
+  if (!exists) {
+    await db.prepare(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definition}`).run();
+  }
 }
 
 async function seedDatabase(db, env) {
@@ -275,6 +315,9 @@ export async function ensureDatabase(env) {
         await env.DB.prepare(statement.trim()).run();
       }
 
+      await ensureColumn(env.DB, "products", "caracteristicas", "TEXT NOT NULL DEFAULT '[]'");
+      await ensureColumn(env.DB, "order_items", "estado", "TEXT NOT NULL DEFAULT 'pendiente'");
+      await ensureColumn(env.DB, "order_items", "updated_at", "TEXT NOT NULL DEFAULT ''");
       await seedDatabase(env.DB, env);
     })().catch((error) => {
       bootstrapPromise = undefined;
@@ -371,10 +414,15 @@ export async function listProducts(db, filters = {}) {
   const limit = Number.isFinite(Number(filters.limit)) && Number(filters.limit) > 0 ? Number(filters.limit) : 24;
   const countSql = `SELECT COUNT(*) AS total FROM products ${whereClause}`;
   const itemsSql = `
-    SELECT *
-    FROM products
-    ${whereClause}
-    ORDER BY id DESC
+    SELECT
+      p.*,
+      COALESCE(AVG(pc.rating), 0) AS rating_promedio,
+      COUNT(pc.id) AS rating_total
+    FROM products p
+    LEFT JOIN product_comments pc ON pc.product_id = p.id
+    ${whereClause ? whereClause.replaceAll("nombre", "p.nombre").replaceAll("descripcion", "p.descripcion").replaceAll("categoria", "p.categoria").replaceAll("precio", "p.precio") : ""}
+    GROUP BY p.id
+    ORDER BY p.id DESC
     LIMIT ?
   `;
 
@@ -391,12 +439,39 @@ export async function listProducts(db, filters = {}) {
 }
 
 export async function listAdminProducts(db) {
-  const result = await db.prepare("SELECT * FROM products ORDER BY id DESC").all();
+  const result = await db
+    .prepare(
+      `
+      SELECT
+        p.*,
+        COALESCE(AVG(pc.rating), 0) AS rating_promedio,
+        COUNT(pc.id) AS rating_total
+      FROM products p
+      LEFT JOIN product_comments pc ON pc.product_id = p.id
+      GROUP BY p.id
+      ORDER BY p.id DESC
+    `
+    )
+    .all();
   return (result.results || []).map(serializeProduct);
 }
 
 export async function getProductById(db, productId) {
-  const row = await db.prepare("SELECT * FROM products WHERE id = ?").bind(productId).first();
+  const row = await db
+    .prepare(
+      `
+      SELECT
+        p.*,
+        COALESCE(AVG(pc.rating), 0) AS rating_promedio,
+        COUNT(pc.id) AS rating_total
+      FROM products p
+      LEFT JOIN product_comments pc ON pc.product_id = p.id
+      WHERE p.id = ?
+      GROUP BY p.id
+    `
+    )
+    .bind(productId)
+    .first();
   return row ? serializeProduct(row) : null;
 }
 
@@ -417,6 +492,12 @@ export async function createProduct(db, input) {
     : String(input.imagenes || "")
         .split(/\r?\n|,/)
         .map((image) => image.trim())
+        .filter(Boolean);
+  const caracteristicas = Array.isArray(input.caracteristicas)
+    ? input.caracteristicas.map((item) => String(item).trim()).filter(Boolean)
+    : String(input.caracteristicas || "")
+        .split(/\r?\n|,/)
+        .map((item) => item.trim())
         .filter(Boolean);
 
   if (!nombre || !descripcion || !["apps", "packs", "webs"].includes(categoria)) {
@@ -443,11 +524,11 @@ export async function createProduct(db, input) {
   const response = await db
     .prepare(
       `
-      INSERT INTO products (slug, nombre, descripcion, precio, stock, categoria, tags, imagenes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO products (slug, nombre, descripcion, precio, stock, categoria, tags, imagenes, caracteristicas)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
     )
-    .bind(slug, nombre, descripcion, precio, stock, categoria, JSON.stringify(tags), JSON.stringify(imagenes))
+    .bind(slug, nombre, descripcion, precio, stock, categoria, JSON.stringify(tags), JSON.stringify(imagenes), JSON.stringify(caracteristicas))
     .run();
 
   return getProductById(db, response.meta.last_row_id);
@@ -481,6 +562,14 @@ export async function updateProduct(db, productId, input) {
           .map((image) => image.trim())
           .filter(Boolean)
       : existing.imagenes;
+  const caracteristicas = Array.isArray(input.caracteristicas)
+    ? input.caracteristicas.map((item) => String(item).trim()).filter(Boolean)
+    : input.caracteristicas !== undefined
+      ? String(input.caracteristicas || "")
+          .split(/\r?\n|,/)
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : existing.caracteristicas;
 
   if (!nombre || !descripcion || !["apps", "packs", "webs"].includes(categoria)) {
     throw new Error("Completa nombre, descripcion y una categoria valida.");
@@ -513,11 +602,22 @@ export async function updateProduct(db, productId, input) {
     .prepare(
       `
       UPDATE products
-      SET slug = ?, nombre = ?, descripcion = ?, precio = ?, stock = ?, categoria = ?, tags = ?, imagenes = ?
+      SET slug = ?, nombre = ?, descripcion = ?, precio = ?, stock = ?, categoria = ?, tags = ?, imagenes = ?, caracteristicas = ?
       WHERE id = ?
     `
     )
-    .bind(slug, nombre, descripcion, precio, stock, categoria, JSON.stringify(tags), JSON.stringify(imagenes), productId)
+    .bind(
+      slug,
+      nombre,
+      descripcion,
+      precio,
+      stock,
+      categoria,
+      JSON.stringify(tags),
+      JSON.stringify(imagenes),
+      JSON.stringify(caracteristicas),
+      productId
+    )
     .run();
 
   return getProductById(db, productId);
@@ -547,7 +647,7 @@ export async function setCartItem(db, userId, productId, cantidad) {
 
   if (existing) {
     await db
-      .prepare("UPDATE cart_items SET cantidad = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND product_id = ?")
+      .prepare("UPDATE cart_items SET cantidad = cantidad + ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND product_id = ?")
       .bind(nextQuantity, userId, productId)
       .run();
     return;
@@ -639,23 +739,25 @@ export async function createOrderFromCart(db, userId, { direccion, proveedorPago
     await db
       .prepare(
         `
-        INSERT INTO order_items (order_id, product_id, nombre, precio, cantidad)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO order_items (order_id, product_id, nombre, precio, cantidad, estado, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       `
       )
-      .bind(orderId, item.productoId, item.nombre, item.precio, item.cantidad)
+      .bind(orderId, item.productoId, item.nombre, item.precio, item.cantidad, "pendiente")
       .run();
   }
 
   await updateUserAddress(db, userId, direccion);
+  await clearCart(db, userId);
 
   return {
     order: {
       id: orderId,
       total: summary.total,
-      estado: "pending_payment",
-      proveedorPago
-    }
+        estado: "pending_payment",
+        proveedorPago,
+        items: summary.items
+      }
   };
 }
 
@@ -677,10 +779,12 @@ export async function getOrderWithItems(db, orderId) {
     total: Number(order.total),
     direccion: parseJson(order.direccion, {}),
     items: (items.results || []).map((item) => ({
+      id: Number(item.id),
       productoId: Number(item.product_id),
       nombre: item.nombre,
       precio: Number(item.precio),
-      cantidad: Number(item.cantidad)
+      cantidad: Number(item.cantidad),
+      estado: item.estado || "pendiente"
     }))
   };
 }
@@ -756,6 +860,34 @@ export async function getUserDashboard(db, userId) {
     .prepare("SELECT id, total, estado, created_at FROM orders WHERE user_id = ? ORDER BY created_at DESC LIMIT 10")
     .bind(userId)
     .all();
+  const orderRows = orders.results || [];
+  const orderItems = orderRows.length
+    ? await db
+        .prepare(
+          `
+          SELECT id, order_id, product_id, nombre, precio, cantidad, estado
+          FROM order_items
+          WHERE order_id IN (${orderRows.map(() => "?").join(",")})
+          ORDER BY id ASC
+        `
+        )
+        .bind(...orderRows.map((order) => order.id))
+        .all()
+    : { results: [] };
+  const itemsByOrder = new Map();
+
+  for (const item of orderItems.results || []) {
+    const list = itemsByOrder.get(item.order_id) || [];
+    list.push({
+      id: Number(item.id),
+      productoId: Number(item.product_id),
+      nombre: item.nombre,
+      precio: Number(item.precio),
+      cantidad: Number(item.cantidad),
+      estado: item.estado || "pendiente"
+    });
+    itemsByOrder.set(item.order_id, list);
+  }
   const searches = await db
     .prepare("SELECT busqueda, fecha FROM search_history WHERE user_id = ? ORDER BY fecha DESC LIMIT 10")
     .bind(userId)
@@ -777,11 +909,12 @@ export async function getUserDashboard(db, userId) {
   return {
     user: serializeUser(user),
     historial: {
-      ordenes: (orders.results || []).map((item) => ({
+      ordenes: orderRows.map((item) => ({
         id: item.id,
         total: Number(item.total),
         estado: item.estado,
-        fecha: item.created_at
+        fecha: item.created_at,
+        items: itemsByOrder.get(item.id) || []
       })),
       busquedas: (searches.results || []).map((item) => ({
         busqueda: item.busqueda,
@@ -795,6 +928,200 @@ export async function getUserDashboard(db, userId) {
       }))
     }
   };
+}
+
+export async function listAdminOrders(db) {
+  const orders = await db
+    .prepare(
+      `
+      SELECT o.*, u.nombre AS usuario_nombre, u.email AS usuario_email
+      FROM orders o
+      INNER JOIN users u ON u.id = o.user_id
+      ORDER BY o.created_at DESC
+      LIMIT 80
+    `
+    )
+    .all();
+  const orderRows = orders.results || [];
+
+  if (!orderRows.length) {
+    return [];
+  }
+
+  const items = await db
+    .prepare(
+      `
+      SELECT oi.*
+      FROM order_items oi
+      WHERE oi.order_id IN (${orderRows.map(() => "?").join(",")})
+      ORDER BY oi.id ASC
+    `
+    )
+    .bind(...orderRows.map((order) => order.id))
+    .all();
+  const itemsByOrder = new Map();
+
+  for (const item of items.results || []) {
+    const list = itemsByOrder.get(item.order_id) || [];
+    list.push({
+      id: Number(item.id),
+      productoId: Number(item.product_id),
+      nombre: item.nombre,
+      precio: Number(item.precio),
+      cantidad: Number(item.cantidad),
+      estado: item.estado || "pendiente"
+    });
+    itemsByOrder.set(item.order_id, list);
+  }
+
+  return orderRows.map((order) => ({
+    id: order.id,
+    userId: Number(order.user_id),
+    usuarioNombre: order.usuario_nombre,
+    usuarioEmail: order.usuario_email,
+    total: Number(order.total),
+    estado: order.estado,
+    proveedorPago: order.proveedor_pago,
+    direccion: parseJson(order.direccion, {}),
+    fecha: order.created_at,
+    items: itemsByOrder.get(order.id) || []
+  }));
+}
+
+export async function listAdminCarts(db) {
+  const result = await db
+    .prepare(
+      `
+      SELECT
+        u.id AS user_id,
+        u.nombre AS usuario_nombre,
+        u.email AS usuario_email,
+        c.product_id,
+        c.cantidad,
+        c.updated_at,
+        p.nombre,
+        p.precio
+      FROM cart_items c
+      INNER JOIN users u ON u.id = c.user_id
+      INNER JOIN products p ON p.id = c.product_id
+      ORDER BY c.updated_at DESC
+    `
+    )
+    .all();
+  const carts = new Map();
+
+  for (const row of result.results || []) {
+    const userId = Number(row.user_id);
+    const cart = carts.get(userId) || {
+      userId,
+      usuarioNombre: row.usuario_nombre,
+      usuarioEmail: row.usuario_email,
+      items: [],
+      total: 0
+    };
+    const subtotal = Number(row.precio) * Number(row.cantidad);
+
+    cart.items.push({
+      productoId: Number(row.product_id),
+      nombre: row.nombre,
+      precio: Number(row.precio),
+      cantidad: Number(row.cantidad),
+      subtotal,
+      actualizado: row.updated_at
+    });
+    cart.total += subtotal;
+    carts.set(userId, cart);
+  }
+
+  return Array.from(carts.values());
+}
+
+export async function updateOrderItemStatus(db, itemId, estado) {
+  const allowed = ["pendiente", "comprado"];
+  const nextStatus = allowed.includes(String(estado || "")) ? estado : "pendiente";
+
+  await db
+    .prepare("UPDATE order_items SET estado = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+    .bind(nextStatus, Number(itemId))
+    .run();
+
+  const row = await db.prepare("SELECT order_id FROM order_items WHERE id = ?").bind(Number(itemId)).first();
+
+  if (row?.order_id) {
+    const pending = await db
+      .prepare("SELECT COUNT(*) AS total FROM order_items WHERE order_id = ? AND estado != 'comprado'")
+      .bind(row.order_id)
+      .first();
+
+    if (!Number(pending?.total || 0)) {
+      await markOrderStatus(db, row.order_id, "paid", "whatsapp");
+    }
+  }
+
+  return { ok: true };
+}
+
+export async function listProductComments(db, productId) {
+  const result = await db
+    .prepare(
+      `
+      SELECT pc.*, u.nombre
+      FROM product_comments pc
+      INNER JOIN users u ON u.id = pc.user_id
+      WHERE pc.product_id = ?
+      ORDER BY pc.created_at DESC
+      LIMIT 30
+    `
+    )
+    .bind(Number(productId))
+    .all();
+
+  return (result.results || []).map((comment) => ({
+    id: Number(comment.id),
+    productId: Number(comment.product_id),
+    userId: Number(comment.user_id),
+    usuario: comment.nombre,
+    rating: Number(comment.rating),
+    comentario: comment.comentario,
+    fecha: comment.created_at
+  }));
+}
+
+export async function createProductComment(db, userId, productId, input) {
+  const rating = Number(input.rating);
+  const comentario = String(input.comentario || "").trim();
+
+  if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+    throw new Error("Selecciona una calificacion de 1 a 5 estrellas.");
+  }
+
+  if (comentario.length < 3) {
+    throw new Error("Escribe un comentario un poco mas completo.");
+  }
+
+  const purchase = await db
+    .prepare(
+      `
+      SELECT oi.id
+      FROM order_items oi
+      INNER JOIN orders o ON o.id = oi.order_id
+      WHERE o.user_id = ? AND oi.product_id = ? AND oi.estado = 'comprado'
+      LIMIT 1
+    `
+    )
+    .bind(Number(userId), Number(productId))
+    .first();
+
+  if (!purchase) {
+    throw new Error("Podras comentar cuando tu compra este confirmada.");
+  }
+
+  await db
+    .prepare("INSERT INTO product_comments (product_id, user_id, rating, comentario) VALUES (?, ?, ?, ?)")
+    .bind(Number(productId), Number(userId), rating, comentario)
+    .run();
+
+  return listProductComments(db, productId);
 }
 
 export async function getSiteContent(db) {

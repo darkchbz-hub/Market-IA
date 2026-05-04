@@ -3,13 +3,13 @@
   font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   color: #1f2937;
   background: #f3f4f6;
-  --yellow: #fff159;
-  --blue: #3483fa;
-  --blue-dark: #1259c3;
-  --border: #d9dfe7;
-  --muted: #6b7280;
+  --yellow: #111318;
+  --blue: #d71920;
+  --blue-dark: #a40f16;
+  --border: #d6d9df;
+  --muted: #667085;
   --surface: #ffffff;
-  --shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --shadow: 0 8px 24px rgba(17, 19, 24, 0.08);
 }
 
 * {
@@ -79,7 +79,7 @@ textarea {
 
 .top-strip {
   padding: 8px 12px;
-  background: #111827;
+  background: #090a0d;
   color: #fff;
   text-align: center;
   font-size: 0.88rem;
@@ -97,7 +97,7 @@ textarea {
   position: sticky;
   top: 0;
   z-index: 30;
-  box-shadow: 0 2px 18px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 18px rgba(9, 10, 13, 0.12);
 }
 
 .header-main {
@@ -107,6 +107,7 @@ textarea {
   align-items: center;
   padding: 14px 0;
   background: var(--yellow);
+  color: #fff;
 }
 
 .brand {
@@ -122,7 +123,7 @@ textarea {
 
 .brand small {
   display: block;
-  color: #374151;
+  color: #c8ccd4;
 }
 
 .brand__badge {
@@ -131,8 +132,9 @@ textarea {
   width: 42px;
   height: 42px;
   border-radius: 12px;
-  background: #111827;
-  color: #fff;
+  background: #f4f6fb;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  color: #111318;
   font-weight: 800;
 }
 
@@ -167,13 +169,14 @@ textarea {
 .header-links a {
   padding: 10px 12px;
   border-radius: 999px;
+  color: #eef2f7;
 }
 
 .cart-pill {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: #111827;
+  background: #d71920;
   color: #fff;
 }
 
@@ -190,8 +193,8 @@ textarea {
 }
 
 .is-active {
-  background: #eff6ff;
-  color: var(--blue-dark);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
 }
 
 .category-nav {
@@ -199,18 +202,18 @@ textarea {
   gap: 10px;
   flex-wrap: wrap;
   padding: 10px 0 12px;
-  background: #fff;
+  background: #111318;
 }
 
 .category-nav a {
   padding: 8px 12px;
   border-radius: 999px;
-  color: #4b5563;
+  color: #d6dae2;
 }
 
 .category-nav a:hover {
-  background: #eff6ff;
-  color: var(--blue-dark);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
 }
 
 .page-stack {
@@ -502,6 +505,10 @@ textarea {
 }
 
 .product-card__image {
+  color: inherit;
+}
+
+.product-card__image {
   overflow: hidden;
   border-radius: 14px;
   aspect-ratio: 4 / 3;
@@ -522,6 +529,16 @@ textarea {
 .product-card__body h3 {
   margin: 0;
   font-size: 1.05rem;
+}
+
+.product-rating {
+  color: #d71920;
+  font-weight: 700;
+}
+
+.product-rating span {
+  color: var(--muted);
+  font-weight: 500;
 }
 
 .product-card__category {
@@ -559,6 +576,88 @@ textarea {
   background: #eff6ff;
   color: var(--blue-dark);
   font-size: 0.84rem;
+}
+
+.product-detail {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(320px, 1.1fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.product-detail__media,
+.product-detail__info,
+.detail-block,
+.comment-item {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.product-detail__media {
+  overflow: hidden;
+}
+
+.product-detail__media img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+}
+
+.product-detail__info {
+  display: grid;
+  gap: 14px;
+  padding: 24px;
+}
+
+.product-detail__info h1 {
+  margin: 0;
+  font-size: 2rem;
+  line-height: 1.12;
+}
+
+.product-detail__price {
+  font-size: 1.8rem;
+}
+
+.detail-block {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+}
+
+.detail-block h3 {
+  margin: 0;
+}
+
+.review-form {
+  margin-top: 16px;
+}
+
+.comments-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.comment-item {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+}
+
+.comment-item > div,
+.admin-order-product {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.purchase-ok {
+  color: #047857;
+  font-weight: 800;
 }
 
 .cart-layout {
@@ -866,6 +965,20 @@ textarea {
   gap: 12px;
 }
 
+.admin-order-list {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-order-item {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+}
+
 .admin-product-item {
   display: flex;
   justify-content: space-between;
@@ -998,6 +1111,7 @@ textarea {
 
 @media (max-width: 1080px) {
   .hero,
+  .product-detail,
   .catalog-layout,
   .cart-layout,
   .auth-shell,
