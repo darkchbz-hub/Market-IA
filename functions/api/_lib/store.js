@@ -1,67 +1,6 @@
 import { hashPassword } from "./security.js";
 
-const seedProducts = [
-  {
-    slug: "chatgpt-plus-anual",
-    nombre: "ChatGPT Plus anual",
-    descripcion: "Suscripcion premium para productividad, redaccion, analisis y automatizacion diaria.",
-    precio: 3499,
-    stock: 100,
-    categoria: "apps",
-    tags: ["ia", "chat", "productividad"],
-    imagenes: ["https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=900&q=80"]
-  },
-  {
-    slug: "notion-ai-business",
-    nombre: "Notion AI Business",
-    descripcion: "Espacio de trabajo con inteligencia artificial para documentacion, planeacion y equipos.",
-    precio: 2899,
-    stock: 80,
-    categoria: "apps",
-    tags: ["notion", "workspace", "ia"],
-    imagenes: ["https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=900&q=80"]
-  },
-  {
-    slug: "pack-creador-pro",
-    nombre: "Pack Creador Pro",
-    descripcion: "Bundle de herramientas premium para edicion, copies, thumbnails y estrategia de contenido.",
-    precio: 7999,
-    stock: 40,
-    categoria: "packs",
-    tags: ["pack", "creadores", "contenido"],
-    imagenes: ["https://images.unsplash.com/photo-1496171367470-9ed9a91ea931?auto=format&fit=crop&w=900&q=80"]
-  },
-  {
-    slug: "pack-agencia-ventas",
-    nombre: "Pack Agencia Ventas",
-    descripcion: "Suite de herramientas para prospeccion, automatizacion comercial y seguimiento de clientes.",
-    precio: 9999,
-    stock: 35,
-    categoria: "packs",
-    tags: ["ventas", "crm", "automatizacion"],
-    imagenes: ["https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=900&q=80"]
-  },
-  {
-    slug: "landing-premium-ia",
-    nombre: "Landing premium con IA",
-    descripcion: "Servicio web para lanzar una pagina de ventas optimizada con copy, estructura y secciones listas.",
-    precio: 24900,
-    stock: 20,
-    categoria: "webs",
-    tags: ["landing", "web", "ventas"],
-    imagenes: ["https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=900&q=80"]
-  },
-  {
-    slug: "tienda-web-completa",
-    nombre: "Tienda web completa",
-    descripcion: "Implementacion de tienda online con catalogo, carrito, checkout y administracion basica.",
-    precio: 59900,
-    stock: 10,
-    categoria: "webs",
-    tags: ["ecommerce", "tienda", "desarrollo"],
-    imagenes: ["https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=900&q=80"]
-  }
-];
+const seedProducts = [];
 
 const schemaStatements = [
   `
@@ -164,6 +103,16 @@ function parseJson(value, fallback) {
   }
 }
 
+function normalizeSlug(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
 function generateOrderId() {
   const random = crypto.randomUUID().slice(0, 8);
   return `ord_${Date.now()}_${random}`;
@@ -206,28 +155,30 @@ export function serializeProduct(row) {
 }
 
 async function seedDatabase(db, env) {
-  const productCountRow = await db.prepare("SELECT COUNT(*) AS total FROM products").first();
+  if (seedProducts.length) {
+    const productCountRow = await db.prepare("SELECT COUNT(*) AS total FROM products").first();
 
-  if (!Number(productCountRow?.total || 0)) {
-    for (const product of seedProducts) {
-      await db
-        .prepare(
+    if (!Number(productCountRow?.total || 0)) {
+      for (const product of seedProducts) {
+        await db
+          .prepare(
+            `
+            INSERT INTO products (slug, nombre, descripcion, precio, stock, categoria, tags, imagenes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
           `
-          INSERT INTO products (slug, nombre, descripcion, precio, stock, categoria, tags, imagenes)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `
-        )
-        .bind(
-          product.slug,
-          product.nombre,
-          product.descripcion,
-          product.precio,
-          product.stock,
-          product.categoria,
-          JSON.stringify(product.tags),
-          JSON.stringify(product.imagenes)
-        )
-        .run();
+          )
+          .bind(
+            product.slug,
+            product.nombre,
+            product.descripcion,
+            product.precio,
+            product.stock,
+            product.categoria,
+            JSON.stringify(product.tags),
+            JSON.stringify(product.imagenes)
+          )
+          .run();
+      }
     }
   }
 
@@ -387,9 +338,149 @@ export async function listProducts(db, filters = {}) {
   };
 }
 
+export async function listAdminProducts(db) {
+  const result = await db.prepare("SELECT * FROM products ORDER BY id DESC").all();
+  return (result.results || []).map(serializeProduct);
+}
+
 export async function getProductById(db, productId) {
   const row = await db.prepare("SELECT * FROM products WHERE id = ?").bind(productId).first();
   return row ? serializeProduct(row) : null;
+}
+
+export async function createProduct(db, input) {
+  const nombre = String(input.nombre || "").trim();
+  const descripcion = String(input.descripcion || "").trim();
+  const categoria = String(input.categoria || "").trim().toLowerCase();
+  const precio = Number(input.precio);
+  const stock = Number(input.stock);
+  const tags = Array.isArray(input.tags)
+    ? input.tags.map((tag) => String(tag).trim()).filter(Boolean)
+    : String(input.tags || "")
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean);
+  const imagenes = Array.isArray(input.imagenes)
+    ? input.imagenes.map((image) => String(image).trim()).filter(Boolean)
+    : String(input.imagenes || "")
+        .split(/\r?\n|,/)
+        .map((image) => image.trim())
+        .filter(Boolean);
+
+  if (!nombre || !descripcion || !["apps", "packs", "webs"].includes(categoria)) {
+    throw new Error("Completa nombre, descripcion y una categoria valida.");
+  }
+
+  if (!Number.isFinite(precio) || precio <= 0) {
+    throw new Error("Ingresa un precio valido.");
+  }
+
+  if (!Number.isFinite(stock) || stock < 0) {
+    throw new Error("Ingresa un stock valido.");
+  }
+
+  const baseSlug = normalizeSlug(input.slug || nombre) || `producto-${Date.now()}`;
+  let slug = baseSlug;
+  let suffix = 1;
+
+  while (await db.prepare("SELECT id FROM products WHERE slug = ?").bind(slug).first()) {
+    suffix += 1;
+    slug = `${baseSlug}-${suffix}`;
+  }
+
+  const response = await db
+    .prepare(
+      `
+      INSERT INTO products (slug, nombre, descripcion, precio, stock, categoria, tags, imagenes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `
+    )
+    .bind(slug, nombre, descripcion, precio, stock, categoria, JSON.stringify(tags), JSON.stringify(imagenes))
+    .run();
+
+  return getProductById(db, response.meta.last_row_id);
+}
+
+export async function updateProduct(db, productId, input) {
+  const existing = await getProductById(db, productId);
+
+  if (!existing) {
+    throw new Error("El producto no existe.");
+  }
+
+  const nombre = String(input.nombre ?? existing.nombre).trim();
+  const descripcion = String(input.descripcion ?? existing.descripcion).trim();
+  const categoria = String(input.categoria ?? existing.categoria).trim().toLowerCase();
+  const precio = Number(input.precio ?? existing.precio);
+  const stock = Number(input.stock ?? existing.stock);
+  const tags = Array.isArray(input.tags)
+    ? input.tags.map((tag) => String(tag).trim()).filter(Boolean)
+    : input.tags !== undefined
+      ? String(input.tags || "")
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter(Boolean)
+      : existing.tags;
+  const imagenes = Array.isArray(input.imagenes)
+    ? input.imagenes.map((image) => String(image).trim()).filter(Boolean)
+    : input.imagenes !== undefined
+      ? String(input.imagenes || "")
+          .split(/\r?\n|,/)
+          .map((image) => image.trim())
+          .filter(Boolean)
+      : existing.imagenes;
+
+  if (!nombre || !descripcion || !["apps", "packs", "webs"].includes(categoria)) {
+    throw new Error("Completa nombre, descripcion y una categoria valida.");
+  }
+
+  if (!Number.isFinite(precio) || precio <= 0) {
+    throw new Error("Ingresa un precio valido.");
+  }
+
+  if (!Number.isFinite(stock) || stock < 0) {
+    throw new Error("Ingresa un stock valido.");
+  }
+
+  const incomingSlug = normalizeSlug(input.slug || nombre) || existing.slug;
+  let slug = incomingSlug;
+  let suffix = 1;
+
+  while (true) {
+    const duplicate = await db.prepare("SELECT id FROM products WHERE slug = ?").bind(slug).first();
+
+    if (!duplicate || Number(duplicate.id) === Number(productId)) {
+      break;
+    }
+
+    suffix += 1;
+    slug = `${incomingSlug}-${suffix}`;
+  }
+
+  await db
+    .prepare(
+      `
+      UPDATE products
+      SET slug = ?, nombre = ?, descripcion = ?, precio = ?, stock = ?, categoria = ?, tags = ?, imagenes = ?
+      WHERE id = ?
+    `
+    )
+    .bind(slug, nombre, descripcion, precio, stock, categoria, JSON.stringify(tags), JSON.stringify(imagenes), productId)
+    .run();
+
+  return getProductById(db, productId);
+}
+
+export async function deleteProduct(db, productId) {
+  await db.prepare("DELETE FROM cart_items WHERE product_id = ?").bind(productId).run();
+  await db.prepare("DELETE FROM product_views WHERE product_id = ?").bind(productId).run();
+  await db.prepare("DELETE FROM products WHERE id = ?").bind(productId).run();
+}
+
+export async function clearAllProducts(db) {
+  await db.prepare("DELETE FROM cart_items").run();
+  await db.prepare("DELETE FROM product_views").run();
+  await db.prepare("DELETE FROM products").run();
 }
 
 export async function setCartItem(db, userId, productId, cantidad) {

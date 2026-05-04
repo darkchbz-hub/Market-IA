@@ -6,6 +6,16 @@ function getOrigin(request) {
   return new URL(request.url).origin;
 }
 
+function buildFormBody(entries) {
+  const params = new URLSearchParams();
+
+  for (const [key, value] of entries) {
+    params.append(key, String(value));
+  }
+
+  return params;
+}
+
 async function readJsonResponse(response) {
   const text = await response.text();
 
@@ -37,6 +47,33 @@ async function getPayPalAccessToken(env) {
   }
 
   return payload.access_token;
+}
+
+function getStripeSecretKey(env) {
+  if (!env.STRIPE_SECRET_KEY) {
+    throw new Error("Configura STRIPE_SECRET_KEY en Cloudflare Pages.");
+  }
+
+  return String(env.STRIPE_SECRET_KEY);
+}
+
+async function stripeRequest(env, path, body, method = "POST") {
+  const response = await fetch(`https://api.stripe.com${path}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${getStripeSecretKey(env)}`,
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body
+  });
+
+  const payload = await readJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(payload.error?.message || payload.message || "No se pudo completar la operacion con Stripe.");
+  }
+
+  return payload;
 }
 
 export async function createPayPalRemoteOrder(env, request, order) {
@@ -179,4 +216,42 @@ export async function fetchMercadoPagoPayment(env, paymentId) {
   }
 
   return payload;
+}
+
+export async function createStripeCheckoutSession(env, request, order) {
+  const origin = getOrigin(request);
+  const body = buildFormBody([
+    ["mode", "payment"],
+    ["payment_method_types[0]", "card"],
+    ["client_reference_id", order.id],
+    ["metadata[orderId]", order.id],
+    [
+      "success_url",
+      `${origin}/pago-estado.html?provider=stripe&status=success&orderId=${encodeURIComponent(order.id)}&session_id={CHECKOUT_SESSION_ID}`
+    ],
+    ["cancel_url", `${origin}/pago-estado.html?provider=stripe&status=cancel&orderId=${encodeURIComponent(order.id)}`]
+  ]);
+
+  order.items.forEach((item, index) => {
+    body.append(`line_items[${index}][quantity]`, String(item.cantidad));
+    body.append(`line_items[${index}][price_data][currency]`, "mxn");
+    body.append(`line_items[${index}][price_data][unit_amount]`, String(Math.round(Number(item.precio) * 100)));
+    body.append(`line_items[${index}][price_data][product_data][name]`, item.nombre);
+  });
+
+  const payload = await stripeRequest(env, "/v1/checkout/sessions", body, "POST");
+
+  if (!payload.url) {
+    throw new Error("Stripe no devolvio la URL de checkout.");
+  }
+
+  return {
+    externalId: payload.id,
+    checkoutUrl: payload.url,
+    payload
+  };
+}
+
+export async function fetchStripeCheckoutSession(env, sessionId) {
+  return stripeRequest(env, `/v1/checkout/sessions/${encodeURIComponent(sessionId)}`, undefined, "GET");
 }

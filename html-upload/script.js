@@ -74,12 +74,14 @@ async function apiRequest(path, options = {}) {
 function normalizeProduct(product) {
   return {
     id: product.id,
+    slug: product.slug || "",
     categoria: product.categoria,
     nombre: product.nombre,
     descripcion: product.descripcion,
     precio: product.precio,
     stock: product.stock,
     imagen: product.imagenes?.[0] || "https://via.placeholder.com/900x675?text=MarketZone",
+    imagenes: product.imagenes || [],
     tags: product.tags || []
   };
 }
@@ -179,6 +181,196 @@ async function loadAccountDashboard() {
   const dashboard = await apiRequest("/users/me", { auth: true });
   setAuthSession({ user: dashboard.user });
   return dashboard;
+}
+
+async function loadAdminProducts() {
+  const payload = await apiRequest("/admin/products", { auth: true });
+  return payload.items.map(normalizeProduct);
+}
+
+function serializeAdminProductForm(form) {
+  const formData = new FormData(form);
+
+  return {
+    nombre: String(formData.get("nombre") || "").trim(),
+    descripcion: String(formData.get("descripcion") || "").trim(),
+    categoria: String(formData.get("categoria") || "").trim(),
+    precio: Number(formData.get("precio") || 0),
+    stock: Number(formData.get("stock") || 0),
+    tags: String(formData.get("tags") || "").trim(),
+    imagenes: String(formData.get("imagenes") || "").trim()
+  };
+}
+
+async function renderAdminPanel(container) {
+  const items = await loadAdminProducts();
+
+  container.innerHTML = `
+    <section class="admin-panel">
+      <div class="section-head">
+        <div>
+          <p class="section-label">Administrador</p>
+          <h3>Gestiona el catalogo desde aqui</h3>
+        </div>
+        <button type="button" class="button button--light js-admin-clear">Borrar catalogo</button>
+      </div>
+      <form class="form-card admin-form js-admin-form">
+        <input type="hidden" name="productId" value="" />
+        <div class="admin-grid">
+          <label>
+            Nombre
+            <input name="nombre" type="text" required />
+          </label>
+          <label>
+            Categoria
+            <select name="categoria" required>
+              <option value="apps">Apps IA</option>
+              <option value="packs">Packs</option>
+              <option value="webs">Servicios web</option>
+            </select>
+          </label>
+          <label>
+            Precio
+            <input name="precio" type="number" min="1" step="1" required />
+          </label>
+          <label>
+            Stock
+            <input name="stock" type="number" min="0" step="1" required />
+          </label>
+        </div>
+        <label>
+          Descripcion
+          <textarea name="descripcion" rows="4" required></textarea>
+        </label>
+        <label>
+          Tags
+          <input name="tags" type="text" placeholder="ia, premium, productividad" />
+        </label>
+        <label>
+          Imagenes
+          <textarea name="imagenes" rows="3" placeholder="Una URL por linea o separadas por coma"></textarea>
+        </label>
+        <div class="button-row">
+          <button type="submit" class="button button--primary js-admin-submit">Guardar producto</button>
+          <button type="button" class="button button--light js-admin-reset">Nuevo producto</button>
+        </div>
+      </form>
+      <div class="admin-product-list js-admin-product-list">
+        ${
+          items.length
+            ? items
+                .map(
+                  (item) => `
+                    <article class="admin-product-item" data-product-id="${item.id}">
+                      <div>
+                        <strong>${item.nombre}</strong>
+                        <p>${item.categoria} - ${formatCurrency(item.precio)} - Stock ${item.stock}</p>
+                      </div>
+                      <div class="admin-actions">
+                        <button type="button" class="button button--light" data-action="edit">Editar</button>
+                        <button type="button" class="button button--light" data-action="delete">Eliminar</button>
+                      </div>
+                    </article>
+                  `
+                )
+                .join("")
+            : `<div class="empty-state"><h2>No hay productos todavia</h2><p>Sube el primero desde este panel.</p></div>`
+        }
+      </div>
+    </section>
+  `;
+
+  const form = container.querySelector(".js-admin-form");
+  const resetButton = container.querySelector(".js-admin-reset");
+  const clearButton = container.querySelector(".js-admin-clear");
+
+  function resetAdminForm() {
+    form.reset();
+    form.querySelector('[name="productId"]').value = "";
+    form.querySelector(".js-admin-submit").textContent = "Guardar producto";
+  }
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const productId = form.querySelector('[name="productId"]').value;
+    const payload = serializeAdminProductForm(form);
+
+    try {
+      if (productId) {
+        await apiRequest(`/admin/products/${productId}`, {
+          method: "PUT",
+          auth: true,
+          body: payload
+        });
+        setSectionMessage(".page-stack", "Producto actualizado.");
+      } else {
+        await apiRequest("/admin/products", {
+          method: "POST",
+          auth: true,
+          body: payload
+        });
+        setSectionMessage(".page-stack", "Producto creado.");
+      }
+
+      await renderAdminPanel(container);
+    } catch (error) {
+      setSectionMessage(".page-stack", error.message, true);
+    }
+  });
+
+  resetButton.addEventListener("click", resetAdminForm);
+
+  clearButton.addEventListener("click", async () => {
+    if (!confirm("Esto borrara todos los productos del catalogo actual.")) {
+      return;
+    }
+
+    try {
+      await apiRequest("/admin/products", {
+        method: "DELETE",
+        auth: true
+      });
+      setSectionMessage(".page-stack", "Catalogo eliminado.");
+      await renderAdminPanel(container);
+    } catch (error) {
+      setSectionMessage(".page-stack", error.message, true);
+    }
+  });
+
+  container.querySelectorAll(".admin-product-item").forEach((itemNode) => {
+    const productId = Number(itemNode.dataset.productId);
+    const product = items.find((entry) => Number(entry.id) === productId);
+
+    itemNode.querySelector('[data-action="edit"]').addEventListener("click", () => {
+      form.querySelector('[name="productId"]').value = String(product.id);
+      form.querySelector('[name="nombre"]').value = product.nombre;
+      form.querySelector('[name="categoria"]').value = product.categoria;
+      form.querySelector('[name="precio"]').value = String(product.precio);
+      form.querySelector('[name="stock"]').value = String(product.stock);
+      form.querySelector('[name="descripcion"]').value = product.descripcion;
+      form.querySelector('[name="tags"]').value = product.tags.join(", ");
+      form.querySelector('[name="imagenes"]').value = product.imagenes.join("\n");
+      form.querySelector(".js-admin-submit").textContent = "Actualizar producto";
+      form.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    itemNode.querySelector('[data-action="delete"]').addEventListener("click", async () => {
+      if (!confirm(`Vas a eliminar ${product.nombre}.`)) {
+        return;
+      }
+
+      try {
+        await apiRequest(`/admin/products/${product.id}`, {
+          method: "DELETE",
+          auth: true
+        });
+        setSectionMessage(".page-stack", "Producto eliminado.");
+        await renderAdminPanel(container);
+      } catch (error) {
+        setSectionMessage(".page-stack", error.message, true);
+      }
+    });
+  });
 }
 
 function createProductCard(product) {
@@ -554,6 +746,7 @@ function renderAccountDashboard(dashboard) {
     <p class="section-label">Perfil real</p>
     <h2>${dashboard.user.nombre}</h2>
     <p class="muted">${dashboard.user.email}</p>
+    ${dashboard.user.role === "admin" ? `<div class="status-message">Cuenta administradora activa. Desde aqui puedes publicar y editar productos.</div>` : ""}
     <form class="profile-update-form">
       <div class="profile-grid">
         <label>
@@ -593,6 +786,7 @@ function renderAccountDashboard(dashboard) {
         ${vistosHtml}
       </section>
     </div>
+    ${dashboard.user.role === "admin" ? `<div class="js-admin-panel"></div>` : ""}
   `;
 
   profileCard.querySelector(".profile-update-form").addEventListener("submit", async (event) => {
@@ -616,6 +810,15 @@ function renderAccountDashboard(dashboard) {
       setSectionMessage(".page-stack", error.message, true);
     }
   });
+
+  if (dashboard.user.role === "admin") {
+    const adminPanel = profileCard.querySelector(".js-admin-panel");
+
+    renderAdminPanel(adminPanel).catch((error) => {
+      adminPanel.innerHTML = "";
+      adminPanel.appendChild(createStatusBox(error.message, true));
+    });
+  }
 }
 
 async function renderAccountPage() {
@@ -758,9 +961,13 @@ function renderCheckoutForm(layout, summary, user) {
           <strong>PayPal</strong>
           <span>Pago externo y captura automatica</span>
         </button>
+        <button type="button" class="payment-option" data-provider="stripe">
+          <strong>Tarjeta credito o debito</strong>
+          <span>Checkout seguro con Stripe</span>
+        </button>
       </div>
 
-      <p class="muted">Stripe sigue disponible en el backend, pero esta version HTML ya queda completa con PayPal y Mercado Pago.</p>
+      <p class="muted">Puedes cobrar con Mercado Pago, PayPal o tarjeta de credito y debito.</p>
       <button type="submit" class="button button--primary">Crear orden y continuar</button>
     </form>
 
@@ -824,6 +1031,23 @@ function renderCheckoutForm(layout, summary, user) {
         return;
       }
 
+      if (selectedProvider === "stripe") {
+        const payment = await apiRequest("/payments/stripe/session", {
+          method: "POST",
+          auth: true,
+          body: {
+            orderId: orderPayload.order.id
+          }
+        });
+
+        if (!payment.checkoutUrl) {
+          throw new Error("Stripe no devolvio la URL de checkout.");
+        }
+
+        window.location.href = payment.checkoutUrl;
+        return;
+      }
+
       const payment = await apiRequest("/payments/mercadopago/preference", {
         method: "POST",
         auth: true,
@@ -877,6 +1101,7 @@ async function renderPaymentStatusPage() {
   const orderId = params.get("orderId") || "";
   const paypalOrderId = params.get("token") || "";
   const mercadopagoPaymentId = params.get("payment_id") || "";
+  const stripeSessionId = params.get("session_id") || "";
 
   layout.innerHTML = `
     <section class="summary-card payment-status-card">
@@ -921,6 +1146,19 @@ async function renderPaymentStatusPage() {
         }
       });
       message.textContent = "El pago con Mercado Pago ya fue validado.";
+      return;
+    }
+
+    if (status === "success" && provider === "stripe" && stripeSessionId) {
+      await apiRequest("/payments/stripe/confirm", {
+        method: "POST",
+        auth: true,
+        body: {
+          orderId,
+          sessionId: stripeSessionId
+        }
+      });
+      message.textContent = "El pago con tarjeta ya fue validado.";
       return;
     }
 

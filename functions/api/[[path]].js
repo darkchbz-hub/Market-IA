@@ -1,12 +1,22 @@
-import { createMercadoPagoPreference, createPayPalRemoteOrder, capturePayPalRemoteOrder, fetchMercadoPagoPayment } from "./_lib/payments.js";
+import {
+  createMercadoPagoPreference,
+  createPayPalRemoteOrder,
+  createStripeCheckoutSession,
+  capturePayPalRemoteOrder,
+  fetchMercadoPagoPayment,
+  fetchStripeCheckoutSession
+} from "./_lib/payments.js";
 import { empty, error, json, readJson } from "./_lib/response.js";
 import { getBearerToken, hashPassword, signToken, verifyPassword, verifyToken } from "./_lib/security.js";
 import {
   buildCheckoutSummary,
   clearCart,
+  clearAllProducts,
   createOrderFromCart,
+  createProduct,
   createUser,
   decrementStockForOrder,
+  deleteProduct,
   ensureDatabase,
   getCartState,
   getOrderById,
@@ -15,6 +25,7 @@ import {
   getUserByEmail,
   getUserById,
   getUserDashboard,
+  listAdminProducts,
   listProducts,
   markOrderStatus,
   recordProductView,
@@ -22,6 +33,7 @@ import {
   savePaymentRecord,
   serializeUser,
   setCartItem,
+  updateProduct,
   updateUserAddress
 } from "./_lib/store.js";
 
@@ -49,6 +61,12 @@ function normalizeAddress(value) {
 
 function getJwtSecret(env) {
   return String(env.JWT_SECRET || "marketzone-cloudflare-secret");
+}
+
+function requireAdmin(user) {
+  if (!user || user.role !== "admin") {
+    throw httpError(403, "Solo el administrador puede hacer esto.");
+  }
 }
 
 async function authenticate(request, env, db, required = true) {
@@ -280,11 +298,58 @@ export async function onRequest(context) {
         throw httpError(400, "Completa toda la direccion antes de continuar.");
       }
 
-      if (!["paypal", "mercadopago"].includes(proveedorPago)) {
+      if (!["paypal", "mercadopago", "stripe"].includes(proveedorPago)) {
         throw httpError(400, "Selecciona un metodo de pago valido.");
       }
 
       return json(await createOrderFromCart(db, user.id, { direccion, proveedorPago }), 201);
+    }
+
+    if (first === "admin" && second === "products" && !third && request.method === "GET") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      return json({
+        items: await listAdminProducts(db)
+      });
+    }
+
+    if (first === "admin" && second === "products" && !third && request.method === "POST") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      const body = await readJson(request);
+      return json(
+        {
+          product: await createProduct(db, body)
+        },
+        201
+      );
+    }
+
+    if (first === "admin" && second === "products" && !third && request.method === "DELETE") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      await clearAllProducts(db);
+      return json({
+        ok: true
+      });
+    }
+
+    if (first === "admin" && second === "products" && third && request.method === "PUT") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      const body = await readJson(request);
+      return json({
+        product: await updateProduct(db, Number(third), body)
+      });
+    }
+
+    if (first === "admin" && second === "products" && third && request.method === "DELETE") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      await deleteProduct(db, Number(third));
+      return json({
+        ok: true
+      });
     }
 
     if (first === "payments" && second === "paypal" && third === "order" && request.method === "POST") {
@@ -400,6 +465,64 @@ export async function onRequest(context) {
 
       return json({
         status: nextStatus
+      });
+    }
+
+    if (first === "payments" && second === "stripe" && third === "session" && request.method === "POST") {
+      const user = await authenticate(request, env, db);
+      const body = await readJson(request);
+      const order = await getOrderWithItems(db, String(body.orderId || ""));
+
+      if (!order || Number(order.user_id) !== Number(user.id)) {
+        throw httpError(404, "La orden no existe para este usuario.");
+      }
+
+      const session = await createStripeCheckoutSession(env, request, order);
+      await savePaymentRecord(db, {
+        orderId: order.id,
+        provider: "stripe",
+        status: "created",
+        externalId: session.externalId,
+        approvalUrl: session.checkoutUrl,
+        payload: JSON.stringify(session.payload)
+      });
+
+      return json({
+        checkoutUrl: session.checkoutUrl,
+        externalId: session.externalId
+      });
+    }
+
+    if (first === "payments" && second === "stripe" && third === "confirm" && request.method === "POST") {
+      const user = await authenticate(request, env, db);
+      const body = await readJson(request);
+      const orderId = String(body.orderId || "");
+      const sessionId = String(body.sessionId || "");
+      const order = await getOrderById(db, orderId);
+
+      if (!order || Number(order.user_id) !== Number(user.id)) {
+        throw httpError(404, "La orden no existe para este usuario.");
+      }
+
+      const session = await fetchStripeCheckoutSession(env, sessionId);
+      const isPaid = session.payment_status === "paid";
+
+      await savePaymentRecord(db, {
+        orderId,
+        provider: "stripe",
+        status: isPaid ? "paid" : "pending_payment",
+        externalId: sessionId,
+        payload: JSON.stringify(session)
+      });
+      await markOrderStatus(db, orderId, isPaid ? "paid" : "pending_payment", sessionId);
+
+      if (isPaid && order.estado !== "paid") {
+        await decrementStockForOrder(db, orderId);
+        await clearCart(db, user.id);
+      }
+
+      return json({
+        status: isPaid ? "paid" : "pending_payment"
       });
     }
 
