@@ -914,7 +914,10 @@ function createProductCard(product) {
         <strong>${formatCurrency(product.precio)}</strong>
         <small>Stock ${product.stock}</small>
       </div>
-      <button type="button" class="button button--primary">Agregar</button>
+      <div class="product-card__actions">
+        <a href="./producto.html?id=${product.id}" class="button button--primary">Ver detalles</a>
+        <button type="button" class="button button--light">Agregar al carrito</button>
+      </div>
     </div>
   `;
 
