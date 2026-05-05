@@ -641,8 +641,9 @@ export async function clearAllProducts(db) {
   await db.prepare("DELETE FROM products").run();
 }
 
-export async function setCartItem(db, userId, productId, cantidad) {
+export async function setCartItem(db, userId, productId, cantidad, options = {}) {
   const nextQuantity = Number(cantidad || 0);
+  const increment = Boolean(options.increment);
 
   if (nextQuantity <= 0) {
     await db.prepare("DELETE FROM cart_items WHERE user_id = ? AND product_id = ?").bind(userId, productId).run();
@@ -652,8 +653,16 @@ export async function setCartItem(db, userId, productId, cantidad) {
   const existing = await db.prepare("SELECT id FROM cart_items WHERE user_id = ? AND product_id = ?").bind(userId, productId).first();
 
   if (existing) {
+    if (increment) {
+      await db
+        .prepare("UPDATE cart_items SET cantidad = cantidad + ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND product_id = ?")
+        .bind(nextQuantity, userId, productId)
+        .run();
+      return;
+    }
+
     await db
-      .prepare("UPDATE cart_items SET cantidad = cantidad + ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND product_id = ?")
+      .prepare("UPDATE cart_items SET cantidad = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND product_id = ?")
       .bind(nextQuantity, userId, productId)
       .run();
     return;

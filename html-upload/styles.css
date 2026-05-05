@@ -1675,6 +1675,69 @@ textarea {
   }
 }
 
+/* Mixed red + dark accent pass */
+:root {
+  --accent-red: #d71920;
+  --accent-red-soft: rgba(215, 25, 32, 0.18);
+}
+
+body,
+body[data-page="account"] {
+  background:
+    radial-gradient(circle at 82% 8%, rgba(0, 132, 255, 0.16), transparent 30%),
+    radial-gradient(circle at 14% 20%, rgba(215, 25, 32, 0.11), transparent 24%),
+    linear-gradient(180deg, #070b11 0%, #0d121a 42%, #0a0e15 100%);
+}
+
+.brand__logo {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+    0 0 18px rgba(215, 25, 32, 0.18),
+    0 0 26px rgba(0, 132, 255, 0.2);
+}
+
+.section-label {
+  color: #ff5a53;
+}
+
+.button--primary {
+  background: linear-gradient(135deg, #d71920 0%, #0b84ff 100%);
+  box-shadow: 0 12px 28px rgba(105, 62, 115, 0.24);
+}
+
+.button--light:hover,
+.button--primary:hover {
+  filter: saturate(1.08);
+}
+
+.cart-pill {
+  background: linear-gradient(135deg, rgba(215, 25, 32, 0.32), rgba(11, 132, 255, 0.2));
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.cart-pill span {
+  background: linear-gradient(135deg, #d71920, #0b84ff);
+}
+
+.category-nav a:first-child,
+.category-nav a:hover {
+  box-shadow: inset 0 -2px 0 #ff5a53, 0 12px 30px rgba(0, 0, 0, 0.18);
+}
+
+.catalog-filter-button {
+  border-color: rgba(215, 25, 32, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(11, 132, 255, 0.12);
+}
+
+.product-card__category {
+  background: linear-gradient(135deg, rgba(215, 25, 32, 0.18), rgba(11, 132, 255, 0.14));
+  color: #ff8c86;
+}
+
+.product-card__image {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
 /* Compact responsive pass: closer to the reference mockup */
 .top-strip {
   padding: 8px 12px;

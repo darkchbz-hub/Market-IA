@@ -292,7 +292,7 @@ export async function onRequest(context) {
         throw httpError(400, "La cantidad solicitada no esta disponible.");
       }
 
-      await setCartItem(db, user.id, productId, cantidad);
+      await setCartItem(db, user.id, productId, cantidad, { increment: true });
       await recordProductView(db, user.id, productId);
       return json(await getCartState(db, user.id), 201);
     }
