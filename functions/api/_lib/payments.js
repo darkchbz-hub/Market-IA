@@ -99,7 +99,7 @@ export async function createPayPalRemoteOrder(env, request, order) {
       payment_source: {
         paypal: {
           experience_context: {
-            brand_name: "MarketZone",
+            brand_name: "Gray C Shop",
             locale: "es-MX",
             landing_page: "LOGIN",
             user_action: "PAY_NOW",

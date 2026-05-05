@@ -79,10 +79,11 @@ textarea {
 
 .top-strip {
   padding: 8px 12px;
-  background: #090a0d;
+  background: #111318;
   color: #fff;
   text-align: center;
   font-size: 0.88rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .top-strip p,
@@ -97,6 +98,7 @@ textarea {
   position: sticky;
   top: 0;
   z-index: 30;
+  background: #111318;
   box-shadow: 0 2px 18px rgba(9, 10, 13, 0.12);
 }
 
@@ -106,7 +108,7 @@ textarea {
   gap: 18px;
   align-items: center;
   padding: 14px 0;
-  background: var(--yellow);
+  background: transparent;
   color: #fff;
 }
 
@@ -126,16 +128,13 @@ textarea {
   color: #c8ccd4;
 }
 
-.brand__badge {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: #f4f6fb;
-  border: 1px solid rgba(255, 255, 255, 0.34);
-  color: #111318;
-  font-weight: 800;
+.brand__logo {
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  object-fit: cover;
+  border: 1px solid rgba(72, 162, 255, 0.45);
+  box-shadow: 0 0 22px rgba(0, 145, 255, 0.22);
 }
 
 .header-search {
@@ -202,7 +201,7 @@ textarea {
   gap: 10px;
   flex-wrap: wrap;
   padding: 10px 0 12px;
-  background: #111318;
+  background: transparent;
 }
 
 .category-nav a {

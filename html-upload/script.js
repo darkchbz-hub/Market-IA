@@ -232,7 +232,7 @@ function normalizeProduct(product) {
     descripcion: product.descripcion,
     precio: product.precio,
     stock: product.stock,
-    imagen: product.imagenes?.[0] || "https://via.placeholder.com/900x675?text=MarketZone",
+    imagen: product.imagenes?.[0] || "https://via.placeholder.com/900x675?text=Gray%20C%20Shop",
     imagenes: product.imagenes || [],
     tags: product.tags || [],
     caracteristicas: product.caracteristicas || [],
@@ -1392,7 +1392,7 @@ async function renderCartPage() {
       const article = document.createElement("article");
       article.className = "cart-item";
       article.innerHTML = `
-        <img src="${item.imagenes?.[0] || "https://via.placeholder.com/900x675?text=MarketZone"}" alt="${item.nombre}" />
+        <img src="${item.imagenes?.[0] || "https://via.placeholder.com/900x675?text=Gray%20C%20Shop"}" alt="${item.nombre}" />
         <div class="cart-item__body">
           <span class="product-card__category">${escapeHtml(getCategoryLabel(item.categoria))}</span>
           <h3>${item.nombre}</h3>

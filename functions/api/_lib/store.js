@@ -274,7 +274,7 @@ async function seedDatabase(db, env) {
       )
       .bind(
         "admin",
-        "Administrador MarketZone",
+        "Administrador Gray C Shop",
         adminEmail,
         passwordHash,
         JSON.stringify({
@@ -285,6 +285,11 @@ async function seedDatabase(db, env) {
           pais: "MX"
         })
       )
+      .run();
+  } else {
+    await db
+      .prepare("UPDATE users SET nombre = ?, role = 'admin' WHERE email = ?")
+      .bind("Administrador Gray C Shop", adminEmail)
       .run();
   }
 
