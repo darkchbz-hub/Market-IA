@@ -655,6 +655,11 @@ textarea {
   gap: 12px;
 }
 
+.comment-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .purchase-ok {
   color: #047857;
   font-weight: 800;

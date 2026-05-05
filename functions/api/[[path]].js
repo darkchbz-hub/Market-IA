@@ -17,6 +17,7 @@ import {
   createProduct,
   createUser,
   decrementStockForOrder,
+  deleteProductComment,
   deleteProduct,
   ensureDatabase,
   getCartState,
@@ -377,6 +378,12 @@ export async function onRequest(context) {
       requireAdmin(user);
       const body = await readJson(request);
       return json(await updateOrderItemStatus(db, Number(third), body.estado));
+    }
+
+    if (first === "admin" && second === "comments" && third && request.method === "DELETE") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      return json(await deleteProductComment(db, Number(third)));
     }
 
     if (first === "admin" && second === "products" && !third && request.method === "POST") {

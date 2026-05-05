@@ -1,6 +1,7 @@
 import { hashPassword } from "./security.js";
 
 const seedProducts = [];
+const allowedCategories = ["productos", "electronica", "casa", "jardin", "apps", "packs", "webs", "mas"];
 const defaultSiteContent = {
   home: {
     topStrip: "Pagos seguros, acceso privado y garantia en cada compra",
@@ -500,7 +501,7 @@ export async function createProduct(db, input) {
         .map((item) => item.trim())
         .filter(Boolean);
 
-  if (!nombre || !descripcion || !["apps", "packs", "webs"].includes(categoria)) {
+  if (!nombre || !descripcion || !allowedCategories.includes(categoria)) {
     throw new Error("Completa nombre, descripcion y una categoria valida.");
   }
 
@@ -571,7 +572,7 @@ export async function updateProduct(db, productId, input) {
           .filter(Boolean)
       : existing.caracteristicas;
 
-  if (!nombre || !descripcion || !["apps", "packs", "webs"].includes(categoria)) {
+  if (!nombre || !descripcion || !allowedCategories.includes(categoria)) {
     throw new Error("Completa nombre, descripcion y una categoria valida.");
   }
 
@@ -1122,6 +1123,17 @@ export async function createProductComment(db, userId, productId, input) {
     .run();
 
   return listProductComments(db, productId);
+}
+
+export async function deleteProductComment(db, commentId) {
+  const id = Number(commentId);
+
+  if (!Number.isFinite(id)) {
+    throw new Error("Comentario invalido.");
+  }
+
+  await db.prepare("DELETE FROM product_comments WHERE id = ?").bind(id).run();
+  return { ok: true };
 }
 
 export async function getSiteContent(db) {

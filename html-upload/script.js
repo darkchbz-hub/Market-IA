@@ -49,6 +49,29 @@ const defaultSiteContent = {
   }
 };
 let currentSiteContent = defaultSiteContent;
+const shopCategories = [
+  { value: "productos", label: "Productos" },
+  { value: "electronica", label: "Electronica" },
+  { value: "casa", label: "Casa" },
+  { value: "jardin", label: "Jardin" },
+  { value: "apps", label: "Apps IA" },
+  { value: "packs", label: "Packs" },
+  { value: "webs", label: "Servicios web" },
+  { value: "mas", label: "Mas" }
+];
+
+function getCategoryLabel(value) {
+  return shopCategories.find((category) => category.value === value)?.label || value || "Producto";
+}
+
+function renderCategoryOptions(selectedValue = "") {
+  return shopCategories
+    .map(
+      (category) =>
+        `<option value="${category.value}"${category.value === selectedValue ? " selected" : ""}>${category.label}</option>`
+    )
+    .join("");
+}
 
 function formatCurrency(value) {
   return new Intl.NumberFormat("es-MX", {
@@ -433,9 +456,7 @@ async function renderAdminPanel(container) {
           <label>
             Categoria
             <select name="categoria" required>
-              <option value="apps">Apps IA</option>
-              <option value="packs">Packs</option>
-              <option value="webs">Servicios web</option>
+              ${renderCategoryOptions()}
             </select>
           </label>
           <label>
@@ -481,7 +502,7 @@ async function renderAdminPanel(container) {
                     <article class="admin-product-item" data-product-id="${item.id}">
                       <div>
                         <strong>${escapeHtml(item.nombre)}</strong>
-                        <p>${escapeHtml(item.categoria)} - ${formatCurrency(item.precio)} - Stock ${item.stock}</p>
+                        <p>${escapeHtml(getCategoryLabel(item.categoria))} - ${formatCurrency(item.precio)} - Stock ${item.stock}</p>
                       </div>
                       <div class="admin-actions">
                         <button type="button" class="button button--light" data-action="edit">Editar</button>
@@ -884,7 +905,7 @@ function createProductCard(product) {
       <img src="${product.imagen}" alt="${product.nombre}" />
     </a>
     <div class="product-card__body">
-      <span class="product-card__category">${product.categoria}</span>
+      <span class="product-card__category">${escapeHtml(getCategoryLabel(product.categoria))}</span>
       <h3><a href="./producto.html?id=${product.id}">${product.nombre}</a></h3>
       <p class="product-rating">${renderStars(product.ratingPromedio)} <span>${product.ratingTotal} opiniones</span></p>
     </div>
@@ -1071,7 +1092,7 @@ async function applyCatalogFilters() {
     results.innerHTML = "";
     items.forEach((product) => results.appendChild(createProductCard(product)));
     title.textContent = `${payload.pagination.total} productos encontrados`;
-    meta.textContent = category ? `Categoria activa: ${category}` : currentSiteContent.catalog.allMeta;
+    meta.textContent = category ? `Categoria activa: ${getCategoryLabel(category)}` : currentSiteContent.catalog.allMeta;
 
     const nextParams = new URLSearchParams();
 
@@ -1126,19 +1147,53 @@ function renderComments(comments = []) {
     return `<p class="muted">Todavia no hay comentarios. Tu opinion puede ser la primera.</p>`;
   }
 
+  const isAdmin = getStoredUser()?.role === "admin";
+
   return comments
     .map(
       (comment) => `
-        <article class="comment-item">
+        <article class="comment-item" data-comment-id="${comment.id}">
           <div>
             <strong>${escapeHtml(comment.usuario)}</strong>
             <span>${renderStars(comment.rating)}</span>
           </div>
           <p>${escapeHtml(comment.comentario)}</p>
+          ${
+            isAdmin
+              ? `<div class="comment-actions"><button type="button" class="button button--light" data-comment-delete="${comment.id}">Eliminar comentario</button></div>`
+              : ""
+          }
         </article>
       `
     )
     .join("");
+}
+
+function bindCommentModeration(container, productId) {
+  if (getStoredUser()?.role !== "admin") {
+    return;
+  }
+
+  container.querySelectorAll("[data-comment-delete]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      if (!confirm("Vas a eliminar este comentario.")) {
+        return;
+      }
+
+      try {
+        await apiRequest(`/admin/comments/${button.dataset.commentDelete}`, {
+          method: "DELETE",
+          auth: true
+        });
+        const response = await apiRequest(`/products/${productId}`, { auth: true });
+        container.querySelector(".js-comments-list").innerHTML = renderComments(response.comments || []);
+        bindCommentModeration(container, productId);
+        setSectionMessage(".page-stack", "Comentario eliminado correctamente.");
+      } catch (error) {
+        setSectionMessage(".page-stack", error.message, true);
+      }
+    });
+  });
 }
 
 async function renderProductPage() {
@@ -1167,7 +1222,7 @@ async function renderProductPage() {
         </div>
         <div class="product-detail__info">
           <a href="./catalogo.html" class="muted">Volver al catalogo</a>
-          <span class="product-card__category">${escapeHtml(product.categoria)}</span>
+          <span class="product-card__category">${escapeHtml(getCategoryLabel(product.categoria))}</span>
           <h1>${escapeHtml(product.nombre)}</h1>
           <p class="product-rating">${renderStars(product.ratingPromedio)} <span>${product.ratingTotal} opiniones</span></p>
           <strong class="product-detail__price">${formatCurrency(product.precio)}</strong>
@@ -1217,6 +1272,8 @@ async function renderProductPage() {
       </section>
     `;
 
+    bindCommentModeration(container, product.id);
+
     container.querySelector(".js-detail-add").addEventListener("click", async () => {
       try {
         await apiRequest("/cart/items", {
@@ -1248,6 +1305,7 @@ async function renderProductPage() {
         });
         event.currentTarget.reset();
         container.querySelector(".js-comments-list").innerHTML = renderComments(response.comments || []);
+        bindCommentModeration(container, product.id);
       } catch (error) {
         setSectionMessage(".page-stack", error.message, true);
       }
@@ -1336,7 +1394,7 @@ async function renderCartPage() {
       article.innerHTML = `
         <img src="${item.imagenes?.[0] || "https://via.placeholder.com/900x675?text=MarketZone"}" alt="${item.nombre}" />
         <div class="cart-item__body">
-          <span class="product-card__category">${item.categoria}</span>
+          <span class="product-card__category">${escapeHtml(getCategoryLabel(item.categoria))}</span>
           <h3>${item.nombre}</h3>
           <p>${item.descripcion}</p>
           <strong>${formatCurrency(item.subtotal)}</strong>
