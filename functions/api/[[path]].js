@@ -41,6 +41,7 @@ import {
   setCartItem,
   updateSiteContent,
   updateOrderItemStatus,
+  updateOrderTracking,
   updateProduct,
   updateUserAddress
 } from "./_lib/store.js";
@@ -167,6 +168,7 @@ export async function onRequest(context) {
       const nombre = String(body.nombre || "").trim();
       const email = String(body.email || "").trim().toLowerCase();
       const password = String(body.password || "");
+      const telefono = String(body.telefono || "").trim();
 
       if (!nombre || !validateEmail(email) || password.length < 6) {
         throw httpError(400, "Completa nombre, email valido y una contrasena de al menos 6 caracteres.");
@@ -179,7 +181,7 @@ export async function onRequest(context) {
       }
 
       const passwordHash = await hashPassword(password);
-      const user = await createUser(db, { nombre, email, passwordHash });
+      const user = await createUser(db, { nombre, email, passwordHash, telefono });
       return json(await buildAuthPayload(user, env), 201);
     }
 
@@ -210,7 +212,7 @@ export async function onRequest(context) {
       const user = await authenticate(request, env, db);
       const body = await readJson(request);
       const direccion = normalizeAddress(body.direccion);
-      const updated = await updateUserAddress(db, user.id, direccion);
+      const updated = await updateUserAddress(db, user.id, direccion, body.telefono);
       return json({ user: serializeUser(updated) });
     }
 
@@ -337,6 +339,7 @@ export async function onRequest(context) {
       const body = await readJson(request);
       const direccion = normalizeAddress(body.direccion);
       const proveedorPago = String(body.proveedorPago || "").trim().toLowerCase();
+      const telefono = String(body.telefono || "").trim();
 
       if (!direccion.calle || !direccion.ciudad || !direccion.estado || !direccion.cp || !direccion.pais) {
         throw httpError(400, "Completa toda la direccion antes de continuar.");
@@ -346,7 +349,7 @@ export async function onRequest(context) {
         throw httpError(400, "Selecciona un metodo de pago valido.");
       }
 
-      return json(await createOrderFromCart(db, user.id, { direccion, proveedorPago }), 201);
+      return json(await createOrderFromCart(db, user.id, { direccion, proveedorPago, telefono }), 201);
     }
 
     if (first === "admin" && second === "products" && !third && request.method === "GET") {
@@ -378,6 +381,13 @@ export async function onRequest(context) {
       requireAdmin(user);
       const body = await readJson(request);
       return json(await updateOrderItemStatus(db, Number(third), body.estado));
+    }
+
+    if (first === "admin" && second === "orders" && third && request.method === "PUT") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      const body = await readJson(request);
+      return json(await updateOrderTracking(db, third, body.tracking));
     }
 
     if (first === "admin" && second === "comments" && third && request.method === "DELETE") {

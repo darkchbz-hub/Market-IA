@@ -45,6 +45,7 @@ const defaultSiteContent = {
     mercadoPagoLabel: "Mercado Pago",
     paypalLabel: "PayPal",
     cardLabel: "Tarjeta de credito o debito Visa o Mastercard",
+    cardUrl: "",
     note: "Al continuar te abriremos WhatsApp con el resumen para dar seguimiento a tu pago."
   }
 };
@@ -59,6 +60,42 @@ const shopCategories = [
   { value: "webs", label: "Servicios web" },
   { value: "mas", label: "Mas" }
 ];
+const countryOptions = [
+  "Afganistan", "Albania", "Alemania", "Andorra", "Angola", "Antigua y Barbuda", "Arabia Saudita", "Argelia",
+  "Argentina", "Armenia", "Australia", "Austria", "Azerbaiyan", "Bahamas", "Bangladesh", "Barbados", "Barein",
+  "Belgica", "Belice", "Benin", "Bielorrusia", "Birmania", "Bolivia", "Bosnia y Herzegovina", "Botsuana",
+  "Brasil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Butan", "Cabo Verde", "Camboya", "Camerun",
+  "Canada", "Catar", "Chad", "Chile", "China", "Chipre", "Colombia", "Comoras", "Corea del Norte",
+  "Corea del Sur", "Costa de Marfil", "Costa Rica", "Croacia", "Cuba", "Dinamarca", "Dominica", "Ecuador",
+  "Egipto", "El Salvador", "Emiratos Arabes Unidos", "Eritrea", "Eslovaquia", "Eslovenia", "Espana",
+  "Estados Unidos", "Estonia", "Esuatini", "Etiopia", "Filipinas", "Finlandia", "Fiyi", "Francia", "Gabon",
+  "Gambia", "Georgia", "Ghana", "Granada", "Grecia", "Guatemala", "Guinea", "Guinea-Bisau", "Guinea Ecuatorial",
+  "Guyana", "Haiti", "Honduras", "Hungria", "India", "Indonesia", "Irak", "Iran", "Irlanda", "Islandia",
+  "Islas Marshall", "Islas Salomon", "Israel", "Italia", "Jamaica", "Japon", "Jordania", "Kazajistan", "Kenia",
+  "Kirguistan", "Kiribati", "Kuwait", "Laos", "Lesoto", "Letonia", "Libano", "Liberia", "Libia", "Liechtenstein",
+  "Lituania", "Luxemburgo", "Macedonia del Norte", "Madagascar", "Malasia", "Malaui", "Maldivas", "Mali",
+  "Malta", "Marruecos", "Mauricio", "Mauritania", "Mexico", "Micronesia", "Moldavia", "Monaco", "Mongolia",
+  "Montenegro", "Mozambique", "Namibia", "Nauru", "Nepal", "Nicaragua", "Niger", "Nigeria", "Noruega",
+  "Nueva Zelanda", "Oman", "Paises Bajos", "Pakistan", "Palaos", "Panama", "Papua Nueva Guinea", "Paraguay",
+  "Peru", "Polonia", "Portugal", "Reino Unido", "Republica Centroafricana", "Republica Checa",
+  "Republica del Congo", "Republica Democratica del Congo", "Republica Dominicana", "Ruanda", "Rumania", "Rusia",
+  "Samoa", "San Cristobal y Nieves", "San Marino", "San Vicente y las Granadinas", "Santa Lucia",
+  "Santo Tome y Principe", "Senegal", "Serbia", "Seychelles", "Sierra Leona", "Singapur", "Siria", "Somalia",
+  "Sri Lanka", "Sudafrica", "Sudan", "Sudan del Sur", "Suecia", "Suiza", "Surinam", "Tailandia", "Tanzania",
+  "Tayikistan", "Timor Oriental", "Togo", "Tonga", "Trinidad y Tobago", "Tunez", "Turkmenistan", "Turquia",
+  "Tuvalu", "Ucrania", "Uganda", "Uruguay", "Uzbekistan", "Vanuatu", "Vaticano", "Venezuela", "Vietnam",
+  "Yemen", "Yibuti", "Zambia", "Zimbabue"
+];
+const countryCodeLabels = {
+  MX: "Mexico",
+  US: "Estados Unidos",
+  ES: "Espana",
+  AR: "Argentina",
+  CO: "Colombia",
+  CL: "Chile",
+  PE: "Peru",
+  VE: "Venezuela"
+};
 
 function getCategoryLabel(value) {
   return shopCategories.find((category) => category.value === value)?.label || value || "Producto";
@@ -71,6 +108,29 @@ function renderCategoryOptions(selectedValue = "") {
         `<option value="${category.value}"${category.value === selectedValue ? " selected" : ""}>${category.label}</option>`
     )
     .join("");
+}
+
+function normalizeCountryValue(value) {
+  const raw = String(value || "").trim();
+  return countryCodeLabels[raw.toUpperCase()] || raw || "Mexico";
+}
+
+function renderCountryOptions(selectedValue = "") {
+  const selectedCountry = normalizeCountryValue(selectedValue);
+  return countryOptions
+    .map((country) => `<option value="${country}"${country === selectedCountry ? " selected" : ""}>${country}</option>`)
+    .join("");
+}
+
+function renderCountrySelect(name, selectedValue = "", required = false, cssClass = "js-country-select") {
+  return `<select name="${name}" class="${cssClass}"${required ? " required" : ""}>${renderCountryOptions(selectedValue)}</select>`;
+}
+
+function hydrateCountrySelects(root = document) {
+  root.querySelectorAll(".js-country-select").forEach((select) => {
+    const selectedValue = select.dataset.selectedCountry || select.value || "Mexico";
+    select.innerHTML = renderCountryOptions(selectedValue);
+  });
 }
 
 function formatCurrency(value) {
@@ -236,6 +296,8 @@ function normalizeProduct(product) {
     imagenes: product.imagenes || [],
     tags: product.tags || [],
     caracteristicas: product.caracteristicas || [],
+    envioGratis: Boolean(product.envioGratis),
+    mostrarEnvioGratis: Boolean(product.mostrarEnvioGratis),
     ratingPromedio: Number(product.ratingPromedio || 0),
     ratingTotal: Number(product.ratingTotal || 0)
   };
@@ -322,6 +384,58 @@ function buildAddressFromFormData(formData) {
 
 function hasAddressData(direccion) {
   return Object.values(direccion).some(Boolean);
+}
+
+function formatTrackingForEditor(tracking = []) {
+  return (tracking || [])
+    .map((item) =>
+      [item.title || "", item.location || "", item.date || "", item.note || "", item.completed ? "si" : "no"].join(" | ")
+    )
+    .join("\n");
+}
+
+function parseTrackingFromEditor(value) {
+  return String(value || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [title = "", location = "", date = "", note = "", completed = ""] = line.split("|").map((item) => item.trim());
+      return {
+        title,
+        location,
+        date,
+        note,
+        completed: /^(si|yes|1|true)$/i.test(completed)
+      };
+    })
+    .filter((item) => item.title || item.location || item.note || item.date);
+}
+
+function renderTrackingTimeline(tracking = []) {
+  if (!tracking.length) {
+    return `<p class="muted">Todavia no hay movimientos de seguimiento cargados.</p>`;
+  }
+
+  return `
+    <div class="tracking-timeline">
+      ${tracking
+        .map(
+          (item) => `
+            <article class="tracking-step${item.completed ? " is-complete" : ""}">
+              <div class="tracking-step__dot"></div>
+              <div class="tracking-step__content">
+                <strong>${escapeHtml(item.title || "Movimiento")}</strong>
+                <span>${escapeHtml(item.location || "Ubicacion pendiente")}</span>
+                ${item.date ? `<small>${escapeHtml(item.date)}</small>` : ""}
+                ${item.note ? `<p>${escapeHtml(item.note)}</p>` : ""}
+              </div>
+            </article>
+          `
+        )
+        .join("")}
+    </div>
+  `;
 }
 
 function renderHistoryList(items, renderItem) {
@@ -420,7 +534,9 @@ function serializeAdminProductForm(form) {
     precio: Number(formData.get("precio") || 0),
     stock: Number(formData.get("stock") || 0),
     tags: String(formData.get("tags") || "").trim(),
-    caracteristicas: String(formData.get("caracteristicas") || "").trim()
+    caracteristicas: String(formData.get("caracteristicas") || "").trim(),
+    envioGratis: formData.get("envioGratis") === "on",
+    mostrarEnvioGratis: formData.get("mostrarEnvioGratis") === "on"
   };
 }
 
@@ -480,6 +596,16 @@ async function renderAdminPanel(container) {
           Caracteristicas
           <textarea name="caracteristicas" rows="4" placeholder="Una caracteristica por linea"></textarea>
         </label>
+        <div class="admin-grid">
+          <label class="toggle-field">
+            <input name="envioGratis" type="checkbox" />
+            <span>Este producto tiene envio gratis</span>
+          </label>
+          <label class="toggle-field">
+            <input name="mostrarEnvioGratis" type="checkbox" />
+            <span>Mostrar esta informacion en la publicacion</span>
+          </label>
+        </div>
         <label>
           Imagenes desde tu computadora
           <input name="imagenesArchivos" type="file" accept="image/*" multiple />
@@ -503,6 +629,11 @@ async function renderAdminPanel(container) {
                       <div>
                         <strong>${escapeHtml(item.nombre)}</strong>
                         <p>${escapeHtml(getCategoryLabel(item.categoria))} - ${formatCurrency(item.precio)} - Stock ${item.stock}</p>
+                        ${
+                          item.mostrarEnvioGratis
+                            ? `<p>${item.envioGratis ? "Envio gratis visible" : "Envio con costo visible"}</p>`
+                            : ""
+                        }
                       </div>
                       <div class="admin-actions">
                         <button type="button" class="button button--light" data-action="edit">Editar</button>
@@ -532,7 +663,12 @@ async function renderAdminPanel(container) {
                     <article class="admin-order-item">
                       <div>
                         <strong>${escapeHtml(order.usuarioNombre)} - ${formatCurrency(order.total)}</strong>
-                        <p>${escapeHtml(order.usuarioEmail)} - ${escapeHtml(order.proveedorPago)} - ${escapeHtml(order.estado)}</p>
+                        <p>${escapeHtml(order.usuarioEmail)} - ${escapeHtml(order.usuarioTelefono || "Sin telefono")} - ${escapeHtml(order.proveedorPago)} - ${escapeHtml(order.estado)}</p>
+                        <p class="muted">${escapeHtml(
+                          [order.direccion?.calle, order.direccion?.ciudad, order.direccion?.estado, order.direccion?.cp, order.direccion?.pais]
+                            .filter(Boolean)
+                            .join(", ") || "Sin direccion guardada"
+                        )}</p>
                       </div>
                       <div class="history-list">
                         ${order.items
@@ -547,6 +683,15 @@ async function renderAdminPanel(container) {
                             `
                           )
                           .join("")}
+                      </div>
+                      <div class="admin-tracking-box">
+                        <strong>Seguimiento del pedido</strong>
+                        <p class="muted">Formato por linea: estado | lugar | fecha | nota | si/no</p>
+                        <textarea class="js-order-tracking" data-order-id="${order.id}" rows="5">${escapeHtml(formatTrackingForEditor(order.tracking || []))}</textarea>
+                        <div class="button-row">
+                          <button type="button" class="button button--primary" data-save-tracking="${order.id}">Guardar seguimiento</button>
+                        </div>
+                        ${renderTrackingTimeline(order.tracking || [])}
                       </div>
                     </article>
                   `
@@ -725,6 +870,10 @@ async function renderAdminPanel(container) {
             <input name="cardLabel" type="text" value="${escapeHtml(paymentContent.cardLabel)}" />
           </label>
           <label>
+            Link para tarjeta Visa o Mastercard
+            <input name="cardUrl" type="url" value="${escapeHtml(paymentContent.cardUrl || "")}" />
+          </label>
+          <label>
             Nota en checkout
             <textarea name="note" rows="3">${escapeHtml(paymentContent.note)}</textarea>
           </label>
@@ -748,6 +897,8 @@ async function renderAdminPanel(container) {
     form.reset();
     form.dataset.currentImages = "[]";
     form.querySelector('[name="productId"]').value = "";
+    form.querySelector('[name="envioGratis"]').checked = false;
+    form.querySelector('[name="mostrarEnvioGratis"]').checked = false;
     form.querySelector(".js-admin-submit").textContent = "Guardar producto";
     renderImagePreview(imagePreview, [], "Sube imagenes para ver la vista previa del producto.");
   }
@@ -838,6 +989,8 @@ async function renderAdminPanel(container) {
       form.querySelector('[name="descripcion"]').value = product.descripcion;
       form.querySelector('[name="tags"]').value = product.tags.join(", ");
       form.querySelector('[name="caracteristicas"]').value = product.caracteristicas.join("\n");
+      form.querySelector('[name="envioGratis"]').checked = Boolean(product.envioGratis);
+      form.querySelector('[name="mostrarEnvioGratis"]').checked = Boolean(product.mostrarEnvioGratis);
       form.dataset.currentImages = JSON.stringify(product.imagenes);
       fileInput.value = "";
       renderImagePreview(imagePreview, product.imagenes, "Sube imagenes para ver la vista previa del producto.");
@@ -881,6 +1034,27 @@ async function renderAdminPanel(container) {
     });
   });
 
+  container.querySelectorAll("[data-save-tracking]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const orderId = button.dataset.saveTracking;
+      const textarea = container.querySelector(`.js-order-tracking[data-order-id="${orderId}"]`);
+
+      try {
+        await apiRequest(`/admin/orders/${orderId}`, {
+          method: "PUT",
+          auth: true,
+          body: {
+            tracking: parseTrackingFromEditor(textarea?.value || "")
+          }
+        });
+        setSectionMessage(".page-stack", "Seguimiento actualizado correctamente.");
+        await renderAdminPanel(container);
+      } catch (error) {
+        setSectionMessage(".page-stack", error.message, true);
+      }
+    });
+  });
+
   container.querySelectorAll(".js-site-form").forEach((formNode) => {
     formNode.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -907,6 +1081,11 @@ function createProductCard(product) {
     <div class="product-card__body">
       <span class="product-card__category">${escapeHtml(getCategoryLabel(product.categoria))}</span>
       <h3><a href="./producto.html?id=${product.id}">${product.nombre}</a></h3>
+      ${
+        product.mostrarEnvioGratis
+          ? `<p class="shipping-pill">${product.envioGratis ? "Envio gratis" : "Envio con costo"}</p>`
+          : ""
+      }
       <p class="product-rating">${renderStars(product.ratingPromedio)} <span>${product.ratingTotal} opiniones</span></p>
     </div>
     <div class="product-card__footer">
@@ -1227,6 +1406,11 @@ async function renderProductPage() {
           <a href="./catalogo.html" class="muted">Volver al catalogo</a>
           <span class="product-card__category">${escapeHtml(getCategoryLabel(product.categoria))}</span>
           <h1>${escapeHtml(product.nombre)}</h1>
+          ${
+            product.mostrarEnvioGratis
+              ? `<p class="shipping-pill">${product.envioGratis ? "Envio gratis disponible" : "Este producto tiene costo de envio"}</p>`
+              : ""
+          }
           <p class="product-rating">${renderStars(product.ratingPromedio)} <span>${product.ratingTotal} opiniones</span></p>
           <strong class="product-detail__price">${formatCurrency(product.precio)}</strong>
           <p>${escapeHtml(product.descripcion)}</p>
@@ -1487,6 +1671,7 @@ function renderAccountDashboard(dashboard) {
             `
           )
           .join("")}
+        ${renderTrackingTimeline(item.tracking || [])}
       </div>
     `
   );
@@ -1514,9 +1699,14 @@ function renderAccountDashboard(dashboard) {
     <p class="section-label">Tu cuenta</p>
     <h2>${dashboard.user.nombre}</h2>
     <p class="muted">${dashboard.user.email}</p>
+    <p class="muted">${dashboard.user.telefono || "Agrega tu numero para que podamos darte mejor seguimiento."}</p>
     <p class="muted">Todas tus compras tienen garantia, pagos seguros y seguimiento desde un solo lugar.</p>
     <form class="profile-update-form">
       <div class="profile-grid">
+        <label>
+          Telefono
+          <input name="telefono" type="text" value="${dashboard.user.telefono || ""}" />
+        </label>
         <label>
           Calle
           <input name="calle" type="text" value="${direccion.calle || ""}" />
@@ -1535,7 +1725,7 @@ function renderAccountDashboard(dashboard) {
         </label>
         <label>
           Pais
-          <input name="pais" type="text" value="${direccion.pais || ""}" />
+          ${renderCountrySelect("pais", direccion.pais || "Mexico")}
         </label>
       </div>
       <button type="submit" class="button button--primary">Guardar direccion</button>
@@ -1567,7 +1757,8 @@ function renderAccountDashboard(dashboard) {
         method: "PUT",
         auth: true,
         body: {
-          direccion: direccionPayload
+          direccion: direccionPayload,
+          telefono: String(formData.get("telefono") || "").trim()
         }
       });
       setAuthSession({ user: payload.user });
@@ -1619,18 +1810,20 @@ async function renderAccountPage() {
         body: {
           nombre: String(formData.get("nombre") || "").trim(),
           email: String(formData.get("email") || "").trim(),
-          password: String(formData.get("password") || "")
+          password: String(formData.get("password") || ""),
+          telefono: String(formData.get("telefono") || "").trim()
         }
       });
 
       setAuthSession(payload);
 
-      if (hasAddressData(direccion)) {
+      if (hasAddressData(direccion) || String(formData.get("telefono") || "").trim()) {
         const updated = await apiRequest("/users/me", {
           method: "PUT",
           auth: true,
           body: {
-            direccion
+            direccion,
+            telefono: String(formData.get("telefono") || "").trim()
           }
         });
         setAuthSession({ user: updated.user });
@@ -1723,6 +1916,10 @@ function renderCheckoutForm(layout, summary, user) {
       <h2>Direccion de envio</h2>
       <div class="profile-grid">
         <label>
+          Telefono
+          <input name="telefono" type="text" value="${user?.telefono || ""}" required />
+        </label>
+        <label>
           Calle
           <input name="calle" type="text" value="${direccion.calle || ""}" required />
         </label>
@@ -1741,7 +1938,7 @@ function renderCheckoutForm(layout, summary, user) {
       </div>
       <label>
         Pais
-        <input name="pais" type="text" value="${direccion.pais || "MX"}" required />
+        ${renderCountrySelect("pais", direccion.pais || "Mexico", true)}
       </label>
 
       <div class="payment-options">
@@ -1755,12 +1952,12 @@ function renderCheckoutForm(layout, summary, user) {
         </button>
         <button type="button" class="payment-option" data-provider="stripe">
           <strong>${escapeHtml(paymentContent.cardLabel)}</strong>
-          <span>Visa o Mastercard</span>
+          <span>${paymentContent.cardUrl ? "Link personalizado" : "Visa o Mastercard"}</span>
         </button>
       </div>
 
       <p class="muted">${escapeHtml(paymentContent.note)}</p>
-      <button type="submit" class="button button--primary">Enviar pedido por WhatsApp</button>
+      <button type="submit" class="button button--primary js-checkout-submit">Continuar al pago</button>
     </form>
 
     <aside class="summary-card">
@@ -1782,19 +1979,33 @@ function renderCheckoutForm(layout, summary, user) {
   `;
 
   let selectedProvider = "mercadopago";
+  const submitButton = layout.querySelector(".js-checkout-submit");
+
+  function syncCheckoutButton() {
+    if (!submitButton) {
+      return;
+    }
+
+    submitButton.textContent =
+      selectedProvider === "stripe" && paymentContent.cardUrl ? "Ir al pago con tarjeta" : "Enviar pedido y continuar";
+  }
 
   layout.querySelectorAll("[data-provider]").forEach((button) => {
     button.addEventListener("click", () => {
       selectedProvider = button.dataset.provider;
       layout.querySelectorAll("[data-provider]").forEach((item) => item.classList.remove("is-selected"));
       button.classList.add("is-selected");
+      syncCheckoutButton();
     });
   });
+
+  syncCheckoutButton();
 
   layout.querySelector(".js-checkout-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const direccionPayload = buildAddressFromFormData(formData);
+    const telefono = String(formData.get("telefono") || "").trim();
 
     try {
       const orderPayload = await apiRequest("/checkout/orders", {
@@ -1802,14 +2013,26 @@ function renderCheckoutForm(layout, summary, user) {
         auth: true,
         body: {
           direccion: direccionPayload,
-          proveedorPago: selectedProvider
+          proveedorPago: selectedProvider,
+          telefono
         }
       });
 
       const methodLabel = selectedProvider === "paypal" ? paymentContent.paypalLabel : selectedProvider === "stripe" ? paymentContent.cardLabel : paymentContent.mercadoPagoLabel;
       const itemsText = orderPayload.order.items.map((item) => `${item.cantidad} x ${item.nombre} (${formatCurrency(item.subtotal)})`).join("%0A");
       const message = `Hola, quiero dar seguimiento a mi pedido ${orderPayload.order.id}.%0AMetodo: ${encodeURIComponent(methodLabel)}%0ATotal: ${encodeURIComponent(formatCurrency(orderPayload.order.total))}%0AProductos:%0A${itemsText}`;
-      window.location.href = `${paymentContent.whatsappUrl}${paymentContent.whatsappUrl.includes("?") ? "&" : "?"}text=${message}`;
+      const selectedUrl = selectedProvider === "stripe" ? paymentContent.cardUrl || paymentContent.whatsappUrl : paymentContent.whatsappUrl;
+
+      if (/wa\.me|whatsapp/i.test(selectedUrl)) {
+        window.location.href = `${selectedUrl}${selectedUrl.includes("?") ? "&" : "?"}text=${message}`;
+        return;
+      }
+
+      const redirectUrl = new URL(selectedUrl, window.location.origin);
+      redirectUrl.searchParams.set("orderId", orderPayload.order.id);
+      redirectUrl.searchParams.set("total", String(orderPayload.order.total));
+      redirectUrl.searchParams.set("provider", selectedProvider);
+      window.location.href = redirectUrl.toString();
     } catch (error) {
       setSectionMessage(".page-stack", error.message, true);
     }
@@ -1944,6 +2167,7 @@ async function init() {
   }
 
   applySiteContent(siteContent);
+  hydrateCountrySelects(document);
 
   bindHeaderSearch();
   await hydrateSession();
