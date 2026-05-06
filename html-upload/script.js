@@ -141,6 +141,26 @@ function formatCurrency(value) {
   }).format(Number(value || 0));
 }
 
+function formatDateTime(value) {
+  const raw = String(value || "").trim();
+
+  if (!raw) {
+    return "";
+  }
+
+  const normalized = raw.includes("T") ? raw : raw.replace(" ", "T");
+  const parsed = new Date(/Z$/i.test(normalized) ? normalized : `${normalized}Z`);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return raw;
+  }
+
+  return new Intl.DateTimeFormat("es-MX", {
+    dateStyle: "short",
+    timeStyle: "short"
+  }).format(parsed);
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -664,6 +684,7 @@ async function renderAdminPanel(container) {
                       <div>
                         <strong>${escapeHtml(order.usuarioNombre)} - ${formatCurrency(order.total)}</strong>
                         <p>${escapeHtml(order.usuarioEmail)} - ${escapeHtml(order.usuarioTelefono || "Sin telefono")} - ${escapeHtml(order.proveedorPago)} - ${escapeHtml(order.estado)}</p>
+                        <p class="muted">Pedido realizado: ${escapeHtml(formatDateTime(order.fecha) || "Sin fecha")}</p>
                         <p class="muted">${escapeHtml(
                           [order.direccion?.calle, order.direccion?.ciudad, order.direccion?.estado, order.direccion?.cp, order.direccion?.pais]
                             .filter(Boolean)
@@ -1662,6 +1683,7 @@ function renderAccountDashboard(dashboard) {
       <div class="history-item">
         <strong>${item.id}</strong>
         <span>${formatCurrency(item.total)} - ${item.estado}</span>
+        <span>Pedido realizado: ${escapeHtml(formatDateTime(item.fecha) || "Sin fecha")}</span>
         ${(item.items || [])
           .map(
             (orderItem) => `
