@@ -43,6 +43,8 @@ const defaultSiteContent = {
   },
   payment: {
     whatsappUrl: "https://wa.me/5215511111111",
+    mercadoPagoUrl: "https://wa.me/5215511111111",
+    paypalUrl: "https://wa.me/5215511111111",
     mercadoPagoLabel: "Mercado Pago",
     paypalLabel: "PayPal",
     cardLabel: "Tarjeta de credito o debito Visa o Mastercard",
@@ -60,6 +62,9 @@ const schemaStatements = [
       email TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
       telefono TEXT NOT NULL DEFAULT '',
+      nickname TEXT NOT NULL DEFAULT '',
+      avatar_url TEXT NOT NULL DEFAULT '',
+      geo_meta TEXT NOT NULL DEFAULT '{}',
       direccion TEXT NOT NULL DEFAULT '{}',
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
@@ -77,6 +82,7 @@ const schemaStatements = [
       imagenes TEXT NOT NULL DEFAULT '[]',
       envio_gratis INTEGER NOT NULL DEFAULT 0,
       mostrar_envio_gratis INTEGER NOT NULL DEFAULT 0,
+      precio_descuento REAL NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `,
@@ -207,17 +213,27 @@ export function serializeUser(row) {
     nombre: row.nombre,
     email: row.email,
     telefono: row.telefono || "",
+    nickname: row.nickname || "",
+    avatarUrl: row.avatar_url || "",
+    geoMeta: parseJson(row.geo_meta, {}),
     direccion: parseJson(row.direccion, {})
   };
 }
 
 export function serializeProduct(row) {
+  const precioBase = Number(row.precio);
+  const precioDescuento = Number(row.precio_descuento || 0);
+  const descuentoActivo = Number.isFinite(precioDescuento) && precioDescuento > 0 && precioDescuento < precioBase;
+
   return {
     id: row.id,
     slug: row.slug,
     nombre: row.nombre,
     descripcion: row.descripcion,
-    precio: Number(row.precio),
+    precio: descuentoActivo ? precioDescuento : precioBase,
+    precioOriginal: descuentoActivo ? precioBase : 0,
+    precioDescuento: descuentoActivo ? precioDescuento : 0,
+    descuentoActivo,
     stock: Number(row.stock),
     categoria: row.categoria,
     tags: parseJson(row.tags, []),
@@ -332,10 +348,14 @@ export async function ensureDatabase(env) {
       await ensureColumn(env.DB, "products", "caracteristicas", "TEXT NOT NULL DEFAULT '[]'");
       await ensureColumn(env.DB, "products", "envio_gratis", "INTEGER NOT NULL DEFAULT 0");
       await ensureColumn(env.DB, "products", "mostrar_envio_gratis", "INTEGER NOT NULL DEFAULT 0");
+      await ensureColumn(env.DB, "products", "precio_descuento", "REAL NOT NULL DEFAULT 0");
       await ensureColumn(env.DB, "order_items", "estado", "TEXT NOT NULL DEFAULT 'pendiente'");
       await ensureColumn(env.DB, "order_items", "updated_at", "TEXT NOT NULL DEFAULT ''");
       await ensureColumn(env.DB, "orders", "tracking", "TEXT NOT NULL DEFAULT '[]'");
       await ensureColumn(env.DB, "users", "telefono", "TEXT NOT NULL DEFAULT ''");
+      await ensureColumn(env.DB, "users", "nickname", "TEXT NOT NULL DEFAULT ''");
+      await ensureColumn(env.DB, "users", "avatar_url", "TEXT NOT NULL DEFAULT ''");
+      await ensureColumn(env.DB, "users", "geo_meta", "TEXT NOT NULL DEFAULT '{}'");
       await seedDatabase(env.DB, env);
     })().catch((error) => {
       bootstrapPromise = undefined;
@@ -355,30 +375,80 @@ export async function getUserById(db, userId) {
   return db.prepare("SELECT * FROM users WHERE id = ?").bind(userId).first();
 }
 
-export async function createUser(db, { nombre, email, passwordHash, telefono = "" }) {
+async function findUserByNickname(db, nickname) {
+  const value = String(nickname || "").trim().toLowerCase();
+
+  if (!value) {
+    return null;
+  }
+
+  return db.prepare("SELECT id, nickname FROM users WHERE LOWER(nickname) = ?").bind(value).first();
+}
+
+export async function isNicknameAvailable(db, nickname, excludeUserId = 0) {
+  const existing = await findUserByNickname(db, nickname);
+  return !existing || Number(existing.id) === Number(excludeUserId || 0);
+}
+
+export async function createUser(db, { nombre, email, passwordHash, telefono = "", nickname = "", avatarUrl = "", direccion = {}, geoMeta = {} }) {
+  const cleanNickname = String(nickname || "").trim();
+
+  if (cleanNickname && !(await isNicknameAvailable(db, cleanNickname))) {
+    throw new Error("Ese nickname ya esta utilizado.");
+  }
+
   const response = await db
     .prepare(
       `
-      INSERT INTO users (nombre, email, password_hash, telefono, direccion)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO users (nombre, email, password_hash, telefono, nickname, avatar_url, geo_meta, direccion)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `
     )
-    .bind(nombre, String(email).trim().toLowerCase(), passwordHash, String(telefono || "").trim(), JSON.stringify({}))
+    .bind(
+      nombre,
+      String(email).trim().toLowerCase(),
+      passwordHash,
+      String(telefono || "").trim(),
+      cleanNickname,
+      String(avatarUrl || "").trim(),
+      JSON.stringify(geoMeta || {}),
+      JSON.stringify(direccion || {})
+    )
     .run();
 
   return getUserById(db, response.meta.last_row_id);
 }
 
-export async function updateUserAddress(db, userId, direccion, telefono) {
+export async function updateUserAddress(db, userId, direccion, telefono, extras = {}) {
+  const nickname = extras?.nickname !== undefined ? String(extras.nickname || "").trim() : null;
+  const avatarUrl = extras?.avatarUrl !== undefined ? String(extras.avatarUrl || "").trim() : null;
+  const geoMeta = extras?.geoMeta !== undefined ? JSON.stringify(extras.geoMeta || {}) : null;
+
+  if (nickname && !(await isNicknameAvailable(db, nickname, userId))) {
+    throw new Error("Ese nickname ya esta utilizado.");
+  }
+
   await db
     .prepare(
       `
       UPDATE users
-      SET direccion = ?, telefono = COALESCE(?, telefono)
+      SET
+        direccion = ?,
+        telefono = COALESCE(?, telefono),
+        nickname = COALESCE(?, nickname),
+        avatar_url = COALESCE(?, avatar_url),
+        geo_meta = COALESCE(?, geo_meta)
       WHERE id = ?
     `
     )
-    .bind(JSON.stringify(direccion || {}), telefono !== undefined ? String(telefono || "").trim() : null, userId)
+    .bind(
+      JSON.stringify(direccion || {}),
+      telefono !== undefined ? String(telefono || "").trim() : null,
+      nickname,
+      avatarUrl,
+      geoMeta,
+      userId
+    )
     .run();
 
   return getUserById(db, userId);
@@ -523,6 +593,7 @@ export async function createProduct(db, input) {
     input.mostrarEnvioGratis === "true" ||
     input.mostrarEnvioGratis === "on" ||
     Number(input.mostrarEnvioGratis) === 1;
+  const precioDescuento = Number(input.precioDescuento || 0);
 
   if (!nombre || !descripcion || !allowedCategories.includes(categoria)) {
     throw new Error("Completa nombre, descripcion y una categoria valida.");
@@ -534,6 +605,10 @@ export async function createProduct(db, input) {
 
   if (!Number.isFinite(stock) || stock < 0) {
     throw new Error("Ingresa un stock valido.");
+  }
+
+  if (Number.isFinite(precioDescuento) && precioDescuento < 0) {
+    throw new Error("Ingresa un descuento valido.");
   }
 
   const baseSlug = normalizeSlug(input.slug || nombre) || `producto-${Date.now()}`;
@@ -548,8 +623,8 @@ export async function createProduct(db, input) {
   const response = await db
     .prepare(
       `
-      INSERT INTO products (slug, nombre, descripcion, precio, stock, categoria, tags, imagenes, caracteristicas, envio_gratis, mostrar_envio_gratis)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO products (slug, nombre, descripcion, precio, stock, categoria, tags, imagenes, caracteristicas, envio_gratis, mostrar_envio_gratis, precio_descuento)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
     )
     .bind(
@@ -563,7 +638,8 @@ export async function createProduct(db, input) {
       JSON.stringify(imagenes),
       JSON.stringify(caracteristicas),
       envioGratis ? 1 : 0,
-      mostrarEnvioGratis ? 1 : 0
+      mostrarEnvioGratis ? 1 : 0,
+      Number.isFinite(precioDescuento) && precioDescuento > 0 && precioDescuento < precio ? precioDescuento : 0
     )
     .run();
 
@@ -617,6 +693,7 @@ export async function updateProduct(db, productId, input) {
         input.mostrarEnvioGratis === "on" ||
         Number(input.mostrarEnvioGratis) === 1
       : existing.mostrarEnvioGratis;
+  const precioDescuento = input.precioDescuento !== undefined ? Number(input.precioDescuento || 0) : Number(existing.precioDescuento || 0);
 
   if (!nombre || !descripcion || !allowedCategories.includes(categoria)) {
     throw new Error("Completa nombre, descripcion y una categoria valida.");
@@ -628,6 +705,10 @@ export async function updateProduct(db, productId, input) {
 
   if (!Number.isFinite(stock) || stock < 0) {
     throw new Error("Ingresa un stock valido.");
+  }
+
+  if (!Number.isFinite(precioDescuento) || precioDescuento < 0) {
+    throw new Error("Ingresa un descuento valido.");
   }
 
   const incomingSlug = normalizeSlug(input.slug || nombre) || existing.slug;
@@ -649,7 +730,7 @@ export async function updateProduct(db, productId, input) {
     .prepare(
       `
       UPDATE products
-      SET slug = ?, nombre = ?, descripcion = ?, precio = ?, stock = ?, categoria = ?, tags = ?, imagenes = ?, caracteristicas = ?, envio_gratis = ?, mostrar_envio_gratis = ?
+      SET slug = ?, nombre = ?, descripcion = ?, precio = ?, stock = ?, categoria = ?, tags = ?, imagenes = ?, caracteristicas = ?, envio_gratis = ?, mostrar_envio_gratis = ?, precio_descuento = ?
       WHERE id = ?
     `
     )
@@ -665,6 +746,7 @@ export async function updateProduct(db, productId, input) {
       JSON.stringify(caracteristicas),
       envioGratis ? 1 : 0,
       mostrarEnvioGratis ? 1 : 0,
+      precioDescuento > 0 && precioDescuento < precio ? precioDescuento : 0,
       productId
     )
     .run();
@@ -725,6 +807,7 @@ export async function getCartState(db, userId) {
         p.descripcion,
         p.categoria,
         p.precio,
+        p.precio_descuento,
         p.stock,
         p.imagenes
       FROM cart_items c
@@ -737,7 +820,12 @@ export async function getCartState(db, userId) {
     .all();
 
   const items = (result.results || []).map((row) => {
-    const precio = Number(row.precio);
+    const precioNormal = Number(row.precio);
+    const precioConDescuento = Number(row.precio_descuento || 0);
+    const precio =
+      Number.isFinite(precioConDescuento) && precioConDescuento > 0 && precioConDescuento < precioNormal
+        ? precioConDescuento
+        : precioNormal;
     const cantidad = Number(row.cantidad);
 
     return {
@@ -747,6 +835,7 @@ export async function getCartState(db, userId) {
       descripcion: row.descripcion,
       categoria: row.categoria,
       precio,
+      precioOriginal: precio !== precioNormal ? precioNormal : 0,
       subtotal: precio * cantidad,
       stock: Number(row.stock),
       imagenes: parseJson(row.imagenes, [])
@@ -1117,6 +1206,48 @@ export async function listAdminCarts(db) {
   return Array.from(carts.values());
 }
 
+export async function listAdminUsers(db) {
+  const users = await db
+    .prepare(
+      `
+      SELECT id, nombre, email, telefono, nickname, avatar_url, direccion, created_at
+      FROM users
+      WHERE role != 'admin'
+      ORDER BY created_at DESC
+      LIMIT 200
+    `
+    )
+    .all();
+
+  return (users.results || []).map((user) => ({
+    id: Number(user.id),
+    nombre: user.nombre,
+    email: user.email,
+    telefono: user.telefono || "",
+    nickname: user.nickname || "",
+    avatarUrl: user.avatar_url || "",
+    direccion: parseJson(user.direccion, {}),
+    fechaRegistro: user.created_at
+  }));
+}
+
+export async function getAdminUserDetail(db, userId) {
+  const user = await getUserById(db, Number(userId));
+
+  if (!user) {
+    return null;
+  }
+
+  const dashboard = await getUserDashboard(db, Number(userId));
+  const cart = await getCartState(db, Number(userId));
+
+  return {
+    user: serializeUser(user),
+    historial: dashboard.historial,
+    cart
+  };
+}
+
 export async function updateOrderItemStatus(db, itemId, estado) {
   const allowed = ["pendiente", "comprado"];
   const nextStatus = allowed.includes(String(estado || "")) ? estado : "pendiente";
@@ -1163,11 +1294,57 @@ export async function updateOrderTracking(db, orderId, tracking) {
   return { ok: true, tracking: normalized };
 }
 
+export async function updateOrderStatus(db, orderId, estado) {
+  const allowed = ["pending_payment", "paid", "cancelled"];
+  const next = allowed.includes(String(estado || "").trim()) ? String(estado || "").trim() : "pending_payment";
+
+  await db
+    .prepare("UPDATE orders SET estado = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+    .bind(next, String(orderId || "").trim())
+    .run();
+
+  return { ok: true, estado: next };
+}
+
+export async function deleteOrder(db, orderId) {
+  const order = await getOrderById(db, orderId);
+
+  if (!order) {
+    return { ok: true };
+  }
+
+  if (!["pending_payment", "cancelled"].includes(String(order.estado || ""))) {
+    throw new Error("Solo puedes eliminar pedidos en espera o cancelados.");
+  }
+
+  await db.prepare("DELETE FROM payments WHERE order_id = ?").bind(orderId).run();
+  await db.prepare("DELETE FROM order_items WHERE order_id = ?").bind(orderId).run();
+  await db.prepare("DELETE FROM orders WHERE id = ?").bind(orderId).run();
+  return { ok: true };
+}
+
+export async function canUserCommentOnProduct(db, userId, productId) {
+  const purchase = await db
+    .prepare(
+      `
+      SELECT oi.id
+      FROM order_items oi
+      INNER JOIN orders o ON o.id = oi.order_id
+      WHERE o.user_id = ? AND oi.product_id = ? AND oi.estado = 'comprado'
+      LIMIT 1
+    `
+    )
+    .bind(Number(userId), Number(productId))
+    .first();
+
+  return Boolean(purchase);
+}
+
 export async function listProductComments(db, productId) {
   const result = await db
     .prepare(
       `
-      SELECT pc.*, u.nombre
+      SELECT pc.*, u.nombre, u.nickname, u.avatar_url
       FROM product_comments pc
       INNER JOIN users u ON u.id = pc.user_id
       WHERE pc.product_id = ?
@@ -1183,6 +1360,8 @@ export async function listProductComments(db, productId) {
     productId: Number(comment.product_id),
     userId: Number(comment.user_id),
     usuario: comment.nombre,
+    nickname: comment.nickname || "",
+    avatarUrl: comment.avatar_url || "",
     rating: Number(comment.rating),
     comentario: comment.comentario,
     fecha: comment.created_at
@@ -1201,20 +1380,7 @@ export async function createProductComment(db, userId, productId, input) {
     throw new Error("Escribe un comentario un poco mas completo.");
   }
 
-  const purchase = await db
-    .prepare(
-      `
-      SELECT oi.id
-      FROM order_items oi
-      INNER JOIN orders o ON o.id = oi.order_id
-      WHERE o.user_id = ? AND oi.product_id = ? AND oi.estado = 'comprado'
-      LIMIT 1
-    `
-    )
-    .bind(Number(userId), Number(productId))
-    .first();
-
-  if (!purchase) {
+  if (!(await canUserCommentOnProduct(db, userId, productId))) {
     throw new Error("Podras comentar cuando tu compra este confirmada.");
   }
 

@@ -87,38 +87,52 @@
                 <input name="nombre" type="text" required />
               </label>
               <label>
+                Nickname publico
+                <input name="nickname" type="text" minlength="3" maxlength="24" pattern="[A-Za-z0-9._-]{3,24}" required />
+                <small class="field-help">Se mostrara como /nickname en tus comentarios.</small>
+                <small class="field-error js-register-nickname-error"></small>
+              </label>
+              <label>
                 Email
                 <input name="email" type="email" required />
               </label>
               <label>
                 Telefono
-                <input name="telefono" type="text" />
+                <input name="telefono" type="tel" required />
               </label>
               <label>
                 Contrasena
                 <input name="password" type="password" minlength="8" required />
               </label>
+              <label>
+                Foto de perfil
+                <input name="avatarArchivo" type="file" accept="image/*" />
+                <small class="field-help">Tu foto se mostrara cuando comentes productos.</small>
+              </label>
+              <p class="field-help js-register-geo-status">
+                Te pediremos acceso a tu ubicacion para guardar tu zona horaria exacta.
+              </p>
               <div class="auth-form-grid">
                 <label>
                   Calle
-                  <input name="calle" type="text" />
+                  <input name="calle" type="text" required />
                 </label>
                 <label>
                   Ciudad
-                  <input name="ciudad" type="text" />
+                  <input name="ciudad" type="text" required />
                 </label>
                 <label>
                   Estado
-                  <input name="estado" type="text" />
+                  <input name="estado" type="text" required />
                 </label>
                 <label>
                   Codigo postal
-                  <input name="cp" type="text" />
+                  <input name="cp" type="text" required />
                 </label>
               </div>
               <label>
                 Pais
-                <select name="pais" class="js-country-select" data-selected-country="Mexico"></select>
+                <select name="pais" class="js-country-select" data-selected-country="Mexico" required></select>
               </label>
               <button type="submit" class="button button--primary">Crear cuenta y entrar</button>
             </form>

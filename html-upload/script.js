@@ -43,7 +43,9 @@ const defaultSiteContent = {
   payment: {
     whatsappUrl: "https://wa.me/5215511111111",
     mercadoPagoLabel: "Mercado Pago",
+    mercadoPagoUrl: "https://wa.me/5215511111111",
     paypalLabel: "PayPal",
+    paypalUrl: "https://wa.me/5215511111111",
     cardLabel: "Tarjeta de credito o debito Visa o Mastercard",
     cardUrl: "",
     note: "Al continuar te abriremos WhatsApp con el resumen para dar seguimiento a tu pago."
@@ -126,6 +128,14 @@ function renderCountrySelect(name, selectedValue = "", required = false, cssClas
   return `<select name="${name}" class="${cssClass}"${required ? " required" : ""}>${renderCountryOptions(selectedValue)}</select>`;
 }
 
+function slugifyNickname(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/[^a-z0-9._-]/g, "");
+}
+
 function hydrateCountrySelects(root = document) {
   root.querySelectorAll(".js-country-select").forEach((select) => {
     const selectedValue = select.dataset.selectedCountry || select.value || "Mexico";
@@ -159,6 +169,76 @@ function formatDateTime(value) {
     dateStyle: "short",
     timeStyle: "short"
   }).format(parsed);
+}
+
+function formatDateTimeForTimezone(value, timeZone = "") {
+  const raw = String(value || "").trim();
+
+  if (!raw) {
+    return "";
+  }
+
+  const normalized = raw.includes("T") ? raw : raw.replace(" ", "T");
+  const parsed = new Date(/Z$/i.test(normalized) ? normalized : `${normalized}Z`);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return raw;
+  }
+
+  return new Intl.DateTimeFormat("es-MX", {
+    dateStyle: "short",
+    timeStyle: "short",
+    ...(timeZone ? { timeZone } : {})
+  }).format(parsed);
+}
+
+function getInitials(name = "") {
+  const parts = String(name || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+
+  return parts.map((part) => part.charAt(0).toUpperCase()).join("") || "GC";
+}
+
+function renderAvatar(user = {}, className = "avatar-badge") {
+  if (user.avatarUrl) {
+    return `<img class="${className}" src="${escapeHtml(user.avatarUrl)}" alt="${escapeHtml(user.nombre || "Avatar")}" />`;
+  }
+
+  return `<span class="${className} avatar-badge--fallback">${escapeHtml(getInitials(user.nombre || user.usuario || ""))}</span>`;
+}
+
+function formatPriceBlock(product) {
+  const hasDiscount = Boolean(product.descuentoActivo && Number(product.precioOriginal || 0) > Number(product.precio || 0));
+
+  return `
+    <div class="product-price-stack">
+      ${hasDiscount ? `<small class="product-price-original">${formatCurrency(product.precioOriginal)}</small>` : ""}
+      <strong>${formatCurrency(product.precio)}</strong>
+    </div>
+  `;
+}
+
+function buildWhatsAppMessageUrl(baseUrl, message) {
+  const text = encodeURIComponent(message);
+
+  if (/wa\.me|whatsapp/i.test(baseUrl)) {
+    return `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}text=${text}`;
+  }
+
+  const redirectUrl = new URL(baseUrl, window.location.origin);
+  redirectUrl.searchParams.set("text", message);
+  return redirectUrl.toString();
+}
+
+function createCheckoutMessage(order, methodLabel) {
+  const itemsText = order.items
+    .map((item) => `${item.cantidad} x ${item.nombre} (${formatCurrency(item.subtotal)})`)
+    .join("\n");
+
+  return `Hola, quiero dar seguimiento a mi pedido ${order.id}.\nMetodo: ${methodLabel}\nTotal: ${formatCurrency(order.total)}\nProductos:\n${itemsText}`;
 }
 
 function escapeHtml(value) {
@@ -310,7 +390,10 @@ function normalizeProduct(product) {
     categoria: product.categoria,
     nombre: product.nombre,
     descripcion: product.descripcion,
-    precio: product.precio,
+    precio: Number(product.precio || 0),
+    precioOriginal: Number(product.precioOriginal || 0),
+    precioDescuento: Number(product.precioDescuento || 0),
+    descuentoActivo: Boolean(product.descuentoActivo),
     stock: product.stock,
     imagen: product.imagenes?.[0] || "https://via.placeholder.com/900x675?text=Gray%20C%20Shop",
     imagenes: product.imagenes || [],
@@ -506,6 +589,15 @@ async function loadAdminCarts() {
   return payload.items || [];
 }
 
+async function loadAdminUsers() {
+  const payload = await apiRequest("/admin/users", { auth: true });
+  return payload.items || [];
+}
+
+async function loadAdminUserDetail(userId) {
+  return apiRequest(`/admin/users/${userId}`, { auth: true });
+}
+
 function readFileAsDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -518,6 +610,97 @@ function readFileAsDataUrl(file) {
 
 async function readFilesAsDataUrls(fileList) {
   return Promise.all(fileList.map((file) => readFileAsDataUrl(file)));
+}
+
+async function requestUserGeoMeta(statusNode = null) {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+  const fallback = {
+    latitude: 0,
+    longitude: 0,
+    timezone,
+    capturedAt: new Date().toISOString()
+  };
+
+  if (!navigator.geolocation) {
+    if (statusNode) {
+      statusNode.textContent = "Tu navegador no permite leer ubicacion. Guardaremos tu zona horaria.";
+    }
+
+    return fallback;
+  }
+
+  if (statusNode) {
+    statusNode.textContent = "Solicitando acceso a tu ubicacion...";
+  }
+
+  try {
+    const position = await new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: false,
+        timeout: 12000,
+        maximumAge: 300000
+      });
+    });
+
+    if (statusNode) {
+      statusNode.textContent = "Ubicacion autorizada correctamente.";
+    }
+
+    return {
+      latitude: Number(position.coords.latitude || 0),
+      longitude: Number(position.coords.longitude || 0),
+      timezone,
+      capturedAt: new Date().toISOString()
+    };
+  } catch {
+    if (statusNode) {
+      statusNode.textContent = "No se pudo usar tu ubicacion exacta. Seguiremos con tu zona horaria actual.";
+    }
+
+    return fallback;
+  }
+}
+
+async function validateNicknameInput(input, errorNode, excludeUserId = 0) {
+  const nickname = slugifyNickname(input?.value || "");
+
+  if (input) {
+    input.value = nickname;
+  }
+
+  if (!nickname) {
+    if (errorNode) {
+      errorNode.textContent = "";
+    }
+
+    return false;
+  }
+
+  if (nickname.length < 3) {
+    if (errorNode) {
+      errorNode.textContent = "Tu nickname debe tener al menos 3 caracteres.";
+    }
+
+    return false;
+  }
+
+  try {
+    const payload = await apiRequest(`/auth/nickname-available?nickname=${encodeURIComponent(nickname)}`);
+    const sameUser = excludeUserId && getStoredUser()?.id === excludeUserId && getStoredUser()?.nickname === nickname;
+    const available = Boolean(payload.available || sameUser);
+
+    if (errorNode) {
+      errorNode.textContent = available ? "" : "Ese nickname ya esta utilizado. Debes escoger otro.";
+    }
+
+    return available;
+  } catch {
+    if (errorNode) {
+      errorNode.textContent = "No pudimos validar el nickname en este momento.";
+    }
+
+    return false;
+  }
 }
 
 function renderImagePreview(container, images, emptyMessage = "Todavia no cargaste imagenes.") {
@@ -552,6 +735,7 @@ function serializeAdminProductForm(form) {
     descripcion: String(formData.get("descripcion") || "").trim(),
     categoria: String(formData.get("categoria") || "").trim(),
     precio: Number(formData.get("precio") || 0),
+    precioDescuento: Number(formData.get("precioDescuento") || 0),
     stock: Number(formData.get("stock") || 0),
     tags: String(formData.get("tags") || "").trim(),
     caracteristicas: String(formData.get("caracteristicas") || "").trim(),
@@ -566,7 +750,12 @@ function serializeSectionForm(form) {
 }
 
 async function renderAdminPanel(container) {
-  const [items, orders, carts] = await Promise.all([loadAdminProducts(), loadAdminOrders(), loadAdminCarts()]);
+  const [items, orders, carts, users] = await Promise.all([
+    loadAdminProducts(),
+    loadAdminOrders(),
+    loadAdminCarts(),
+    loadAdminUsers()
+  ]);
   const content = await loadSiteContent();
   const homeContent = content.home;
   const catalogContent = content.catalog;
@@ -578,7 +767,7 @@ async function renderAdminPanel(container) {
       <div class="section-head">
         <div>
           <p class="section-label">Tu catalogo</p>
-          <h3>Publica y actualiza tus productos</h3>
+          <h3>Publica, edita descuentos y controla tus productos</h3>
         </div>
         <button type="button" class="button button--light js-admin-clear">Vaciar catalogo</button>
       </div>
@@ -596,8 +785,12 @@ async function renderAdminPanel(container) {
             </select>
           </label>
           <label>
-            Precio
+            Precio normal
             <input name="precio" type="number" min="1" step="1" required />
+          </label>
+          <label>
+            Precio con descuento
+            <input name="precioDescuento" type="number" min="0" step="1" placeholder="0 para dejar sin oferta" />
           </label>
           <label>
             Stock
@@ -648,7 +841,14 @@ async function renderAdminPanel(container) {
                     <article class="admin-product-item" data-product-id="${item.id}">
                       <div>
                         <strong>${escapeHtml(item.nombre)}</strong>
-                        <p>${escapeHtml(getCategoryLabel(item.categoria))} - ${formatCurrency(item.precio)} - Stock ${item.stock}</p>
+                        <p>${escapeHtml(getCategoryLabel(item.categoria))} - Stock ${item.stock}</p>
+                        <p>
+                          ${
+                            item.descuentoActivo
+                              ? `<span class="admin-price-old">${formatCurrency(item.precioOriginal)}</span> <span class="admin-price-offer">${formatCurrency(item.precio)}</span>`
+                              : formatCurrency(item.precio)
+                          }
+                        </p>
                         ${
                           item.mostrarEnvioGratis
                             ? `<p>${item.envioGratis ? "Envio gratis visible" : "Envio con costo visible"}</p>`
@@ -670,8 +870,36 @@ async function renderAdminPanel(container) {
     <section class="admin-panel">
       <div class="section-head">
         <div>
+          <p class="section-label">Clientes</p>
+          <h3>Usuarios registrados y acceso a su historial</h3>
+        </div>
+      </div>
+      <div class="admin-user-list">
+        ${
+          users.length
+            ? users
+                .map(
+                  (user) => `
+                    <a class="admin-user-card" href="./usuario-admin.html?id=${user.id}">
+                      ${renderAvatar(user, "comment-avatar")}
+                      <div>
+                        <strong>${escapeHtml(user.nombre)}</strong>
+                        <p>${escapeHtml(user.email)}</p>
+                        <small>${escapeHtml(user.telefono || "Sin telefono")}${user.nickname ? ` - /${escapeHtml(user.nickname)}` : ""}</small>
+                      </div>
+                    </a>
+                  `
+                )
+                .join("")
+            : `<div class="empty-state"><h2>No hay usuarios registrados</h2><p>Cuando lleguen nuevos clientes apareceran aqui.</p></div>`
+        }
+      </div>
+    </section>
+    <section class="admin-panel">
+      <div class="section-head">
+        <div>
           <p class="section-label">Ventas</p>
-          <h3>Pedidos y productos por confirmar</h3>
+          <h3>Pedidos, pagos en espera y seguimiento</h3>
         </div>
       </div>
       <div class="admin-order-list js-admin-order-list">
@@ -681,15 +909,31 @@ async function renderAdminPanel(container) {
                 .map(
                   (order) => `
                     <article class="admin-order-item">
-                      <div>
-                        <strong>${escapeHtml(order.usuarioNombre)} - ${formatCurrency(order.total)}</strong>
-                        <p>${escapeHtml(order.usuarioEmail)} - ${escapeHtml(order.usuarioTelefono || "Sin telefono")} - ${escapeHtml(order.proveedorPago)} - ${escapeHtml(order.estado)}</p>
-                        <p class="muted">Pedido realizado: ${escapeHtml(formatDateTime(order.fecha) || "Sin fecha")}</p>
-                        <p class="muted">${escapeHtml(
-                          [order.direccion?.calle, order.direccion?.ciudad, order.direccion?.estado, order.direccion?.cp, order.direccion?.pais]
-                            .filter(Boolean)
-                            .join(", ") || "Sin direccion guardada"
-                        )}</p>
+                      <div class="admin-order-head">
+                        <div>
+                          <strong>${escapeHtml(order.id)} - ${escapeHtml(order.usuarioNombre)}</strong>
+                          <p>${escapeHtml(order.usuarioEmail)} - ${escapeHtml(order.usuarioTelefono || "Sin telefono")}</p>
+                          <p>${escapeHtml(order.proveedorPago)} - ${escapeHtml(order.estado)} - ${formatCurrency(order.total)}</p>
+                          <p class="muted">Pedido realizado: ${escapeHtml(formatDateTime(order.fecha) || "Sin fecha")}</p>
+                          <p class="muted">${escapeHtml(
+                            [order.direccion?.calle, order.direccion?.ciudad, order.direccion?.estado, order.direccion?.cp, order.direccion?.pais]
+                              .filter(Boolean)
+                              .join(", ") || "Sin direccion guardada"
+                          )}</p>
+                        </div>
+                        <div class="admin-actions">
+                          <a class="button button--light" href="./usuario-admin.html?id=${order.userId}">Ver cliente</a>
+                          ${
+                            order.estado !== "cancelled"
+                              ? `<button type="button" class="button button--light" data-order-cancel="${order.id}">Cancelar pedido</button>`
+                              : ""
+                          }
+                          ${
+                            ["pending_payment", "cancelled"].includes(order.estado)
+                              ? `<button type="button" class="button button--light" data-order-delete="${order.id}">Eliminar pedido</button>`
+                              : ""
+                          }
+                        </div>
                       </div>
                       <div class="history-list">
                         ${order.items
@@ -698,7 +942,7 @@ async function renderAdminPanel(container) {
                               <div class="admin-order-product">
                                 <span>${escapeHtml(item.nombre)} x ${item.cantidad}</span>
                                 <button type="button" class="button button--light" data-order-item="${item.id}" data-status="${item.estado === "comprado" ? "pendiente" : "comprado"}">
-                                  ${item.estado === "comprado" ? "✓ Comprado" : "Marcar comprado"}
+                                  ${item.estado === "comprado" ? "Comprado confirmado" : "Marcar comprado"}
                                 </button>
                               </div>
                             `
@@ -753,7 +997,7 @@ async function renderAdminPanel(container) {
       <div class="section-head">
         <div>
           <p class="section-label">Tu pagina</p>
-          <h3>Edita los textos principales sin tocar codigo</h3>
+          <h3>Edita textos, contacto y pagos sin tocar codigo</h3>
         </div>
       </div>
       <div class="admin-content-grid">
@@ -800,7 +1044,6 @@ async function renderAdminPanel(container) {
             <button type="submit" class="button button--primary">Guardar inicio</button>
           </div>
         </form>
-
         <form class="form-card admin-form js-site-form" data-section="catalog">
           <div class="admin-form-title">
             <strong>Catalogo</strong>
@@ -830,7 +1073,6 @@ async function renderAdminPanel(container) {
             <button type="submit" class="button button--primary">Guardar catalogo</button>
           </div>
         </form>
-
         <form class="form-card admin-form js-site-form" data-section="contact">
           <div class="admin-form-title">
             <strong>Contacto</strong>
@@ -868,14 +1110,13 @@ async function renderAdminPanel(container) {
             <button type="submit" class="button button--primary">Guardar contacto</button>
           </div>
         </form>
-
         <form class="form-card admin-form js-site-form" data-section="payment">
           <div class="admin-form-title">
             <strong>Pagos</strong>
-            <span>Texto y link de seguimiento por WhatsApp</span>
+            <span>Controla tus links de WhatsApp y tarjeta</span>
           </div>
           <label>
-            Link para seguimiento por WhatsApp
+            Link general de seguimiento por WhatsApp
             <input name="whatsappUrl" type="url" value="${escapeHtml(paymentContent.whatsappUrl)}" />
           </label>
           <label>
@@ -883,8 +1124,16 @@ async function renderAdminPanel(container) {
             <input name="mercadoPagoLabel" type="text" value="${escapeHtml(paymentContent.mercadoPagoLabel)}" />
           </label>
           <label>
+            Link de WhatsApp para Mercado Pago
+            <input name="mercadoPagoUrl" type="url" value="${escapeHtml(paymentContent.mercadoPagoUrl || paymentContent.whatsappUrl)}" />
+          </label>
+          <label>
             PayPal
             <input name="paypalLabel" type="text" value="${escapeHtml(paymentContent.paypalLabel)}" />
+          </label>
+          <label>
+            Link de WhatsApp para PayPal
+            <input name="paypalUrl" type="url" value="${escapeHtml(paymentContent.paypalUrl || paymentContent.whatsappUrl)}" />
           </label>
           <label>
             Tarjetas
@@ -920,6 +1169,7 @@ async function renderAdminPanel(container) {
     form.querySelector('[name="productId"]').value = "";
     form.querySelector('[name="envioGratis"]').checked = false;
     form.querySelector('[name="mostrarEnvioGratis"]').checked = false;
+    form.querySelector('[name="precioDescuento"]').value = "";
     form.querySelector(".js-admin-submit").textContent = "Guardar producto";
     renderImagePreview(imagePreview, [], "Sube imagenes para ver la vista previa del producto.");
   }
@@ -1005,7 +1255,8 @@ async function renderAdminPanel(container) {
       form.querySelector('[name="productId"]').value = String(product.id);
       form.querySelector('[name="nombre"]').value = product.nombre;
       form.querySelector('[name="categoria"]').value = product.categoria;
-      form.querySelector('[name="precio"]').value = String(product.precio);
+      form.querySelector('[name="precio"]').value = String(product.descuentoActivo ? product.precioOriginal : product.precio);
+      form.querySelector('[name="precioDescuento"]').value = product.descuentoActivo ? String(product.precio) : "";
       form.querySelector('[name="stock"]').value = String(product.stock);
       form.querySelector('[name="descripcion"]').value = product.descripcion;
       form.querySelector('[name="tags"]').value = product.tags.join(", ");
@@ -1055,6 +1306,43 @@ async function renderAdminPanel(container) {
     });
   });
 
+  container.querySelectorAll("[data-order-cancel]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      try {
+        await apiRequest(`/admin/orders/${button.dataset.orderCancel}`, {
+          method: "PATCH",
+          auth: true,
+          body: {
+            estado: "cancelled"
+          }
+        });
+        setSectionMessage(".page-stack", "Pedido cancelado correctamente.");
+        await renderAdminPanel(container);
+      } catch (error) {
+        setSectionMessage(".page-stack", error.message, true);
+      }
+    });
+  });
+
+  container.querySelectorAll("[data-order-delete]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      if (!confirm("Vas a eliminar este pedido del historial.")) {
+        return;
+      }
+
+      try {
+        await apiRequest(`/admin/orders/${button.dataset.orderDelete}`, {
+          method: "DELETE",
+          auth: true
+        });
+        setSectionMessage(".page-stack", "Pedido eliminado correctamente.");
+        await renderAdminPanel(container);
+      } catch (error) {
+        setSectionMessage(".page-stack", error.message, true);
+      }
+    });
+  });
+
   container.querySelectorAll("[data-save-tracking]").forEach((button) => {
     button.addEventListener("click", async () => {
       const orderId = button.dataset.saveTracking;
@@ -1097,6 +1385,7 @@ function createProductCard(product) {
   article.className = "product-card";
   article.innerHTML = `
     <a class="product-card__image" href="./producto.html?id=${product.id}">
+      ${product.descuentoActivo ? `<span class="product-card__offer">Oferta</span>` : ""}
       <img src="${product.imagen}" alt="${product.nombre}" />
     </a>
     <div class="product-card__body">
@@ -1108,10 +1397,11 @@ function createProductCard(product) {
           : ""
       }
       <p class="product-rating">${renderStars(product.ratingPromedio)} <span>${product.ratingTotal} opiniones</span></p>
+      <p class="product-card__description">${escapeHtml(product.descripcion)}</p>
     </div>
     <div class="product-card__footer">
       <div class="product-card__price">
-        <strong>${formatCurrency(product.precio)}</strong>
+        ${formatPriceBlock(product)}
         <small>Stock ${product.stock}</small>
       </div>
       <div class="product-card__actions">
@@ -1356,9 +1646,13 @@ function renderComments(comments = []) {
     .map(
       (comment) => `
         <article class="comment-item" data-comment-id="${comment.id}">
-          <div>
-            <strong>${escapeHtml(comment.usuario)}</strong>
-            <span>${renderStars(comment.rating)}</span>
+          <div class="comment-item__head">
+            ${renderAvatar({ nombre: comment.usuario, avatarUrl: comment.avatarUrl }, "comment-avatar")}
+            <div class="comment-item__meta">
+              <strong>${escapeHtml(comment.usuario)}</strong>
+              <small>${comment.nickname ? `/${escapeHtml(comment.nickname)}` : ""}</small>
+              <span>${renderStars(comment.rating)}</span>
+            </div>
           </div>
           <p>${escapeHtml(comment.comentario)}</p>
           ${
@@ -1417,10 +1711,13 @@ async function renderProductPage() {
     const payload = await apiRequest(`/products/${productId}`, { auth: Boolean(getToken()) });
     const product = normalizeProduct(payload.product);
     const comments = payload.comments || [];
+    const canComment = Boolean(payload.canComment);
+    const user = getStoredUser();
 
     container.innerHTML = `
       <article class="product-detail">
         <div class="product-detail__media">
+          ${product.descuentoActivo ? `<span class="product-card__offer">Oferta</span>` : ""}
           <img src="${product.imagen}" alt="${escapeHtml(product.nombre)}" />
         </div>
         <div class="product-detail__info">
@@ -1433,7 +1730,7 @@ async function renderProductPage() {
               : ""
           }
           <p class="product-rating">${renderStars(product.ratingPromedio)} <span>${product.ratingTotal} opiniones</span></p>
-          <strong class="product-detail__price">${formatCurrency(product.precio)}</strong>
+          <div class="product-detail__price">${formatPriceBlock(product)}</div>
           <p>${escapeHtml(product.descripcion)}</p>
           <div class="detail-block">
             <h3>Caracteristicas</h3>
@@ -1459,23 +1756,34 @@ async function renderProductPage() {
             <h2>Comentarios y puntuacion</h2>
           </div>
         </div>
-        <form class="form-card review-form js-review-form">
-          <label>
-            Calificacion
-            <select name="rating" required>
-              <option value="5">5 estrellas</option>
-              <option value="4">4 estrellas</option>
-              <option value="3">3 estrellas</option>
-              <option value="2">2 estrellas</option>
-              <option value="1">1 estrella</option>
-            </select>
-          </label>
-          <label>
-            Comentario
-            <textarea name="comentario" rows="4" placeholder="Cuenta como te fue con este producto" required></textarea>
-          </label>
-          <button type="submit" class="button button--primary">Publicar comentario</button>
-        </form>
+        ${
+          canComment
+            ? `
+              <form class="form-card review-form js-review-form">
+                <label>
+                  Calificacion
+                  <select name="rating" required>
+                    <option value="5">5 estrellas</option>
+                    <option value="4">4 estrellas</option>
+                    <option value="3">3 estrellas</option>
+                    <option value="2">2 estrellas</option>
+                    <option value="1">1 estrella</option>
+                  </select>
+                </label>
+                <label>
+                  Comentario
+                  <textarea name="comentario" rows="4" placeholder="Cuenta como te fue con este producto" required></textarea>
+                </label>
+                <button type="submit" class="button button--primary">Publicar comentario</button>
+              </form>
+            `
+            : `
+              <div class="form-card review-lock">
+                <strong>${user ? "Podras comentar cuando tu compra aparezca como comprada." : "Inicia sesion para seguir tu compra y comentar despues."}</strong>
+                <p class="muted">Solo los clientes que ya compraron este producto pueden dejar una opinion publica.</p>
+              </div>
+            `
+        }
         <div class="comments-list js-comments-list">${renderComments(comments)}</div>
       </section>
     `;
@@ -1483,6 +1791,11 @@ async function renderProductPage() {
     bindCommentModeration(container, product.id);
 
     container.querySelector(".js-detail-add").addEventListener("click", async () => {
+      if (!getToken()) {
+        window.location.href = "./cuenta.html";
+        return;
+      }
+
       try {
         await apiRequest("/cart/items", {
           method: "POST",
@@ -1499,25 +1812,29 @@ async function renderProductPage() {
       }
     });
 
-    container.querySelector(".js-review-form").addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const formData = new FormData(event.currentTarget);
-      try {
-        const response = await apiRequest(`/products/${product.id}/comments`, {
-          method: "POST",
-          auth: true,
-          body: {
-            rating: Number(formData.get("rating")),
-            comentario: String(formData.get("comentario") || "").trim()
-          }
-        });
-        event.currentTarget.reset();
-        container.querySelector(".js-comments-list").innerHTML = renderComments(response.comments || []);
-        bindCommentModeration(container, product.id);
-      } catch (error) {
-        setSectionMessage(".page-stack", error.message, true);
-      }
-    });
+    const reviewForm = container.querySelector(".js-review-form");
+
+    if (reviewForm) {
+      reviewForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+        try {
+          const response = await apiRequest(`/products/${product.id}/comments`, {
+            method: "POST",
+            auth: true,
+            body: {
+              rating: Number(formData.get("rating")),
+              comentario: String(formData.get("comentario") || "").trim()
+            }
+          });
+          event.currentTarget.reset();
+          container.querySelector(".js-comments-list").innerHTML = renderComments(response.comments || []);
+          bindCommentModeration(container, product.id);
+        } catch (error) {
+          setSectionMessage(".page-stack", error.message, true);
+        }
+      });
+    }
   } catch (error) {
     container.innerHTML = "";
     container.appendChild(createStatusBox(error.message, true));
@@ -1677,22 +1994,27 @@ function renderAccountDashboard(dashboard) {
   }
 
   const direccion = dashboard.user.direccion || {};
+  const timezone = dashboard.user.geoMeta?.timezone || "";
+  const whatsappBase = currentSiteContent.payment.whatsappUrl || currentSiteContent.contact?.whatsappUrl || "https://wa.me/5215511111111";
   const ordenesHtml = renderHistoryList(
     dashboard.historial.ordenes || [],
     (item) => `
       <div class="history-item">
         <strong>${item.id}</strong>
         <span>${formatCurrency(item.total)} - ${item.estado}</span>
-        <span>Pedido realizado: ${escapeHtml(formatDateTime(item.fecha) || "Sin fecha")}</span>
+        <span>Pedido realizado: ${escapeHtml(formatDateTimeForTimezone(item.fecha, timezone) || "Sin fecha")}</span>
         ${(item.items || [])
           .map(
             (orderItem) => `
               <small class="${orderItem.estado === "comprado" ? "purchase-ok" : "muted"}">
-                ${orderItem.estado === "comprado" ? "✓ Comprado" : "Pendiente"} - ${escapeHtml(orderItem.nombre)} x ${orderItem.cantidad}
+                ${orderItem.estado === "comprado" ? "Comprado confirmado" : "Pendiente"} - ${escapeHtml(orderItem.nombre)} x ${orderItem.cantidad}
               </small>
             `
           )
           .join("")}
+        <div class="button-row button-row--compact">
+          <a class="button button--light" href="${buildWhatsAppMessageUrl(whatsappBase, `Hola, aqui mando mi voucher del pedido ${item.id}.`)}" target="_blank" rel="noreferrer">Aqui manda tu voucher</a>
+        </div>
         ${renderTrackingTimeline(item.tracking || [])}
       </div>
     `
@@ -1718,39 +2040,56 @@ function renderAccountDashboard(dashboard) {
 
   profileCard.className = "profile-card js-profile-card";
   profileCard.innerHTML = `
-    <p class="section-label">Tu cuenta</p>
-    <h2>${dashboard.user.nombre}</h2>
-    <p class="muted">${dashboard.user.email}</p>
+    <div class="profile-head">
+      ${renderAvatar(dashboard.user, "profile-avatar")}
+      <div>
+        <p class="section-label">Tu cuenta</p>
+        <h2>${dashboard.user.nombre}</h2>
+        <p class="muted">${dashboard.user.email}</p>
+        <p class="muted">${dashboard.user.nickname ? `/${escapeHtml(dashboard.user.nickname)}` : "Agrega un nickname publico para tus comentarios."}</p>
+      </div>
+    </div>
     <p class="muted">${dashboard.user.telefono || "Agrega tu numero para que podamos darte mejor seguimiento."}</p>
     <p class="muted">Todas tus compras tienen garantia, pagos seguros y seguimiento desde un solo lugar.</p>
     <form class="profile-update-form">
       <div class="profile-grid">
         <label>
+          Nickname publico
+          <input name="nickname" type="text" minlength="3" maxlength="24" pattern="[A-Za-z0-9._-]{3,24}" value="${escapeHtml(dashboard.user.nickname || "")}" required />
+          <small class="field-error js-profile-nickname-error"></small>
+        </label>
+        <label>
+          Foto de perfil
+          <input name="avatarArchivo" type="file" accept="image/*" />
+          <small class="field-help">Tu foto aparecera cuando comentes productos.</small>
+        </label>
+        <label>
           Telefono
-          <input name="telefono" type="text" value="${dashboard.user.telefono || ""}" />
+          <input name="telefono" type="text" value="${dashboard.user.telefono || ""}" required />
         </label>
         <label>
           Calle
-          <input name="calle" type="text" value="${direccion.calle || ""}" />
+          <input name="calle" type="text" value="${direccion.calle || ""}" required />
         </label>
         <label>
           Ciudad
-          <input name="ciudad" type="text" value="${direccion.ciudad || ""}" />
+          <input name="ciudad" type="text" value="${direccion.ciudad || ""}" required />
         </label>
         <label>
           Estado
-          <input name="estado" type="text" value="${direccion.estado || ""}" />
+          <input name="estado" type="text" value="${direccion.estado || ""}" required />
         </label>
         <label>
           Codigo postal
-          <input name="cp" type="text" value="${direccion.cp || ""}" />
+          <input name="cp" type="text" value="${direccion.cp || ""}" required />
         </label>
         <label>
           Pais
-          ${renderCountrySelect("pais", direccion.pais || "Mexico")}
+          ${renderCountrySelect("pais", direccion.pais || "Mexico", true)}
         </label>
       </div>
-      <button type="submit" class="button button--primary">Guardar direccion</button>
+      <p class="field-help js-profile-geo-status">Zona horaria guardada: ${escapeHtml(timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "Sin registrar")}</p>
+      <button type="submit" class="button button--primary">Guardar perfil</button>
     </form>
     <div class="history-grid">
       <section>
@@ -1769,22 +2108,52 @@ function renderAccountDashboard(dashboard) {
     ${dashboard.user.role === "admin" ? `<div class="js-admin-panel"></div>` : ""}
   `;
 
-  profileCard.querySelector(".profile-update-form").addEventListener("submit", async (event) => {
+  const profileForm = profileCard.querySelector(".profile-update-form");
+  const nicknameInput = profileForm.querySelector('[name="nickname"]');
+  const nicknameError = profileForm.querySelector(".js-profile-nickname-error");
+  const geoStatus = profileForm.querySelector(".js-profile-geo-status");
+
+  nicknameInput.addEventListener("input", () => {
+    nicknameInput.value = slugifyNickname(nicknameInput.value);
+    nicknameError.textContent = "";
+  });
+
+  nicknameInput.addEventListener("blur", () => {
+    validateNicknameInput(nicknameInput, nicknameError, Number(dashboard.user.id));
+  });
+
+  profileForm.addEventListener("submit", async (event) => {
     event.preventDefault();
+
+    if (!profileForm.reportValidity()) {
+      return;
+    }
+
     const formData = new FormData(event.currentTarget);
     const direccionPayload = buildAddressFromFormData(formData);
+    const nicknameAvailable = await validateNicknameInput(nicknameInput, nicknameError, Number(dashboard.user.id));
+
+    if (!nicknameAvailable) {
+      return;
+    }
 
     try {
+      const avatarFile = formData.get("avatarArchivo");
+      const avatarUrl = avatarFile instanceof File && avatarFile.size ? await readFileAsDataUrl(avatarFile) : dashboard.user.avatarUrl || "";
+      const geoMeta = await requestUserGeoMeta(geoStatus);
       const payload = await apiRequest("/users/me", {
         method: "PUT",
         auth: true,
         body: {
           direccion: direccionPayload,
-          telefono: String(formData.get("telefono") || "").trim()
+          telefono: String(formData.get("telefono") || "").trim(),
+          nickname: String(formData.get("nickname") || "").trim(),
+          avatarUrl,
+          geoMeta
         }
       });
       setAuthSession({ user: payload.user });
-      setSectionMessage(".page-stack", "Direccion actualizada correctamente.");
+      setSectionMessage(".page-stack", "Perfil actualizado correctamente.");
       const nextDashboard = await loadAccountDashboard();
       renderAccountDashboard(nextDashboard);
     } catch (error) {
@@ -1821,38 +2190,56 @@ async function renderAccountPage() {
     }
   }
 
+  const registerNicknameInput = registerForm.querySelector('[name="nickname"]');
+  const registerNicknameError = registerForm.querySelector(".js-register-nickname-error");
+  const registerGeoStatus = registerForm.querySelector(".js-register-geo-status");
+
+  registerNicknameInput.addEventListener("input", () => {
+    registerNicknameInput.value = slugifyNickname(registerNicknameInput.value);
+    registerNicknameError.textContent = "";
+  });
+
+  registerNicknameInput.addEventListener("blur", () => {
+    validateNicknameInput(registerNicknameInput, registerNicknameError);
+  });
+
   registerForm.addEventListener("submit", async (event) => {
     event.preventDefault();
+
+    if (!registerForm.reportValidity()) {
+      return;
+    }
+
     const formData = new FormData(registerForm);
     const direccion = buildAddressFromFormData(formData);
+    const nicknameAvailable = await validateNicknameInput(registerNicknameInput, registerNicknameError);
+
+    if (!nicknameAvailable) {
+      return;
+    }
 
     try {
+      const avatarFile = formData.get("avatarArchivo");
+      const avatarUrl = avatarFile instanceof File && avatarFile.size ? await readFileAsDataUrl(avatarFile) : "";
+      const geoMeta = await requestUserGeoMeta(registerGeoStatus);
       const payload = await apiRequest("/auth/register", {
         method: "POST",
         body: {
           nombre: String(formData.get("nombre") || "").trim(),
           email: String(formData.get("email") || "").trim(),
           password: String(formData.get("password") || ""),
-          telefono: String(formData.get("telefono") || "").trim()
+          telefono: String(formData.get("telefono") || "").trim(),
+          nickname: String(formData.get("nickname") || "").trim(),
+          direccion,
+          avatarUrl,
+          geoMeta
         }
       });
 
       setAuthSession(payload);
-
-      if (hasAddressData(direccion) || String(formData.get("telefono") || "").trim()) {
-        const updated = await apiRequest("/users/me", {
-          method: "PUT",
-          auth: true,
-          body: {
-            direccion,
-            telefono: String(formData.get("telefono") || "").trim()
-          }
-        });
-        setAuthSession({ user: updated.user });
-      }
-
       setSectionMessage(".page-stack", "Cuenta creada correctamente.");
       registerForm.reset();
+      registerGeoStatus.textContent = "Te pediremos acceso a tu ubicacion para guardar tu zona horaria exacta.";
       const nextTarget = getNextTarget();
 
       if (nextTarget) {
@@ -1919,6 +2306,135 @@ async function renderAccountPage() {
   }
 }
 
+async function renderAdminUserDetailPage() {
+  const container = document.querySelector(".js-admin-user-detail");
+
+  if (!container) {
+    return;
+  }
+
+  const currentUser = getStoredUser();
+
+  if (currentUser?.role !== "admin") {
+    container.innerHTML = "";
+    container.appendChild(createStatusBox("Solo el administrador puede ver esta pagina.", true));
+    return;
+  }
+
+  const userId = new URLSearchParams(window.location.search).get("id");
+
+  if (!userId) {
+    container.innerHTML = "";
+    container.appendChild(createStatusBox("No encontramos el cliente solicitado.", true));
+    return;
+  }
+
+  try {
+    const detail = await loadAdminUserDetail(userId);
+    const user = detail.user;
+    const direccion = user.direccion || {};
+    const timezone = user.geoMeta?.timezone || "";
+    const cart = detail.cart || { items: [], total: 0 };
+
+    container.innerHTML = `
+      <div class="section-head">
+        <div>
+          <p class="section-label">Cliente</p>
+          <h2>${escapeHtml(user.nombre)}</h2>
+        </div>
+        <a href="./cuenta.html" class="button button--light">Volver al administrador</a>
+      </div>
+      <div class="admin-user-detail-grid">
+        <section class="form-card">
+          <div class="profile-head">
+            ${renderAvatar(user, "profile-avatar")}
+            <div>
+              <strong>${escapeHtml(user.nombre)}</strong>
+              <p class="muted">${escapeHtml(user.email)}</p>
+              <p class="muted">${user.nickname ? `/${escapeHtml(user.nickname)}` : "Sin nickname publico"}</p>
+            </div>
+          </div>
+          <div class="history-list">
+            <div class="history-item">
+              <strong>Telefono</strong>
+              <span>${escapeHtml(user.telefono || "Sin telefono")}</span>
+            </div>
+            <div class="history-item">
+              <strong>Direccion</strong>
+              <span>${escapeHtml([direccion.calle, direccion.ciudad, direccion.estado, direccion.cp, direccion.pais].filter(Boolean).join(", ") || "Sin direccion")}</span>
+            </div>
+            <div class="history-item">
+              <strong>Registro</strong>
+              <span>${escapeHtml(formatDateTimeForTimezone(user.fechaRegistro, timezone) || "Sin fecha")}</span>
+            </div>
+          </div>
+        </section>
+        <section class="form-card">
+          <p class="section-label">Carrito actual</p>
+          <h3>${formatCurrency(cart.total || 0)}</h3>
+          <div class="history-list">
+            ${
+              cart.items?.length
+                ? cart.items
+                    .map(
+                      (item) => `
+                        <div class="history-item">
+                          <strong>${escapeHtml(item.nombre)}</strong>
+                          <span>${item.cantidad} x ${formatCurrency(item.precio)}</span>
+                        </div>
+                      `
+                    )
+                    .join("")
+                : `<p class="muted">Este cliente no tiene productos en el carrito.</p>`
+            }
+          </div>
+        </section>
+      </div>
+      <section class="admin-panel">
+        <div class="section-head">
+          <div>
+            <p class="section-label">Pedidos</p>
+            <h3>Historial completo del cliente</h3>
+          </div>
+        </div>
+        <div class="admin-order-list">
+          ${
+            detail.historial?.ordenes?.length
+              ? detail.historial.ordenes
+                  .map(
+                    (order) => `
+                      <article class="admin-order-item">
+                        <strong>${escapeHtml(order.id)}</strong>
+                        <p>${formatCurrency(order.total)} - ${escapeHtml(order.estado)}</p>
+                        <p class="muted">Pedido realizado: ${escapeHtml(formatDateTimeForTimezone(order.fecha, timezone) || "Sin fecha")}</p>
+                        <div class="history-list">
+                          ${(order.items || [])
+                            .map(
+                              (item) => `
+                                <div class="history-item">
+                                  <strong>${escapeHtml(item.nombre)}</strong>
+                                  <span>${item.cantidad} x ${formatCurrency(item.precio)} - ${escapeHtml(item.estado)}</span>
+                                </div>
+                              `
+                            )
+                            .join("")}
+                        </div>
+                        ${renderTrackingTimeline(order.tracking || [])}
+                      </article>
+                    `
+                  )
+                  .join("")
+              : `<div class="empty-state"><h2>Este cliente aun no compra</h2><p>Cuando haga su primer pedido lo veras aqui con su ID.</p></div>`
+          }
+        </div>
+      </section>
+    `;
+  } catch (error) {
+    container.innerHTML = "";
+    container.appendChild(createStatusBox(error.message, true));
+  }
+}
+
 function renderCheckoutLoggedOut(layout) {
   layout.innerHTML = `
     <div class="empty-state">
@@ -1966,20 +2482,19 @@ function renderCheckoutForm(layout, summary, user) {
       <div class="payment-options">
         <button type="button" class="payment-option is-selected" data-provider="mercadopago">
           <strong>${escapeHtml(paymentContent.mercadoPagoLabel)}</strong>
-          <span>Seguimiento por WhatsApp</span>
+          <span class="payment-option__note">Transferencia por WhatsApp sin costo extra</span>
         </button>
         <button type="button" class="payment-option" data-provider="paypal">
           <strong>${escapeHtml(paymentContent.paypalLabel)}</strong>
-          <span>Seguimiento por WhatsApp</span>
+          <span class="payment-option__note">Seguimiento por WhatsApp con comision del 6%</span>
         </button>
         <button type="button" class="payment-option" data-provider="stripe">
           <strong>${escapeHtml(paymentContent.cardLabel)}</strong>
-          <span>${paymentContent.cardUrl ? "Link personalizado" : "Visa o Mastercard"}</span>
+          <span class="payment-option__note">Pago directo con tu link de tarjeta</span>
         </button>
       </div>
 
       <p class="muted">${escapeHtml(paymentContent.note)}</p>
-      <button type="submit" class="button button--primary js-checkout-submit">Continuar al pago</button>
     </form>
 
     <aside class="summary-card">
@@ -2000,34 +2515,23 @@ function renderCheckoutForm(layout, summary, user) {
     </aside>
   `;
 
-  let selectedProvider = "mercadopago";
-  const submitButton = layout.querySelector(".js-checkout-submit");
+  const form = layout.querySelector(".js-checkout-form");
 
-  function syncCheckoutButton() {
-    if (!submitButton) {
+  async function proceedToPayment(provider, button) {
+    if (!form.reportValidity()) {
       return;
     }
 
-    submitButton.textContent =
-      selectedProvider === "stripe" && paymentContent.cardUrl ? "Ir al pago con tarjeta" : "Enviar pedido y continuar";
-  }
-
-  layout.querySelectorAll("[data-provider]").forEach((button) => {
-    button.addEventListener("click", () => {
-      selectedProvider = button.dataset.provider;
-      layout.querySelectorAll("[data-provider]").forEach((item) => item.classList.remove("is-selected"));
-      button.classList.add("is-selected");
-      syncCheckoutButton();
-    });
-  });
-
-  syncCheckoutButton();
-
-  layout.querySelector(".js-checkout-form").addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
+    const formData = new FormData(form);
     const direccionPayload = buildAddressFromFormData(formData);
     const telefono = String(formData.get("telefono") || "").trim();
+    const paymentButtons = Array.from(layout.querySelectorAll("[data-provider]"));
+
+    paymentButtons.forEach((item) => {
+      item.classList.remove("is-selected");
+      item.disabled = true;
+    });
+    button.classList.add("is-selected");
 
     try {
       const orderPayload = await apiRequest("/checkout/orders", {
@@ -2035,29 +2539,51 @@ function renderCheckoutForm(layout, summary, user) {
         auth: true,
         body: {
           direccion: direccionPayload,
-          proveedorPago: selectedProvider,
+          proveedorPago: provider,
           telefono
         }
       });
 
-      const methodLabel = selectedProvider === "paypal" ? paymentContent.paypalLabel : selectedProvider === "stripe" ? paymentContent.cardLabel : paymentContent.mercadoPagoLabel;
-      const itemsText = orderPayload.order.items.map((item) => `${item.cantidad} x ${item.nombre} (${formatCurrency(item.subtotal)})`).join("%0A");
-      const message = `Hola, quiero dar seguimiento a mi pedido ${orderPayload.order.id}.%0AMetodo: ${encodeURIComponent(methodLabel)}%0ATotal: ${encodeURIComponent(formatCurrency(orderPayload.order.total))}%0AProductos:%0A${itemsText}`;
-      const selectedUrl = selectedProvider === "stripe" ? paymentContent.cardUrl || paymentContent.whatsappUrl : paymentContent.whatsappUrl;
+      const methodLabel =
+        provider === "paypal"
+          ? paymentContent.paypalLabel
+          : provider === "stripe"
+            ? paymentContent.cardLabel
+            : paymentContent.mercadoPagoLabel;
+      const message = createCheckoutMessage(orderPayload.order, methodLabel);
+      const selectedUrl =
+        provider === "paypal"
+          ? paymentContent.paypalUrl || paymentContent.whatsappUrl
+          : provider === "stripe"
+            ? paymentContent.cardUrl
+            : paymentContent.mercadoPagoUrl || paymentContent.whatsappUrl;
 
-      if (/wa\.me|whatsapp/i.test(selectedUrl)) {
-        window.location.href = `${selectedUrl}${selectedUrl.includes("?") ? "&" : "?"}text=${message}`;
+      if (!selectedUrl) {
+        throw new Error("Todavia no configuraste el link para este metodo de pago.");
+      }
+
+      if (provider === "stripe") {
+        const redirectUrl = new URL(selectedUrl, window.location.origin);
+        redirectUrl.searchParams.set("orderId", orderPayload.order.id);
+        redirectUrl.searchParams.set("total", String(orderPayload.order.total));
+        redirectUrl.searchParams.set("provider", provider);
+        window.location.href = redirectUrl.toString();
         return;
       }
 
-      const redirectUrl = new URL(selectedUrl, window.location.origin);
-      redirectUrl.searchParams.set("orderId", orderPayload.order.id);
-      redirectUrl.searchParams.set("total", String(orderPayload.order.total));
-      redirectUrl.searchParams.set("provider", selectedProvider);
-      window.location.href = redirectUrl.toString();
+      window.location.href = buildWhatsAppMessageUrl(selectedUrl, message);
     } catch (error) {
+      paymentButtons.forEach((item) => {
+        item.disabled = false;
+      });
       setSectionMessage(".page-stack", error.message, true);
     }
+  }
+
+  layout.querySelectorAll("[data-provider]").forEach((button) => {
+    button.addEventListener("click", () => {
+      proceedToPayment(button.dataset.provider, button);
+    });
   });
 }
 
@@ -2219,6 +2745,10 @@ async function init() {
 
   if (page === "account") {
     await renderAccountPage();
+  }
+
+  if (page === "admin-user") {
+    await renderAdminUserDetailPage();
   }
 
   if (page === "checkout") {

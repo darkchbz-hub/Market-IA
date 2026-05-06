@@ -10,16 +10,19 @@ import { empty, error, json, readJson } from "./_lib/response.js";
 import { getBearerToken, hashPassword, signToken, verifyPassword, verifyToken } from "./_lib/security.js";
 import {
   buildCheckoutSummary,
+  canUserCommentOnProduct,
   clearCart,
   clearAllProducts,
   createOrderFromCart,
   createProductComment,
   createProduct,
   createUser,
+  deleteOrder,
   decrementStockForOrder,
   deleteProductComment,
   deleteProduct,
   ensureDatabase,
+  getAdminUserDetail,
   getCartState,
   getOrderById,
   getOrderWithItems,
@@ -28,6 +31,8 @@ import {
   getUserByEmail,
   getUserById,
   getUserDashboard,
+  isNicknameAvailable,
+  listAdminUsers,
   listAdminProducts,
   listAdminCarts,
   listAdminOrders,
@@ -41,6 +46,7 @@ import {
   setCartItem,
   updateSiteContent,
   updateOrderItemStatus,
+  updateOrderStatus,
   updateOrderTracking,
   updateProduct,
   updateUserAddress
@@ -65,6 +71,17 @@ function normalizeAddress(value) {
     estado: String(address.estado || "").trim(),
     cp: String(address.cp || "").trim(),
     pais: String(address.pais || "").trim()
+  };
+}
+
+function normalizeGeoMeta(value) {
+  const meta = value && typeof value === "object" ? value : {};
+
+  return {
+    latitude: Number(meta.latitude || 0),
+    longitude: Number(meta.longitude || 0),
+    timezone: String(meta.timezone || "").trim(),
+    capturedAt: String(meta.capturedAt || "").trim()
   };
 }
 
@@ -169,9 +186,17 @@ export async function onRequest(context) {
       const email = String(body.email || "").trim().toLowerCase();
       const password = String(body.password || "");
       const telefono = String(body.telefono || "").trim();
+      const nickname = String(body.nickname || "").trim();
+      const direccion = normalizeAddress(body.direccion);
+      const avatarUrl = String(body.avatarUrl || "").trim();
+      const geoMeta = normalizeGeoMeta(body.geoMeta);
 
       if (!nombre || !validateEmail(email) || password.length < 6) {
         throw httpError(400, "Completa nombre, email valido y una contrasena de al menos 6 caracteres.");
+      }
+
+      if (!telefono || !direccion.calle || !direccion.ciudad || !direccion.estado || !direccion.cp || !direccion.pais) {
+        throw httpError(400, "Completa todos los datos obligatorios para crear tu cuenta.");
       }
 
       const existing = await getUserByEmail(db, email);
@@ -181,8 +206,15 @@ export async function onRequest(context) {
       }
 
       const passwordHash = await hashPassword(password);
-      const user = await createUser(db, { nombre, email, passwordHash, telefono });
+      const user = await createUser(db, { nombre, email, passwordHash, telefono, nickname, avatarUrl, direccion, geoMeta });
       return json(await buildAuthPayload(user, env), 201);
+    }
+
+    if (first === "auth" && second === "nickname-available" && request.method === "GET") {
+      const nickname = String(url.searchParams.get("nickname") || "").trim();
+      return json({
+        available: nickname ? await isNicknameAvailable(db, nickname) : false
+      });
     }
 
     if (first === "auth" && second === "login" && request.method === "POST") {
@@ -212,7 +244,11 @@ export async function onRequest(context) {
       const user = await authenticate(request, env, db);
       const body = await readJson(request);
       const direccion = normalizeAddress(body.direccion);
-      const updated = await updateUserAddress(db, user.id, direccion, body.telefono);
+      const updated = await updateUserAddress(db, user.id, direccion, body.telefono, {
+        nickname: body.nickname,
+        avatarUrl: body.avatarUrl,
+        geoMeta: normalizeGeoMeta(body.geoMeta)
+      });
       return json({ user: serializeUser(updated) });
     }
 
@@ -247,7 +283,8 @@ export async function onRequest(context) {
 
       return json({
         product,
-        comments: await listProductComments(db, product.id)
+        comments: await listProductComments(db, product.id),
+        canComment: user ? await canUserCommentOnProduct(db, user.id, product.id) : false
       });
     }
 
@@ -340,6 +377,7 @@ export async function onRequest(context) {
       const direccion = normalizeAddress(body.direccion);
       const proveedorPago = String(body.proveedorPago || "").trim().toLowerCase();
       const telefono = String(body.telefono || "").trim();
+      const telefono = String(body.telefono || "").trim();
 
       if (!direccion.calle || !direccion.ciudad || !direccion.estado || !direccion.cp || !direccion.pais) {
         throw httpError(400, "Completa toda la direccion antes de continuar.");
@@ -368,6 +406,26 @@ export async function onRequest(context) {
       });
     }
 
+    if (first === "admin" && second === "users" && !third && request.method === "GET") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      return json({
+        items: await listAdminUsers(db)
+      });
+    }
+
+    if (first === "admin" && second === "users" && third && request.method === "GET") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      const detail = await getAdminUserDetail(db, Number(third));
+
+      if (!detail) {
+        throw httpError(404, "El usuario no existe.");
+      }
+
+      return json(detail);
+    }
+
     if (first === "admin" && second === "carts" && !third && request.method === "GET") {
       const user = await authenticate(request, env, db);
       requireAdmin(user);
@@ -388,6 +446,19 @@ export async function onRequest(context) {
       requireAdmin(user);
       const body = await readJson(request);
       return json(await updateOrderTracking(db, third, body.tracking));
+    }
+
+    if (first === "admin" && second === "orders" && third && request.method === "PATCH") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      const body = await readJson(request);
+      return json(await updateOrderStatus(db, third, body.estado));
+    }
+
+    if (first === "admin" && second === "orders" && third && request.method === "DELETE") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      return json(await deleteOrder(db, third));
     }
 
     if (first === "admin" && second === "comments" && third && request.method === "DELETE") {
