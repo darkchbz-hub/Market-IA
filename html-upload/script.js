@@ -416,6 +416,10 @@ function updateHeaderState(cartCount = 0) {
   document.querySelectorAll(".js-account-link").forEach((node) => {
     node.textContent = user?.nombre ? `Hola, ${user.nombre}` : "Mi cuenta";
   });
+
+  document.querySelectorAll(".js-admin-users-link").forEach((node) => {
+    node.classList.toggle("is-hidden", user?.role !== "admin");
+  });
 }
 
 async function refreshHeaderState() {
@@ -2449,6 +2453,56 @@ async function renderAdminUserDetailPage() {
   }
 }
 
+async function renderAdminUsersPage() {
+  const container = document.querySelector(".js-admin-users-page");
+
+  if (!container) {
+    return;
+  }
+
+  const currentUser = getStoredUser();
+
+  if (currentUser?.role !== "admin") {
+    container.innerHTML = "";
+    container.appendChild(createStatusBox("Solo el administrador puede ver esta pagina.", true));
+    return;
+  }
+
+  try {
+    const users = await loadAdminUsers();
+
+    container.innerHTML = `
+      <div class="section-head">
+        <div>
+          <p class="section-label">Usuarios</p>
+          <h2>Clientes registrados</h2>
+          <p class="muted">Aqui veras a todos los usuarios que ya se registraron y los que se registren despues.</p>
+        </div>
+        <a href="./cuenta.html" class="button button--light">Volver a mi cuenta</a>
+      </div>
+      <div class="admin-users-grid">
+        ${
+          users.length
+            ? users
+                .map(
+                  (user) => `
+                    <a class="admin-user-button" href="./usuario-admin.html?id=${user.id}">
+                      <strong>${escapeHtml(user.nombre)}</strong>
+                      <span>${escapeHtml(user.telefono || "Sin numero")}</span>
+                    </a>
+                  `
+                )
+                .join("")
+            : `<div class="empty-state"><h2>Todavia no hay usuarios</h2><p>Cuando se registren apareceran aqui automaticamente.</p></div>`
+        }
+      </div>
+    `;
+  } catch (error) {
+    container.innerHTML = "";
+    container.appendChild(createStatusBox(error.message, true));
+  }
+}
+
 function renderCheckoutLoggedOut(layout) {
   layout.innerHTML = `
     <div class="empty-state">
@@ -2763,6 +2817,10 @@ async function init() {
 
   if (page === "admin-user") {
     await renderAdminUserDetailPage();
+  }
+
+  if (page === "admin-users") {
+    await renderAdminUsersPage();
   }
 
   if (page === "checkout") {
