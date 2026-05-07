@@ -2335,6 +2335,16 @@ body[data-page="catalog"] main > .section-block:first-child::after {
   gap: 14px;
 }
 
+.admin-inline-shell {
+  display: grid;
+  gap: 16px;
+  margin: 6px 0 10px;
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(138, 170, 210, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+}
+
 .admin-user-detail-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }

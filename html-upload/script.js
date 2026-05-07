@@ -2051,6 +2051,21 @@ function renderAccountDashboard(dashboard) {
     </div>
     <p class="muted">${dashboard.user.telefono || "Agrega tu numero para que podamos darte mejor seguimiento."}</p>
     <p class="muted">Todas tus compras tienen garantia, pagos seguros y seguimiento desde un solo lugar.</p>
+    ${
+      dashboard.user.role === "admin"
+        ? `
+          <section class="admin-inline-shell">
+            <div class="section-head">
+              <div>
+                <p class="section-label">Administrador</p>
+                <h3>Usuarios registrados, pedidos y control de tienda</h3>
+              </div>
+            </div>
+            <div class="js-admin-panel"></div>
+          </section>
+        `
+        : ""
+    }
     <form class="profile-update-form">
       <div class="profile-grid">
         <label>
@@ -2105,7 +2120,6 @@ function renderAccountDashboard(dashboard) {
         ${vistosHtml}
       </section>
     </div>
-    ${dashboard.user.role === "admin" ? `<div class="js-admin-panel"></div>` : ""}
   `;
 
   const profileForm = profileCard.querySelector(".profile-update-form");
