@@ -1428,6 +1428,7 @@ body::before {
 .category-nav a:nth-child(8)::before { content: "◎"; }
 .category-nav a:nth-child(9)::before { content: "•••"; }
 .category-nav a:nth-child(10)::before { content: "✉"; }
+.category-nav .js-admin-users-link::before { content: "◉"; }
 
 .category-nav a:first-child,
 .category-nav a:hover {

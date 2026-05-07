@@ -406,8 +406,33 @@ function normalizeProduct(product) {
   };
 }
 
+function ensureAdminUsersLink() {
+  document.querySelectorAll(".category-nav").forEach((nav) => {
+    let adminLink = nav.querySelector(".js-admin-users-link");
+
+    if (!adminLink) {
+      adminLink = document.createElement("a");
+      adminLink.href = "./usuarios-admin.html";
+      adminLink.className = "js-admin-users-link is-hidden";
+      adminLink.textContent = "Usuarios";
+    }
+
+    const contactLink = Array.from(nav.querySelectorAll("a")).find((link) =>
+      /contacto\.html$/i.test(link.getAttribute("href") || "")
+    );
+
+    if (contactLink) {
+      contactLink.insertAdjacentElement("afterend", adminLink);
+    } else if (!nav.contains(adminLink)) {
+      nav.appendChild(adminLink);
+    }
+  });
+}
+
 function updateHeaderState(cartCount = 0) {
   const user = getStoredUser();
+
+  ensureAdminUsersLink();
 
   document.querySelectorAll(".js-cart-count").forEach((node) => {
     node.textContent = String(cartCount);
