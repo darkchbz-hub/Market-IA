@@ -2398,7 +2398,7 @@ async function renderAdminUserDetailPage() {
                       (item) => `
                         <div class="history-item">
                           <strong>${escapeHtml(item.nombre)}</strong>
-                          <span>${item.cantidad} x ${formatCurrency(item.precio)}</span>
+                          <span>${item.cantidad} x ${formatCurrency(item.precio)} - Pendiente</span>
                         </div>
                       `
                     )
@@ -2419,17 +2419,33 @@ async function renderAdminUserDetailPage() {
           ${
             detail.historial?.ordenes?.length
               ? detail.historial.ordenes
-                  .map(
-                    (order) => `
-                      <article class="admin-order-item">
-                        <strong>${escapeHtml(order.id)}</strong>
-                        <p>${formatCurrency(order.total)} - ${escapeHtml(order.estado)}</p>
-                        <p class="muted">Pedido realizado: ${escapeHtml(formatDateTimeForTimezone(order.fecha, timezone) || "Sin fecha")}</p>
-                        <div class="history-list">
-                          ${(order.items || [])
-                            .map(
-                              (item) => `
-                                <div class="history-item">
+                .map(
+                  (order) => `
+                    <article class="admin-order-item">
+                      <div class="admin-order-head">
+                        <div>
+                          <strong>${escapeHtml(order.id)}</strong>
+                          <p>${formatCurrency(order.total)} - ${escapeHtml(getOrderStatusLabel(order.estado))}</p>
+                          <p class="muted">Pedido realizado: ${escapeHtml(formatDateTimeForTimezone(order.fecha, timezone) || "Sin fecha")}</p>
+                        </div>
+                        <div class="admin-actions">
+                          ${
+                            order.estado !== "cancelled"
+                              ? `<button type="button" class="button button--light" data-detail-order-cancel="${order.id}">Cancelar pedido</button>`
+                              : ""
+                          }
+                          ${
+                            ["pending_payment", "cancelled"].includes(order.estado)
+                              ? `<button type="button" class="button button--light" data-detail-order-delete="${order.id}">Eliminar pedido</button>`
+                              : ""
+                          }
+                        </div>
+                      </div>
+                      <div class="history-list">
+                        ${(order.items || [])
+                          .map(
+                            (item) => `
+                              <div class="history-item">
                                   <strong>${escapeHtml(item.nombre)}</strong>
                                   <span>${item.cantidad} x ${formatCurrency(item.precio)} - ${escapeHtml(item.estado)}</span>
                                 </div>
@@ -2447,6 +2463,43 @@ async function renderAdminUserDetailPage() {
         </div>
       </section>
     `;
+
+    container.querySelectorAll("[data-detail-order-cancel]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        try {
+          await apiRequest(`/admin/orders/${button.dataset.detailOrderCancel}`, {
+            method: "PATCH",
+            auth: true,
+            body: {
+              estado: "cancelled"
+            }
+          });
+          setSectionMessage(".page-stack", "Pedido cancelado correctamente.");
+          await renderAdminUserDetailPage();
+        } catch (error) {
+          setSectionMessage(".page-stack", error.message, true);
+        }
+      });
+    });
+
+    container.querySelectorAll("[data-detail-order-delete]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        if (!confirm("Vas a eliminar este pedido del historial del usuario.")) {
+          return;
+        }
+
+        try {
+          await apiRequest(`/admin/orders/${button.dataset.detailOrderDelete}`, {
+            method: "DELETE",
+            auth: true
+          });
+          setSectionMessage(".page-stack", "Pedido eliminado correctamente.");
+          await renderAdminUserDetailPage();
+        } catch (error) {
+          setSectionMessage(".page-stack", error.message, true);
+        }
+      });
+    });
   } catch (error) {
     container.innerHTML = "";
     container.appendChild(createStatusBox(error.message, true));
@@ -2511,6 +2564,22 @@ function renderCheckoutLoggedOut(layout) {
       <a href="./cuenta.html" class="button button--primary">Ir a mi cuenta</a>
     </div>
   `;
+}
+
+function getOrderStatusLabel(status) {
+  if (status === "pending_payment") {
+    return "Pendiente";
+  }
+
+  if (status === "cancelled") {
+    return "Cancelado";
+  }
+
+  if (status === "paid") {
+    return "Pagado";
+  }
+
+  return status || "Pendiente";
 }
 
 function renderCheckoutForm(layout, summary, user) {
