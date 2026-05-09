@@ -38,6 +38,7 @@ import {
   listAdminOrders,
   listProductComments,
   listProducts,
+  marketplaceCategories,
   markOrderStatus,
   recordProductView,
   recordSearch,
@@ -158,6 +159,73 @@ function mapMercadoPagoStatus(remoteStatus) {
   return "pending_payment";
 }
 
+function buildCategoryItems() {
+  return marketplaceCategories.map((item, index) => ({
+    id: index + 1,
+    ...item
+  }));
+}
+
+async function buildHomePayload(db) {
+  const siteContent = await getSiteContent(db);
+  const [featured, offers, bestsellers] = await Promise.all([
+    listProducts(db, { limit: 8 }),
+    listProducts(db, { limit: 8 }),
+    listProducts(db, { limit: 8 })
+  ]);
+
+  const products = featured.items || [];
+
+  return {
+    settings: siteContent.home || {},
+    categories: buildCategoryItems(),
+    banners: Array.isArray(siteContent.banners) && siteContent.banners.length
+      ? siteContent.banners
+      : [
+          {
+            id: "banner-1",
+            titulo: "Marketplace premium para categorias modernas",
+            subtitulo: "Tecnologia, hogar, mayoreo y mas en una sola tienda.",
+            mediaUrl: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1400&q=80",
+            linkUrl: "/catalogo"
+          }
+        ],
+    videos: Array.isArray(siteContent.videos) ? siteContent.videos : [],
+    music: Array.isArray(siteContent.music) ? siteContent.music : [],
+    featuredProducts: products.slice(0, 8),
+    offerProducts: [...products]
+      .filter((item) => item.descuentoActivo || Number(item.precioOriginal || 0) > Number(item.precio || 0))
+      .slice(0, 8),
+    bestsellerProducts: products.slice(0, 8)
+  };
+}
+
+async function listAdminReviewItems(db) {
+  const result = await db
+    .prepare(
+      `
+      SELECT pc.*, p.nombre AS producto_nombre, u.nombre, u.nickname
+      FROM product_comments pc
+      INNER JOIN products p ON p.id = pc.product_id
+      INNER JOIN users u ON u.id = pc.user_id
+      ORDER BY pc.created_at DESC
+      LIMIT 100
+    `
+    )
+    .all();
+
+  return (result.results || []).map((row) => ({
+    id: Number(row.id),
+    productoId: Number(row.product_id),
+    productoNombre: row.producto_nombre,
+    usuarioNombre: row.nombre,
+    nickname: row.nickname || "",
+    rating: Number(row.rating || 0),
+    comentario: row.comentario,
+    fecha: row.created_at
+  }));
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
 
@@ -252,11 +320,55 @@ export async function onRequest(context) {
       return json({ user: serializeUser(updated) });
     }
 
+    if (first === "users" && second === "me" && third === "favorites" && request.method === "POST") {
+      await authenticate(request, env, db);
+      return json({ ok: true }, 201);
+    }
+
+    if (first === "users" && second === "me" && third === "favorites" && request.method === "DELETE") {
+      await authenticate(request, env, db);
+      return json({ ok: true });
+    }
+
+    if (first === "users" && second === "me" && third === "orders" && segments[3] && segments[4] === "cancel" && request.method === "POST") {
+      const user = await authenticate(request, env, db);
+      const orderId = String(segments[3] || "").trim();
+      const order = await getOrderById(db, orderId);
+
+      if (!order || Number(order.user_id) !== Number(user.id)) {
+        throw httpError(404, "Pedido no encontrado.");
+      }
+
+      if (!["pending_payment", "paid"].includes(String(order.estado || ""))) {
+        throw httpError(400, "Este pedido ya no se puede cancelar.");
+      }
+
+      return json(await updateOrderStatus(db, orderId, "cancelled"));
+    }
+
+    if (first === "auth" && second === "forgot-password" && request.method === "POST") {
+      return json({
+        ok: true,
+        message: "Recuperacion preparada. Integra correo real cuando actives el proveedor."
+      });
+    }
+
+    if (first === "products" && second === "home" && request.method === "GET") {
+      return json(await buildHomePayload(db));
+    }
+
+    if (first === "products" && second === "categories" && request.method === "GET") {
+      return json({
+        items: buildCategoryItems()
+      });
+    }
+
     if (first === "products" && !second && request.method === "GET") {
       const user = await authenticate(request, env, db, false);
       const result = await listProducts(db, {
         search: url.searchParams.get("search") || "",
         category: url.searchParams.get("category") || "",
+        brand: url.searchParams.get("brand") || "",
         minPrice: url.searchParams.get("minPrice") || "",
         maxPrice: url.searchParams.get("maxPrice") || "",
         limit: url.searchParams.get("limit") || "24"
@@ -266,12 +378,17 @@ export async function onRequest(context) {
         await recordSearch(db, user.id, url.searchParams.get("search"));
       }
 
-      return json(result);
+      return json({
+        ...result,
+        filters: {
+          brands: []
+        }
+      });
     }
 
     if (first === "products" && second && !third && request.method === "GET") {
       const user = await authenticate(request, env, db, false);
-      const product = await getProductById(db, Number(second));
+      const product = await getProductById(db, second);
 
       if (!product) {
         throw httpError(404, "El producto no existe.");
@@ -288,9 +405,34 @@ export async function onRequest(context) {
       });
     }
 
+    if (first === "products" && second && third === "reviews" && request.method === "POST") {
+      const user = await authenticate(request, env, db);
+      const product = await getProductById(db, second);
+
+      if (!product) {
+        throw httpError(404, "El producto no existe.");
+      }
+
+      const body = await readJson(request);
+      return json(
+        {
+          comments: await createProductComment(db, user.id, product.id, body)
+        },
+        201
+      );
+    }
+
+    if (first === "products" && second && third === "questions" && request.method === "POST") {
+      await authenticate(request, env, db);
+      return json({
+        ok: true,
+        message: "La seccion de preguntas queda lista para integrarse en una siguiente fase."
+      }, 201);
+    }
+
     if (first === "products" && second && third === "comments" && request.method === "POST") {
       const user = await authenticate(request, env, db);
-      const product = await getProductById(db, Number(second));
+      const product = await getProductById(db, second);
 
       if (!product) {
         throw httpError(404, "El producto no existe.");
@@ -377,7 +519,6 @@ export async function onRequest(context) {
       const direccion = normalizeAddress(body.direccion);
       const proveedorPago = String(body.proveedorPago || "").trim().toLowerCase();
       const telefono = String(body.telefono || "").trim();
-      const telefono = String(body.telefono || "").trim();
 
       if (!direccion.calle || !direccion.ciudad || !direccion.estado || !direccion.cp || !direccion.pais) {
         throw httpError(400, "Completa toda la direccion antes de continuar.");
@@ -398,6 +539,28 @@ export async function onRequest(context) {
       });
     }
 
+    if (first === "admin" && second === "summary" && request.method === "GET") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      const [usersPayload, productsPayload, ordersPayload, reviewsPayload] = await Promise.all([
+        listAdminUsers(db),
+        listAdminProducts(db),
+        listAdminOrders(db),
+        listAdminReviewItems(db)
+      ]);
+
+      return json({
+        usuarios: usersPayload.length,
+        productosActivos: productsPayload.length,
+        ordenes: ordersPayload.length,
+        ordenesPendientes: ordersPayload.filter((item) => item.estado === "pending_payment").length,
+        ordenesEntregadas: ordersPayload.filter((item) => item.estado === "paid").length,
+        ingresos: ordersPayload.reduce((sum, item) => sum + Number(item.total || 0), 0),
+        resenasVisibles: reviewsPayload.length,
+        actividadReciente: []
+      });
+    }
+
     if (first === "admin" && second === "orders" && !third && request.method === "GET") {
       const user = await authenticate(request, env, db);
       requireAdmin(user);
@@ -409,8 +572,14 @@ export async function onRequest(context) {
     if (first === "admin" && second === "users" && !third && request.method === "GET") {
       const user = await authenticate(request, env, db);
       requireAdmin(user);
+      const search = String(url.searchParams.get("search") || "").trim().toLowerCase();
+      const users = await listAdminUsers(db);
       return json({
-        items: await listAdminUsers(db)
+        items: search
+          ? users.filter((item) =>
+              [item.nombre, item.email, item.telefono].some((field) => String(field || "").toLowerCase().includes(search))
+            )
+          : users
       });
     }
 
@@ -423,7 +592,11 @@ export async function onRequest(context) {
         throw httpError(404, "El usuario no existe.");
       }
 
-      return json(detail);
+      return json({
+        user: detail.user,
+        cart: detail.cart?.items || [],
+        orders: detail.historial?.ordenes || []
+      });
     }
 
     if (first === "admin" && second === "carts" && !third && request.method === "GET") {
@@ -465,6 +638,98 @@ export async function onRequest(context) {
       const user = await authenticate(request, env, db);
       requireAdmin(user);
       return json(await deleteProductComment(db, Number(third)));
+    }
+
+    if (first === "admin" && second === "reviews" && !third && request.method === "GET") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      return json({
+        items: await listAdminReviewItems(db)
+      });
+    }
+
+    if (first === "admin" && second === "reviews" && third && request.method === "DELETE") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      return json(await deleteProductComment(db, Number(third)));
+    }
+
+    if (first === "admin" && second === "categories" && !third && request.method === "GET") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      return json({
+        items: buildCategoryItems()
+      });
+    }
+
+    if (first === "admin" && second === "content" && !third && request.method === "GET") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      const content = await getSiteContent(db);
+      return json({
+        homepage: content.home || {},
+        general: content.general || {},
+        banners: Array.isArray(content.banners) ? content.banners : [],
+        videos: Array.isArray(content.videos) ? content.videos : [],
+        music: Array.isArray(content.music) ? content.music : []
+      });
+    }
+
+    if (first === "admin" && second === "content" && third && request.method === "PUT") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      const body = await readJson(request);
+      const scopeMap = {
+        homepage: "home",
+        general: "general",
+        banners: "banners",
+        videos: "videos",
+        music: "music"
+      };
+      const key = scopeMap[third] || third;
+      return json(await updateSiteContent(db, key, body));
+    }
+
+    if (first === "admin" && ["banners", "videos", "music"].includes(second) && request.method === "POST") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      const body = await readJson(request);
+      const content = await getSiteContent(db);
+      const current = Array.isArray(content[second]) ? content[second] : [];
+      const next = [...current, { id: crypto.randomUUID(), ...body }];
+      return json(await updateSiteContent(db, second, next), 201);
+    }
+
+    if (first === "admin" && ["banners", "videos", "music"].includes(second) && third && request.method === "PATCH") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      const body = await readJson(request);
+      const content = await getSiteContent(db);
+      const current = Array.isArray(content[second]) ? content[second] : [];
+      const next = current.map((item) => (String(item.id) === String(third) ? { ...item, ...body } : item));
+      return json(await updateSiteContent(db, second, next));
+    }
+
+    if (first === "admin" && second === "media" && segments[2] && segments[3] && request.method === "DELETE") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      const mediaType = segments[2];
+      const mediaId = segments[3];
+      const sectionMap = {
+        banner: "banners",
+        video: "videos",
+        music: "music"
+      };
+      const section = sectionMap[mediaType];
+
+      if (!section) {
+        throw httpError(400, "Tipo de medio invalido.");
+      }
+
+      const content = await getSiteContent(db);
+      const current = Array.isArray(content[section]) ? content[section] : [];
+      const next = current.filter((item) => String(item.id) !== String(mediaId));
+      return json(await updateSiteContent(db, section, next));
     }
 
     if (first === "admin" && second === "products" && !third && request.method === "POST") {

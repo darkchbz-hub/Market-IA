@@ -1,5 +1,8 @@
-export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
-export const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:4000";
+const defaultApiUrl = typeof window !== "undefined" ? `${window.location.origin}/api` : "http://localhost:4000/api";
+const defaultSocketUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:4000";
+
+export const API_URL = import.meta.env.VITE_API_URL || defaultApiUrl;
+export const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || defaultSocketUrl;
 export const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "";
 
 export async function apiFetch(path, options = {}) {

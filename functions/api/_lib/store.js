@@ -1,56 +1,50 @@
 import { hashPassword } from "./security.js";
 
 const seedProducts = [];
-const allowedCategories = ["productos", "electronica", "casa", "jardin", "apps", "packs", "webs", "mas"];
+export const marketplaceCategories = [
+  { slug: "tecnologia", nombre: "Tecnologia", descripcion: "Laptops, celulares, accesorios y equipos premium.", icono: "⌘", color: "#2563eb" },
+  { slug: "hogar", nombre: "Hogar", descripcion: "Cocina, decoracion, orden y estilo para tus espacios.", icono: "⌂", color: "#0f766e" },
+  { slug: "jardin", nombre: "Jardin", descripcion: "Herramientas, macetas y articulos para exterior.", icono: "❋", color: "#16a34a" },
+  { slug: "automovil", nombre: "Automovil", descripcion: "Accesorios y soluciones para cada trayecto.", icono: "◈", color: "#f97316" },
+  { slug: "empresas", nombre: "Empresas", descripcion: "Recursos y equipo para oficina y negocio.", icono: "▣", color: "#8b5cf6" },
+  { slug: "mayoreo", nombre: "Mayoreo", descripcion: "Compras por volumen para venta y distribucion.", icono: "◫", color: "#f59e0b" },
+  { slug: "importados", nombre: "Importados", descripcion: "Productos globales y tendencias internacionales.", icono: "◎", color: "#ec4899" },
+  { slug: "mascotas", nombre: "Mascotas", descripcion: "Todo para compania, descanso e higiene.", icono: "✦", color: "#22c55e" },
+  { slug: "ropa", nombre: "Ropa", descripcion: "Moda, accesorios y colecciones actuales.", icono: "◍", color: "#ef4444" },
+  { slug: "juguetes", nombre: "Juguetes", descripcion: "Diversion y regalos para todas las edades.", icono: "★", color: "#06b6d4" },
+  { slug: "productos", nombre: "Productos", descripcion: "Categorias generales y destacados del marketplace.", icono: "•", color: "#38bdf8" },
+  { slug: "electronica", nombre: "Electronica", descripcion: "Equipos, dispositivos y accesorios.", icono: "▰", color: "#2563eb" },
+  { slug: "casa", nombre: "Casa", descripcion: "Soluciones utiles para tu hogar.", icono: "⌂", color: "#14b8a6" },
+  { slug: "apps", nombre: "Apps IA", descripcion: "Software, suscripciones y productividad.", icono: "✧", color: "#7c3aed" },
+  { slug: "packs", nombre: "Packs", descripcion: "Combos digitales y herramientas completas.", icono: "◇", color: "#f97316" },
+  { slug: "webs", nombre: "Servicios web", descripcion: "Landing pages, tiendas y desarrollo.", icono: "◎", color: "#38bdf8" },
+  { slug: "mas", nombre: "Mas", descripcion: "Otras oportunidades y categorias especiales.", icono: "…", color: "#94a3b8" }
+];
+const allowedCategories = marketplaceCategories.map((item) => item.slug);
 const defaultSiteContent = {
   home: {
-    topStrip: "Pagos seguros, acceso privado y garantia en cada compra",
-    heroEyebrow: "Marketplace digital",
-    heroTitle: "Compra suscripciones, herramientas IA y servicios web desde una sola tienda.",
+    announcement: "Compra con seguridad, garantia y envio confiable.",
+    heroEyebrow: "Marketplace premium",
+    heroTitle: "Todo lo que necesitas para tecnologia, hogar, negocio y estilo de vida en un solo lugar.",
     heroDescription:
-      "Una vitrina limpia y clara para encontrar productos digitales, comprar con confianza y volver cuando quieras.",
-    primaryButton: "Ver catalogo",
-    secondaryButton: "Crear cuenta",
-    categoriesLabel: "Explora rapido",
-    categoriesTitle: "Categorias destacadas",
-    featuredLabel: "Top productos",
-    featuredTitle: "Lo mas vendido",
-    infoOneTitle: "Catalogo con busqueda y filtros",
-    infoOneText: "Tus clientes encuentran rapido lo que quieren y guardan sus favoritos en su cuenta.",
-    infoTwoTitle: "Cuenta privada y segura",
-    infoTwoText: "Cada compra, historial y direccion queda guardado dentro del perfil del usuario.",
-    infoThreeTitle: "Pagos y control total",
-    infoThreeText: "Vende desde una sola tienda y administra tu contenido desde el panel interno."
+      "Una plataforma profesional para comprar productos de muchas categorias con experiencia elegante, segura y preparada para crecer.",
+    heroPrimary: "Explorar catalogo",
+    heroSecondary: "Ver ofertas",
+    featuredTitle: "Recomendados para ti",
+    offersTitle: "Ofertas especiales",
+    bestsellersTitle: "Mas vendidos",
+    videoTitle: "Comerciales y novedades",
+    musicTitle: "Ambiente de compra"
   },
-  catalog: {
-    topStrip: "Encuentra productos digitales con pagos seguros y compra protegida",
-    label: "Catalogo",
-    title: "Encuentra el producto ideal",
-    description: "Descubre apps IA, packs y servicios web desde un solo lugar.",
-    resultsLabel: "Resultados",
-    allMeta: "Mostrando todo el catalogo"
+  general: {
+    siteName: "Gray C Shop",
+    tagline: "Marketplace elegante para categorias premium y compras confiables.",
+    supportEmail: "ventas@graycshop.com",
+    supportPhone: "+52 5512345678"
   },
-  contact: {
-    topStrip: "Atencion personalizada por WhatsApp",
-    label: "Contacto",
-    title: "Atencion, ventas y seguimiento",
-    introTitle: "Habla con nosotros de forma directa",
-    introText: "Resolvemos dudas, damos seguimiento a pagos y te ayudamos con tus productos digitales.",
-    email: "ventas@marketzone.mx",
-    whatsappLabel: "+52 55 1111 1111",
-    whatsappUrl: "https://wa.me/5215511111111",
-    schedule: "Lunes a sabado de 9:00 a 19:00"
-  },
-  payment: {
-    whatsappUrl: "https://wa.me/5215511111111",
-    mercadoPagoUrl: "https://wa.me/5215511111111",
-    paypalUrl: "https://wa.me/5215511111111",
-    mercadoPagoLabel: "Mercado Pago",
-    paypalLabel: "PayPal",
-    cardLabel: "Tarjeta de credito o debito Visa o Mastercard",
-    cardUrl: "",
-    note: "Al continuar te abriremos WhatsApp con el resumen para dar seguimiento a tu pago."
-  }
+  banners: [],
+  videos: [],
+  music: []
 };
 
 const schemaStatements = [
@@ -554,11 +548,11 @@ export async function getProductById(db, productId) {
         COUNT(pc.id) AS rating_total
       FROM products p
       LEFT JOIN product_comments pc ON pc.product_id = p.id
-      WHERE p.id = ?
+      WHERE p.id = ? OR p.slug = ?
       GROUP BY p.id
     `
     )
-    .bind(productId)
+    .bind(productId, String(productId || "").trim())
     .first();
   return row ? serializeProduct(row) : null;
 }
@@ -1093,7 +1087,8 @@ export async function getUserDashboard(db, userId) {
         producto: {
           nombre: item.nombre
         }
-      }))
+      })),
+      favoritos: []
     }
   };
 }
