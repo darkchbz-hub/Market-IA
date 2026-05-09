@@ -7,10 +7,12 @@ import { apiFetch } from "../lib/api.js";
 
 const fallbackHome = {
   settings: {},
+  general: {},
   categories: [],
   banners: [],
   videos: [],
   music: [],
+  partnerLogos: [],
   featuredProducts: [],
   offerProducts: [],
   bestsellerProducts: []
@@ -128,6 +130,25 @@ export function HomePage() {
           )}
         </aside>
       </section>
+
+      {!!home.partnerLogos.length && (
+        <section className="section-card">
+          <div className="section-heading">
+            <div>
+              <p className="section-label">{home.general.partnerTitle || "Confianza"}</p>
+              <h2>{home.general.partnerTitle || "Empresas asociadas"}</h2>
+            </div>
+          </div>
+          <div className="partner-grid">
+            {home.partnerLogos.map((partner) => (
+              <article key={partner.id || partner.name} className="partner-card">
+                {partner.logoUrl && <img src={partner.logoUrl} alt={partner.name} />}
+                <strong>{partner.name}</strong>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="section-card">
         <div className="section-heading">

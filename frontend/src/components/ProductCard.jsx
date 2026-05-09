@@ -26,12 +26,12 @@ export function ProductCard({ product, onAddToCart, onBuyNow, busy }) {
         <div className="rating-row">
           <strong>{renderStars(product.ratingPromedio || 0)}</strong>
           <span>
-            {Number(product.ratingPromedio || 0).toFixed(1)} · {product.totalOpiniones || 0} opiniones
+            {Number(product.ratingPromedio || 0).toFixed(1)} · {product.ratingTotal || 0} opiniones
           </span>
         </div>
 
         <div className="product-card__price">
-          {product.precioAnterior > product.precio && <small>${product.precioAnterior.toFixed(2)}</small>}
+          {product.precioOriginal > product.precio && <small>${product.precioOriginal.toFixed(2)}</small>}
           <strong>${product.precio.toFixed(2)}</strong>
           {product.descuento > 0 && <span>{product.descuento}% off</span>}
         </div>

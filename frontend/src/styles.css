@@ -926,6 +926,31 @@ textarea {
   border: 0;
 }
 
+.partner-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
+}
+
+.partner-card {
+  display: grid;
+  gap: 10px;
+  align-items: center;
+  justify-items: center;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.55);
+  text-align: center;
+}
+
+.partner-card img {
+  width: 100%;
+  max-width: 110px;
+  height: 48px;
+  object-fit: contain;
+}
+
 .market-footer {
   display: flex;
   justify-content: space-between;

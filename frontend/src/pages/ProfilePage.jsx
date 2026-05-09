@@ -12,7 +12,7 @@ const initialAddress = {
 };
 
 export function ProfilePage() {
-  const { token, refreshUser } = useAuth();
+  const { token, refreshUser, isAdmin } = useAuth();
   const [dashboard, setDashboard] = useState(null);
   const [form, setForm] = useState({
     nombre: "",
@@ -181,6 +181,11 @@ export function ProfilePage() {
           </label>
 
           {message && <p className="inline-message">{message}</p>}
+          {isAdmin && (
+            <Link to="/admin" className="button button--ghost">
+              Ir al panel administrador
+            </Link>
+          )}
           <button type="submit" className="button button--primary" disabled={saving}>
             {saving ? "Guardando..." : "Guardar cambios"}
           </button>

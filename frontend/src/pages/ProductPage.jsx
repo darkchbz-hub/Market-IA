@@ -10,6 +10,25 @@ function renderStars(rating = 0) {
   return Array.from({ length: 5 }, (_, index) => (index < rounded ? "★" : "☆")).join("");
 }
 
+function mapProductPayload(response) {
+  return {
+    ...response.product,
+    reviews: (response.comments || []).map((comment) => ({
+      id: comment.id,
+      rating: comment.rating,
+      comentario: comment.comentario,
+      fecha: comment.fecha,
+      usuario: {
+        nombre: comment.usuario,
+        nickname: comment.nickname,
+        avatarUrl: comment.avatarUrl
+      }
+    })),
+    questions: response.questions || [],
+    relatedProducts: response.relatedProducts || []
+  };
+}
+
 export function ProductPage() {
   const { productId } = useParams();
   const navigate = useNavigate();
@@ -19,6 +38,7 @@ export function ProductPage() {
   const [activeImage, setActiveImage] = useState(0);
   const [busyId, setBusyId] = useState("");
   const [message, setMessage] = useState("");
+  const [canComment, setCanComment] = useState(false);
   const [reviewForm, setReviewForm] = useState({ rating: "5", comentario: "" });
   const [questionForm, setQuestionForm] = useState({ pregunta: "" });
 
@@ -27,9 +47,12 @@ export function ProductPage() {
 
     apiFetch(`/products/${productId}`)
       .then((response) => {
-        if (active) {
-          setProduct(response.product);
+        if (!active) {
+          return;
         }
+
+        setProduct(mapProductPayload(response));
+        setCanComment(Boolean(response.canComment));
       })
       .catch((error) => {
         if (active) {
@@ -54,6 +77,12 @@ export function ProductPage() {
   }, [product, isAuthenticated, token]);
 
   const mainImage = useMemo(() => product?.imagenes?.[activeImage] || product?.imagenes?.[0] || "", [product, activeImage]);
+
+  const reloadProduct = async () => {
+    const response = await apiFetch(`/products/${productId}`);
+    setProduct(mapProductPayload(response));
+    setCanComment(Boolean(response.canComment));
+  };
 
   const handleAddToCart = async () => {
     if (!product) {
@@ -93,8 +122,7 @@ export function ProductPage() {
         }
       });
 
-      const refreshed = await apiFetch(`/products/${productId}`);
-      setProduct(refreshed.product);
+      await reloadProduct();
       setReviewForm({ rating: "5", comentario: "" });
       setMessage("Reseña guardada correctamente.");
     } catch (error) {
@@ -112,8 +140,7 @@ export function ProductPage() {
         body: questionForm
       });
 
-      const refreshed = await apiFetch(`/products/${productId}`);
-      setProduct(refreshed.product);
+      await reloadProduct();
       setQuestionForm({ pregunta: "" });
       setMessage("Pregunta enviada correctamente.");
     } catch (error) {
@@ -154,13 +181,23 @@ export function ProductPage() {
           <div className="rating-row">
             <strong>{renderStars(product.ratingPromedio)}</strong>
             <span>
-              {Number(product.ratingPromedio || 0).toFixed(1)} · {product.totalOpiniones || 0} opiniones verificadas
+              {Number(product.ratingPromedio || 0).toFixed(1)} · {product.ratingTotal || 0} opiniones verificadas
             </span>
           </div>
           <p className="muted-text">{product.descripcionCorta || product.descripcion}</p>
 
+          {!!product.tags?.length && (
+            <div className="pill-row">
+              {product.tags.map((tag) => (
+                <span key={tag} className="pill pill--small">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+
           <div className="product-price-box">
-            {product.precioAnterior > product.precio && <small>${product.precioAnterior.toFixed(2)}</small>}
+            {product.precioOriginal > product.precio && <small>${product.precioOriginal.toFixed(2)}</small>}
             <strong>${product.precio.toFixed(2)}</strong>
             {product.descuento > 0 && <span>{product.descuento}% de descuento</span>}
           </div>
@@ -170,8 +207,9 @@ export function ProductPage() {
             <span>Stock: {product.stock}</span>
             <span>Estado: {product.disponibilidad}</span>
             <span>Entrega: {product.fechaEstimada || "Por confirmar"}</span>
-            <span>Envio: {product.infoEnvio || "Envio nacional con seguimiento"}</span>
-            <span>Garantia: {product.garantia || "Garantia segun producto"}</span>
+            <span>Envío: {product.infoEnvio || "Envio nacional con seguimiento"}</span>
+            <span>Garantía: {product.garantia || "Garantia segun producto"}</span>
+            {product.mostrarEnvioGratis && <span>{product.envioGratis ? "Envío gratis" : "Envío con costo"}</span>}
           </div>
 
           <div className="product-summary__actions">
@@ -191,14 +229,6 @@ export function ProductPage() {
               Comprar ahora
             </button>
           </div>
-
-          <div className="pill-row">
-            {(product.metodosPago || []).map((method) => (
-              <span key={method} className="pill pill--small">
-                {method}
-              </span>
-            ))}
-          </div>
         </div>
       </section>
 
@@ -217,21 +247,17 @@ export function ProductPage() {
           <article className="detail-card">
             <h3>Caracteristicas</h3>
             <ul className="feature-list">
-              {(product.atributos || []).map((attribute, index) => (
-                <li key={`${attribute.nombre}-${index}`}>
-                  <strong>{attribute.nombre}:</strong> {attribute.valor}
-                </li>
+              {(product.caracteristicas || []).map((attribute, index) => (
+                <li key={`${attribute}-${index}`}>{attribute}</li>
               ))}
             </ul>
           </article>
           <article className="detail-card">
-            <h3>Variantes</h3>
+            <h3>Informacion adicional</h3>
             <ul className="feature-list">
-              {(product.variantes || []).map((variant, index) => (
-                <li key={`${variant.tipo}-${index}`}>
-                  <strong>{variant.tipo}:</strong> {(variant.opciones || []).join(", ")}
-                </li>
-              ))}
+              <li>Devolucion: {product.devolucion || "Segun producto"}</li>
+              <li>Categoría: {product.categoria}</li>
+              <li>Disponibilidad: {product.disponibilidad}</li>
             </ul>
           </article>
         </div>
@@ -278,7 +304,8 @@ export function ProductPage() {
                 onChange={(event) => setReviewForm((current) => ({ ...current, comentario: event.target.value }))}
               />
             </label>
-            <button type="submit" className="button button--primary">
+            {!canComment && <p className="muted-text">Las reseñas solo se habilitan para compras confirmadas.</p>}
+            <button type="submit" className="button button--primary" disabled={!canComment}>
               Publicar reseña
             </button>
           </form>
@@ -294,24 +321,24 @@ export function ProductPage() {
         </div>
         <div className="community-grid">
           <div className="community-list">
-            {product.questions.map((question) => (
-              <article key={question.id} className="community-card">
-                <strong>{question.usuario.nickname ? `${question.usuario.nombre} /${question.usuario.nickname}` : question.usuario.nombre}</strong>
-                <p>{question.pregunta}</p>
-                <small>{question.respuesta || "Pendiente de respuesta"}</small>
-              </article>
-            ))}
+            {product.questions.length ? (
+              product.questions.map((question) => (
+                <article key={question.id} className="community-card">
+                  <strong>{question.usuario.nickname ? `${question.usuario.nombre} /${question.usuario.nickname}` : question.usuario.nombre}</strong>
+                  <p>{question.pregunta}</p>
+                  <small>{question.respuesta || "Pendiente de respuesta"}</small>
+                </article>
+              ))
+            ) : (
+              <p className="muted-text">Todavía no hay preguntas publicadas para este producto.</p>
+            )}
           </div>
 
           <form className="detail-card" onSubmit={handleQuestionSubmit}>
             <h3>Haz una pregunta</h3>
             <label>
               Tu pregunta
-              <textarea
-                rows="5"
-                value={questionForm.pregunta}
-                onChange={(event) => setQuestionForm({ pregunta: event.target.value })}
-              />
+              <textarea rows="5" value={questionForm.pregunta} onChange={(event) => setQuestionForm({ pregunta: event.target.value })} />
             </label>
             <button type="submit" className="button button--primary">
               Enviar pregunta

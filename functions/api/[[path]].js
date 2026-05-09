@@ -178,6 +178,7 @@ async function buildHomePayload(db) {
 
   return {
     settings: siteContent.home || {},
+    general: siteContent.general || {},
     categories: buildCategoryItems(),
     banners: Array.isArray(siteContent.banners) && siteContent.banners.length
       ? siteContent.banners
@@ -196,7 +197,8 @@ async function buildHomePayload(db) {
     offerProducts: [...products]
       .filter((item) => item.descuentoActivo || Number(item.precioOriginal || 0) > Number(item.precio || 0))
       .slice(0, 8),
-    bestsellerProducts: products.slice(0, 8)
+    bestsellerProducts: products.slice(0, 8),
+    partnerLogos: Array.isArray(siteContent.general?.partnerLogos) ? siteContent.general.partnerLogos : []
   };
 }
 
@@ -398,10 +400,19 @@ export async function onRequest(context) {
         await recordProductView(db, user.id, product.id);
       }
 
+      const relatedPayload = await listProducts(db, {
+        category: product.categoria,
+        limit: 6
+      });
+      const comments = await listProductComments(db, product.id);
+      const relatedProducts = (relatedPayload.items || []).filter((item) => Number(item.id) !== Number(product.id)).slice(0, 4);
+
       return json({
         product,
-        comments: await listProductComments(db, product.id),
-        canComment: user ? await canUserCommentOnProduct(db, user.id, product.id) : false
+        comments,
+        canComment: user ? await canUserCommentOnProduct(db, user.id, product.id) : false,
+        relatedProducts,
+        questions: []
       });
     }
 
@@ -428,6 +439,18 @@ export async function onRequest(context) {
         ok: true,
         message: "La seccion de preguntas queda lista para integrarse en una siguiente fase."
       }, 201);
+    }
+
+    if (first === "products" && second && third === "view" && request.method === "POST") {
+      const user = await authenticate(request, env, db);
+      const product = await getProductById(db, second);
+
+      if (!product) {
+        throw httpError(404, "El producto no existe.");
+      }
+
+      await recordProductView(db, user.id, product.id);
+      return json({ ok: true });
     }
 
     if (first === "products" && second && third === "comments" && request.method === "POST") {
@@ -537,6 +560,18 @@ export async function onRequest(context) {
       return json({
         items: await listAdminProducts(db)
       });
+    }
+
+    if (first === "admin" && second === "products" && third && request.method === "GET") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      const product = await getProductById(db, third);
+
+      if (!product) {
+        throw httpError(404, "El producto no existe.");
+      }
+
+      return json({ product });
     }
 
     if (first === "admin" && second === "summary" && request.method === "GET") {
@@ -754,6 +789,15 @@ export async function onRequest(context) {
     }
 
     if (first === "admin" && second === "products" && third && request.method === "PUT") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      const body = await readJson(request);
+      return json({
+        product: await updateProduct(db, Number(third), body)
+      });
+    }
+
+    if (first === "admin" && second === "products" && third && request.method === "PATCH") {
       const user = await authenticate(request, env, db);
       requireAdmin(user);
       const body = await readJson(request);

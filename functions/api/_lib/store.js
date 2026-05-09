@@ -15,7 +15,7 @@ export const marketplaceCategories = [
   { slug: "productos", nombre: "Productos", descripcion: "Categorias generales y destacados del marketplace.", icono: "•", color: "#38bdf8" },
   { slug: "electronica", nombre: "Electronica", descripcion: "Equipos, dispositivos y accesorios.", icono: "▰", color: "#2563eb" },
   { slug: "casa", nombre: "Casa", descripcion: "Soluciones utiles para tu hogar.", icono: "⌂", color: "#14b8a6" },
-  { slug: "apps", nombre: "Apps IA", descripcion: "Software, suscripciones y productividad.", icono: "✧", color: "#7c3aed" },
+  { slug: "apps", nombre: "Suscripciones IA", descripcion: "Software, accesos premium, automatizacion y productividad.", icono: "✧", color: "#7c3aed" },
   { slug: "packs", nombre: "Packs", descripcion: "Combos digitales y herramientas completas.", icono: "◇", color: "#f97316" },
   { slug: "webs", nombre: "Servicios web", descripcion: "Landing pages, tiendas y desarrollo.", icono: "◎", color: "#38bdf8" },
   { slug: "mas", nombre: "Mas", descripcion: "Otras oportunidades y categorias especiales.", icono: "…", color: "#94a3b8" }
@@ -40,7 +40,9 @@ const defaultSiteContent = {
     siteName: "Gray C Shop",
     tagline: "Marketplace elegante para categorias premium y compras confiables.",
     supportEmail: "ventas@graycshop.com",
-    supportPhone: "+52 5512345678"
+    supportPhone: "+52 5512345678",
+    partnerTitle: "Empresas asociadas",
+    partnerLogos: []
   },
   banners: [],
   videos: [],
@@ -224,10 +226,14 @@ export function serializeProduct(row) {
     slug: row.slug,
     nombre: row.nombre,
     descripcion: row.descripcion,
+    descripcionCorta: row.descripcion_corta || "",
+    marca: row.marca || "",
     precio: descuentoActivo ? precioDescuento : precioBase,
     precioOriginal: descuentoActivo ? precioBase : 0,
     precioDescuento: descuentoActivo ? precioDescuento : 0,
     descuentoActivo,
+    oferta: descuentoActivo,
+    descuento: descuentoActivo && precioBase > 0 ? Math.round(((precioBase - precioDescuento) / precioBase) * 100) : 0,
     stock: Number(row.stock),
     categoria: row.categoria,
     tags: parseJson(row.tags, []),
@@ -235,6 +241,11 @@ export function serializeProduct(row) {
     caracteristicas: parseJson(row.caracteristicas, []),
     envioGratis: Boolean(Number(row.envio_gratis || 0)),
     mostrarEnvioGratis: Boolean(Number(row.mostrar_envio_gratis || 0)),
+    disponibilidad: row.disponibilidad || (Number(row.stock || 0) > 0 ? "Disponible" : "Agotado"),
+    infoEnvio: row.info_envio || "",
+    fechaEstimada: row.fecha_estimada || "",
+    garantia: row.garantia || "",
+    devolucion: row.devolucion || "",
     ratingPromedio: Number(row.rating_promedio || 0),
     ratingTotal: Number(row.rating_total || 0)
   };
@@ -339,6 +350,13 @@ export async function ensureDatabase(env) {
       }
 
       await ensureColumn(env.DB, "products", "caracteristicas", "TEXT NOT NULL DEFAULT '[]'");
+      await ensureColumn(env.DB, "products", "descripcion_corta", "TEXT NOT NULL DEFAULT ''");
+      await ensureColumn(env.DB, "products", "marca", "TEXT NOT NULL DEFAULT ''");
+      await ensureColumn(env.DB, "products", "disponibilidad", "TEXT NOT NULL DEFAULT 'Disponible'");
+      await ensureColumn(env.DB, "products", "info_envio", "TEXT NOT NULL DEFAULT ''");
+      await ensureColumn(env.DB, "products", "fecha_estimada", "TEXT NOT NULL DEFAULT ''");
+      await ensureColumn(env.DB, "products", "garantia", "TEXT NOT NULL DEFAULT ''");
+      await ensureColumn(env.DB, "products", "devolucion", "TEXT NOT NULL DEFAULT ''");
       await ensureColumn(env.DB, "products", "envio_gratis", "INTEGER NOT NULL DEFAULT 0");
       await ensureColumn(env.DB, "products", "mostrar_envio_gratis", "INTEGER NOT NULL DEFAULT 0");
       await ensureColumn(env.DB, "products", "precio_descuento", "REAL NOT NULL DEFAULT 0");
@@ -559,6 +577,8 @@ export async function getProductById(db, productId) {
 export async function createProduct(db, input) {
   const nombre = String(input.nombre || "").trim();
   const descripcion = String(input.descripcion || "").trim();
+  const descripcionCorta = String(input.descripcionCorta || "").trim();
+  const marca = String(input.marca || "").trim();
   const categoria = String(input.categoria || "").trim().toLowerCase();
   const precio = Number(input.precio);
   const stock = Number(input.stock);
@@ -587,6 +607,11 @@ export async function createProduct(db, input) {
     input.mostrarEnvioGratis === "on" ||
     Number(input.mostrarEnvioGratis) === 1;
   const precioDescuento = Number(input.precioDescuento || 0);
+  const disponibilidad = String(input.disponibilidad || (stock > 0 ? "Disponible" : "Agotado")).trim();
+  const infoEnvio = String(input.infoEnvio || "").trim();
+  const fechaEstimada = String(input.fechaEstimada || "").trim();
+  const garantia = String(input.garantia || "").trim();
+  const devolucion = String(input.devolucion || "").trim();
 
   if (!nombre || !descripcion || !allowedCategories.includes(categoria)) {
     throw new Error("Completa nombre, descripcion y una categoria valida.");
@@ -616,20 +641,30 @@ export async function createProduct(db, input) {
   const response = await db
     .prepare(
       `
-      INSERT INTO products (slug, nombre, descripcion, precio, stock, categoria, tags, imagenes, caracteristicas, envio_gratis, mostrar_envio_gratis, precio_descuento)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO products (
+        slug, nombre, descripcion, descripcion_corta, marca, precio, stock, categoria, tags, imagenes, caracteristicas,
+        disponibilidad, info_envio, fecha_estimada, garantia, devolucion, envio_gratis, mostrar_envio_gratis, precio_descuento
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
     )
     .bind(
       slug,
       nombre,
       descripcion,
+      descripcionCorta,
+      marca,
       precio,
       stock,
       categoria,
       JSON.stringify(tags),
       JSON.stringify(imagenes),
       JSON.stringify(caracteristicas),
+      disponibilidad,
+      infoEnvio,
+      fechaEstimada,
+      garantia,
+      devolucion,
       envioGratis ? 1 : 0,
       mostrarEnvioGratis ? 1 : 0,
       Number.isFinite(precioDescuento) && precioDescuento > 0 && precioDescuento < precio ? precioDescuento : 0
@@ -648,6 +683,8 @@ export async function updateProduct(db, productId, input) {
 
   const nombre = String(input.nombre ?? existing.nombre).trim();
   const descripcion = String(input.descripcion ?? existing.descripcion).trim();
+  const descripcionCorta = String(input.descripcionCorta ?? existing.descripcionCorta ?? "").trim();
+  const marca = String(input.marca ?? existing.marca ?? "").trim();
   const categoria = String(input.categoria ?? existing.categoria).trim().toLowerCase();
   const precio = Number(input.precio ?? existing.precio);
   const stock = Number(input.stock ?? existing.stock);
@@ -687,6 +724,11 @@ export async function updateProduct(db, productId, input) {
         Number(input.mostrarEnvioGratis) === 1
       : existing.mostrarEnvioGratis;
   const precioDescuento = input.precioDescuento !== undefined ? Number(input.precioDescuento || 0) : Number(existing.precioDescuento || 0);
+  const disponibilidad = String(input.disponibilidad ?? existing.disponibilidad ?? (stock > 0 ? "Disponible" : "Agotado")).trim();
+  const infoEnvio = String(input.infoEnvio ?? existing.infoEnvio ?? "").trim();
+  const fechaEstimada = String(input.fechaEstimada ?? existing.fechaEstimada ?? "").trim();
+  const garantia = String(input.garantia ?? existing.garantia ?? "").trim();
+  const devolucion = String(input.devolucion ?? existing.devolucion ?? "").trim();
 
   if (!nombre || !descripcion || !allowedCategories.includes(categoria)) {
     throw new Error("Completa nombre, descripcion y una categoria valida.");
@@ -723,7 +765,7 @@ export async function updateProduct(db, productId, input) {
     .prepare(
       `
       UPDATE products
-      SET slug = ?, nombre = ?, descripcion = ?, precio = ?, stock = ?, categoria = ?, tags = ?, imagenes = ?, caracteristicas = ?, envio_gratis = ?, mostrar_envio_gratis = ?, precio_descuento = ?
+      SET slug = ?, nombre = ?, descripcion = ?, descripcion_corta = ?, marca = ?, precio = ?, stock = ?, categoria = ?, tags = ?, imagenes = ?, caracteristicas = ?, disponibilidad = ?, info_envio = ?, fecha_estimada = ?, garantia = ?, devolucion = ?, envio_gratis = ?, mostrar_envio_gratis = ?, precio_descuento = ?
       WHERE id = ?
     `
     )
@@ -731,12 +773,19 @@ export async function updateProduct(db, productId, input) {
       slug,
       nombre,
       descripcion,
+      descripcionCorta,
+      marca,
       precio,
       stock,
       categoria,
       JSON.stringify(tags),
       JSON.stringify(imagenes),
       JSON.stringify(caracteristicas),
+      disponibilidad,
+      infoEnvio,
+      fechaEstimada,
+      garantia,
+      devolucion,
       envioGratis ? 1 : 0,
       mostrarEnvioGratis ? 1 : 0,
       precioDescuento > 0 && precioDescuento < precio ? precioDescuento : 0,
@@ -1078,13 +1127,16 @@ export async function getUserDashboard(db, userId) {
         items: itemsByOrder.get(item.id) || []
       })),
       busquedas: (searches.results || []).map((item) => ({
+        id: `${item.fecha}-${item.busqueda}`,
         busqueda: item.busqueda,
         fecha: item.fecha
       })),
       productosVistos: (views.results || []).map((item) => ({
+        id: `${item.fecha}-${item.nombre}`,
         fecha: item.fecha,
         producto: {
-          nombre: item.nombre
+          nombre: item.nombre,
+          slug: normalizeSlug(item.nombre)
         }
       })),
       favoritos: []
@@ -1402,10 +1454,13 @@ export async function getSiteContent(db) {
   const content = structuredClone(defaultSiteContent);
 
   for (const row of result.results || []) {
-    content[row.clave] = {
-      ...(content[row.clave] || {}),
-      ...parseJson(row.valor, {})
-    };
+    const parsed = parseJson(row.valor, Array.isArray(defaultSiteContent[row.clave]) ? [] : {});
+    content[row.clave] = Array.isArray(defaultSiteContent[row.clave])
+      ? (Array.isArray(parsed) ? parsed : [])
+      : {
+          ...(content[row.clave] || {}),
+          ...(parsed && typeof parsed === "object" ? parsed : {})
+        };
   }
 
   return content;
@@ -1418,10 +1473,12 @@ export async function updateSiteContent(db, sectionKey, input) {
     throw new Error("La seccion que intentas editar no existe.");
   }
 
-  const nextValue = {
-    ...defaultSiteContent[key],
-    ...(input && typeof input === "object" ? input : {})
-  };
+  const nextValue = Array.isArray(defaultSiteContent[key])
+    ? (Array.isArray(input) ? input : [])
+    : {
+        ...defaultSiteContent[key],
+        ...(input && typeof input === "object" ? input : {})
+      };
 
   await db
     .prepare(

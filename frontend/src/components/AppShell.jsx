@@ -27,7 +27,7 @@ export function AppShell() {
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const { itemCount } = useCart();
   const [search, setSearch] = useState("");
-  const [siteData, setSiteData] = useState({ settings: {}, categories: [], music: [] });
+  const [siteData, setSiteData] = useState({ settings: {}, general: {}, categories: [], music: [] });
   const [musicEnabled, setMusicEnabled] = useState(false);
   const [musicVolume, setMusicVolume] = useState(0.35);
   const [trackIndex, setTrackIndex] = useState(0);
@@ -38,12 +38,13 @@ export function AppShell() {
       .then((payload) => {
         setSiteData({
           settings: payload.settings || {},
+          general: payload.general || {},
           categories: payload.categories || [],
           music: payload.music || []
         });
       })
       .catch(() => {
-        setSiteData({ settings: {}, categories: [], music: [] });
+        setSiteData({ settings: {}, general: {}, categories: [], music: [] });
       });
   }, []);
 
@@ -119,8 +120,8 @@ export function AppShell() {
           <Link to="/" className="brand">
             <span className="brand__badge">GC</span>
             <span>
-              <strong>Gray C Shop</strong>
-              <small>{siteData.settings.heroEyebrow || "Marketplace elegante"}</small>
+              <strong>{siteData.general.siteName || "Gray C Shop"}</strong>
+              <small>{siteData.general.tagline || siteData.settings.heroEyebrow || "Marketplace elegante"}</small>
             </span>
           </Link>
 
@@ -140,8 +141,13 @@ export function AppShell() {
               <>
                 <Link to="/perfil" className="account-chip">
                   <span>{user?.nombre}</span>
-                  <small>{isAdmin ? "Panel privado" : "Tu cuenta"}</small>
+                  <small>{isAdmin ? "Cuenta administradora" : "Tu cuenta"}</small>
                 </Link>
+                {isAdmin && (
+                  <Link to="/admin" className="button button--primary">
+                    Administrar tienda
+                  </Link>
+                )}
                 <Link to="/carrito" className="cart-button">
                   Carrito
                   <span>{itemCount}</span>
@@ -225,7 +231,7 @@ export function AppShell() {
 
       <footer className="market-footer">
         <div>
-          <strong>Gray C Shop</strong>
+          <strong>{siteData.general.siteName || "Gray C Shop"}</strong>
           <p>Marketplace formal, moderno y listo para crecer con categorias, pedidos y panel administrador.</p>
         </div>
         <div className="market-footer__links">
