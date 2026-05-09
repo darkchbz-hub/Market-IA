@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { authenticate } from "../../middlewares/authenticate.js";
 import { asyncHandler } from "../../shared/async-handler.js";
-import { getCurrentUserProfile, loginUser, registerUser } from "./service.js";
+import { getCurrentUserProfile, loginUser, registerUser, requestPasswordReset, resetPassword } from "./service.js";
 
 export const authRouter = Router();
 
@@ -17,6 +17,22 @@ authRouter.post(
   "/login",
   asyncHandler(async (req, res) => {
     const result = await loginUser(req.body || {});
+    res.json(result);
+  })
+);
+
+authRouter.post(
+  "/forgot-password",
+  asyncHandler(async (req, res) => {
+    const result = await requestPasswordReset(req.body?.email);
+    res.json(result);
+  })
+);
+
+authRouter.post(
+  "/reset-password",
+  asyncHandler(async (req, res) => {
+    const result = await resetPassword(req.body || {});
     res.json(result);
   })
 );

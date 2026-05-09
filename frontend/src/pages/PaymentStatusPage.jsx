@@ -18,15 +18,10 @@ export function PaymentStatusPage() {
 
   useEffect(() => {
     const processPayment = async () => {
-      if (!token || !orderId || status === "cancel") {
-        return;
-      }
+      if (!token || !orderId || status === "cancel") return;
 
       const key = `${status}-${orderId}-${stripePaymentIntent || paypalOrderId || mercadopagoPaymentId || "none"}`;
-
-      if (processedRef.current === key) {
-        return;
-      }
+      if (processedRef.current === key) return;
 
       processedRef.current = key;
       setProcessing(true);
@@ -36,43 +31,23 @@ export function PaymentStatusPage() {
           await apiFetch("/payments/stripe/confirm", {
             method: "POST",
             token,
-            body: {
-              orderId,
-              paymentIntentId: stripePaymentIntent
-            }
+            body: { orderId, paymentIntentId: stripePaymentIntent }
           });
-
-          setMessage("El pago con Stripe ya fue confirmado.");
-          return;
-        }
-
-        if (status === "success" && paypalOrderId) {
+        } else if (status === "success" && paypalOrderId) {
           await apiFetch("/payments/paypal/capture", {
             method: "POST",
             token,
-            body: {
-              orderId,
-              paypalOrderId
-            }
+            body: { orderId, paypalOrderId }
           });
-
-          setMessage("El pago con PayPal ya fue capturado.");
-          return;
-        }
-
-        if ((status === "success" || status === "pending") && mercadopagoPaymentId) {
+        } else if ((status === "success" || status === "pending") && mercadopagoPaymentId) {
           await apiFetch("/payments/mercadopago/confirm", {
             method: "POST",
             token,
-            body: {
-              orderId,
-              paymentId: mercadopagoPaymentId
-            }
+            body: { orderId, paymentId: mercadopagoPaymentId }
           });
-
-          setMessage("El pago con Mercado Pago ya fue validado.");
-          return;
         }
+
+        setMessage("El estado del pago ya fue sincronizado con tu pedido.");
       } catch (error) {
         setMessage(error.message);
       } finally {
@@ -91,21 +66,17 @@ export function PaymentStatusPage() {
 
   return (
     <section className="status-page">
-      <div className="card status-card">
-        <p className="section-label">Resultado del pago</p>
-        <h1>{titles[status] || "Estado del pago"}</h1>
-        <p>
-          {orderId
-            ? `La orden ${orderId} ya regreso desde el proveedor.`
-            : "El proveedor de pago devolvio el estado de la operacion."}
-        </p>
-        {processing && <p className="inline-message">Validando pago con el proveedor...</p>}
+      <div className="status-card">
+        <p className="section-label">Estado del pago</p>
+        <h1>{titles[status] || "Resultado del pago"}</h1>
+        <p>{orderId ? `La orden ${orderId} ya regreso desde el proveedor.` : "El proveedor devolvio el estado de la operacion."}</p>
+        {processing && <p className="inline-message">Validando el pago con el proveedor...</p>}
         {message && <p className="inline-message">{message}</p>}
         <div className="action-row">
           <Link to="/perfil" className="button button--primary">
-            Ver perfil
+            Ver mis pedidos
           </Link>
-          <Link to="/" className="button button--light">
+          <Link to="/catalogo" className="button button--ghost">
             Volver al catalogo
           </Link>
         </div>

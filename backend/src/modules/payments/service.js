@@ -28,18 +28,18 @@ function mapOrderStatus(paymentStatus) {
   const normalized = String(paymentStatus || "").toLowerCase();
 
   if (["succeeded", "approved", "completed", "paid", "approved"].includes(normalized)) {
-    return "paid";
+    return "pagado";
   }
 
   if (["pending", "in_process", "requires_payment_method", "requires_confirmation", "processing", "created"].includes(normalized)) {
-    return "awaiting_payment";
+    return "pendiente";
   }
 
   if (["rejected", "failed", "canceled", "cancelled", "denied", "voided", "expired"].includes(normalized)) {
-    return "payment_failed";
+    return "cancelado";
   }
 
-  return "awaiting_payment";
+  return "pendiente";
 }
 
 async function parseResponse(response) {
@@ -136,6 +136,8 @@ async function upsertPaymentRecord({ orderId, provider, providerPaymentId, amoun
 async function syncOrderPayment({ provider, orderId, providerPaymentId, status, rawResponse }) {
   const amountCents = await getOrderAmount(orderId);
   const orderStatus = mapOrderStatus(status);
+  const normalizedPaymentStatus =
+    orderStatus === "pagado" ? "paid" : orderStatus === "cancelado" ? "failed" : "pending";
 
   await upsertPaymentRecord({
     orderId,
@@ -153,10 +155,11 @@ async function syncOrderPayment({ provider, orderId, providerPaymentId, status, 
         payment_provider = $2,
         payment_reference = $3,
         estado = $4,
+        payment_status = $5,
         updated_at = NOW()
       WHERE id = $1
     `,
-    [orderId, provider, providerPaymentId || null, orderStatus]
+    [orderId, provider, providerPaymentId || null, orderStatus, normalizedPaymentStatus]
   );
 
   return {
@@ -276,12 +279,12 @@ export async function createPayPalOrder(orderId, auth) {
       application_context: {
         brand_name: "MarketZone",
         user_action: "PAY_NOW",
-        return_url: buildClientPageUrl("pago-estado.html", {
+        return_url: buildClientPageUrl("checkout/success", {
           status: "success",
           provider: "paypal",
           orderId: order.id
         }),
-        cancel_url: buildClientPageUrl("pago-estado.html", {
+        cancel_url: buildClientPageUrl("checkout/cancel", {
           status: "cancel",
           provider: "paypal",
           orderId: order.id
@@ -360,17 +363,17 @@ export async function createMercadoPagoPreference(orderId, auth) {
       external_reference: order.id,
       notification_url: `${env.serverUrl}/api/payments/webhook/mercadopago`,
       back_urls: {
-        success: buildClientPageUrl("pago-estado.html", {
+        success: buildClientPageUrl("checkout/success", {
           status: "success",
           provider: "mercadopago",
           orderId: order.id
         }),
-        failure: buildClientPageUrl("pago-estado.html", {
+        failure: buildClientPageUrl("checkout/cancel", {
           status: "cancel",
           provider: "mercadopago",
           orderId: order.id
         }),
-        pending: buildClientPageUrl("pago-estado.html", {
+        pending: buildClientPageUrl("checkout/pending", {
           status: "pending",
           provider: "mercadopago",
           orderId: order.id

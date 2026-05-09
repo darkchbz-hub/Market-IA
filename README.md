@@ -1,90 +1,135 @@
-# MarketZone
+# Gray C Shop Marketplace
 
-Proyecto rehecho desde cero como marketplace web estilo tienda grande, inspirado en patrones de Amazon y Mercado Libre, pero enfocado en vender suscripciones IA, apps, servicios web y paquetes digitales.
+Marketplace profesional, formal y moderno para vender productos de muchas categorias con:
 
-## Stack
+- frontend React + Vite
+- backend Node.js + Express
+- PostgreSQL
+- usuarios y administrador
+- catalogo, producto individual, carrito y checkout
+- reseñas verificadas
+- panel administrador
+- banners, videos y musica administrables
 
-- Web publica: HTML, CSS y JavaScript en `html-upload/`
-- Backend cloud: Cloudflare Pages Functions en `functions/`
-- Base de datos cloud: Cloudflare D1
-- Backend legado/local: Node.js + Express + PostgreSQL en `backend/`
-- Frontend legado/local: React + Vite en `frontend/`
-- Seguridad cloud: token firmado + hash PBKDF2
-- Pagos cloud: PayPal Orders API + Mercado Pago Checkout Preferences
+## Arquitectura
 
-## Estructura
+### Frontend
 
-- `html-upload/`: sitio estatico que ya publicaste en Cloudflare Pages
-- `functions/`: backend nativo para Cloudflare Pages Functions
-- `backend/`: API anterior en Node/Express para entorno local o migraciones
-- `frontend/`: app React anterior
-- `render.yaml`: opcion previa para Render si alguna vez quieres volver a Node + Postgres
+- `frontend/src/components`: shell principal, tarjetas y componentes reutilizables
+- `frontend/src/pages`: home, catalogo, producto, carrito, checkout, perfil, login, registro, admin y soporte
+- `frontend/src/context`: autenticacion y carrito
+- `frontend/src/lib`: cliente API y utilidades
 
-## Fases cubiertas
+### Backend
 
-1. Base de datos
-2. Backend API
-3. Usuarios
-4. Productos
-5. Carrito
-6. Checkout
-7. Pagos
-8. Panel admin
-9. Chat
-10. Tracking
+- `backend/src/modules/auth`: registro, login y recuperacion
+- `backend/src/modules/users`: perfil, favoritos y cancelacion de pedidos
+- `backend/src/modules/products`: home publica, catalogo, producto, categorias, reseñas y preguntas
+- `backend/src/modules/cart`: carrito persistente
+- `backend/src/modules/checkout`: pedidos y resumen
+- `backend/src/modules/payments`: Stripe, PayPal y Mercado Pago listos para integrar
+- `backend/src/modules/admin`: dashboard, usuarios, pedidos, reseñas, categorias y contenido del sitio
 
-## Requisitos locales
+### Base de datos
 
-- Ninguno para la version Cloudflare ya publicada
-- Node.js 20+ y PostgreSQL 15+ solo si quieres seguir usando la version local
+La base ya queda preparada con tablas para:
 
-## Despliegue en Cloudflare
+- `users`
+- `categories`
+- `products`
+- `cart_items`
+- `coupons`
+- `orders`
+- `order_items`
+- `payments`
+- `messages`
+- `search_history`
+- `product_views`
+- `wishlist_items`
+- `product_reviews`
+- `product_questions`
+- `site_banners`
+- `promo_videos`
+- `music_tracks`
+- `site_settings`
+- `admin_activity_logs`
+- `password_resets`
 
-Tu sitio publico actual es:
+## Funcionalidad implementada
 
-- [https://market-ia-8wq.pages.dev](https://market-ia-8wq.pages.dev)
+### Publico
 
-Para que el backend nuevo funcione en ese mismo proyecto:
+- portada premium con hero
+- banners y videos
+- musica ambiental manual
+- categorias destacadas
+- recomendados, ofertas y mas vendidos
+- catalogo con filtros por categoria, marca, precio, rating y disponibilidad
+- producto individual con galeria, reseñas, preguntas y relacionados
 
-1. En Cloudflare Pages deja:
-   - `Framework preset`: `None`
-   - `Build command`: `exit 0`
-   - `Build output directory`: `html-upload`
-2. En tu proyecto de Pages agrega una base D1.
-3. En `Settings > Functions > D1 bindings` crea el binding:
-   - `Variable name`: `DB`
-4. En `Settings > Environment variables` agrega:
-   - `JWT_SECRET`
-   - `ADMIN_EMAIL`
-   - `ADMIN_PASSWORD`
-   - `PAYPAL_ENV` = `sandbox` o `live`
-   - `PAYPAL_CLIENT_ID`
-   - `PAYPAL_CLIENT_SECRET`
-   - `MERCADOPAGO_ACCESS_TOKEN`
-5. Vuelve a desplegar desde GitHub.
+### Usuario
 
-Con eso:
+- crear cuenta
+- iniciar sesion
+- recuperar contraseña por token
+- editar perfil
+- guardar direccion, telefono, nickname y avatar
+- favoritos
+- carrito persistente
+- historial de pedidos
+- cancelacion si el estado lo permite
 
-- `/api/*` saldra desde `functions/api/[[path]].js`
-- la web publica seguira saliendo desde `html-upload/`
-- el catalogo, login, carrito, perfil y checkout usaran Cloudflare, no localhost
+### Administrador
 
-## Instalacion local legacy
+- dashboard con metricas
+- crear productos
+- activar o desactivar productos
+- ver usuarios
+- abrir detalle de usuario
+- ver carrito y pedidos del usuario
+- cambiar estados de pedido
+- moderar reseñas
+- ver categorias
+- editar textos principales
+- administrar banners, videos y musica
 
-### 1. Base de datos
+## Instalacion
 
-1. Crea una base llamada `marketzone`
-2. Ejecuta:
-   - `backend/src/db/schema.sql`
-   - `backend/src/db/seed.sql`
+### 1. Requisitos
 
-### 2. Variables de entorno
+- Node.js 20+
+- PostgreSQL 15+
 
-1. Ya se dejaron `backend/.env` y `frontend/.env` listos para entorno local
-2. Si cambias puertos, dominio o credenciales, actualizalos segun tu entorno
-3. Completa credenciales de Stripe, PayPal y Mercado Pago
+### 2. Variables de entorno backend
 
-### 3. Dependencias
+Crea `backend/.env` con algo similar:
+
+```env
+PORT=4000
+DATABASE_URL=postgres://usuario:password@localhost:5432/gray_c_shop
+JWT_SECRET=tu_clave_segura
+CLIENT_URL=http://localhost:5173
+SERVER_URL=http://localhost:4000
+ADMIN_EMAIL=admin@marketzone.mx
+PAYPAL_CLIENT_ID=
+PAYPAL_CLIENT_SECRET=
+PAYPAL_ENV=sandbox
+MERCADOPAGO_ACCESS_TOKEN=
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+```
+
+### 3. Variables de entorno frontend
+
+Crea `frontend/.env`:
+
+```env
+VITE_API_URL=http://localhost:4000/api
+VITE_SOCKET_URL=http://localhost:4000
+VITE_STRIPE_PUBLISHABLE_KEY=
+```
+
+### 4. Instalar dependencias
 
 ```bash
 cd backend
@@ -94,50 +139,78 @@ cd ../frontend
 npm install
 ```
 
-### 4. Ejecutar
+### 5. Crear estructura inicial de base de datos
+
+```bash
+cd backend
+npm run db:setup
+```
+
+Ese comando ejecuta:
+
+- `backend/src/db/schema.sql`
+- `backend/src/db/seed.sql`
+
+### 6. Ejecutar
+
+Backend:
 
 ```bash
 cd backend
 npm run dev
-
-abre http://localhost:4000/
 ```
 
-## Credenciales seed
+Frontend:
 
-- Admin:
-  - email: `admin@marketzone.mx`
-  - contrasena: `Admin123!`
+```bash
+cd frontend
+npm run dev
+```
 
-## Notas
+## Primer administrador
 
-- En esta maquina ya se instalaron Node.js y PostgreSQL 16 para levantar el proyecto localmente.
-- El backend responde en `http://localhost:4000/api/health`.
-- La version HTML completa se sirve desde `http://localhost:4000/`.
-- La salida compilada del frontend React sigue estando en `frontend/dist/`, pero ya no es necesaria para la version HTML desplegable.
-- La API crea primero la orden local y luego inicia el flujo del proveedor de pago.
-- La version Cloudflare vive en `functions/` y usa D1 en lugar de PostgreSQL.
-- Stripe queda pendiente en la version Cloudflare; por ahora el checkout HTML usa PayPal y Mercado Pago.
-- PayPal queda pensado para Orders v2 con captura.
-- Mercado Pago queda pensado para Checkout Pro via preferencias.
-- La carpeta `html-upload/` ya puede apuntar a la API del mismo dominio en Cloudflare Pages.
+El seed crea esta cuenta:
 
-## Despliegue alterno en Render
+- email: `admin@marketzone.mx`
+- contraseña: `Admin123!`
 
-1. Sube este proyecto a GitHub.
-2. En Render crea el servicio desde `render.yaml`.
-3. Agrega tus credenciales reales de Stripe, PayPal y Mercado Pago en Render.
-4. Abre la URL publica del servicio y la web HTML quedara servida desde la raiz.
+Si quieres otro correo para admin, cambia `ADMIN_EMAIL` antes de correr `npm run db:setup`.
 
-## Referencias oficiales consultadas
+## Subida de imagenes y videos
 
-- Cloudflare Pages deploy anything: [developers.cloudflare.com/pages/framework-guides/deploy-anything/](https://developers.cloudflare.com/pages/framework-guides/deploy-anything/)
-- Cloudflare Pages Functions get started: [developers.cloudflare.com/pages/functions/get-started/](https://developers.cloudflare.com/pages/functions/get-started/)
-- Cloudflare Pages bindings: [developers.cloudflare.com/pages/functions/bindings/](https://developers.cloudflare.com/pages/functions/bindings/)
-- Cloudflare D1: [developers.cloudflare.com/d1/](https://developers.cloudflare.com/d1/)
-- Stripe PaymentIntents API: [docs.stripe.com/api/payment_intents/create?lang=node](https://docs.stripe.com/api/payment_intents/create?lang=node)
-- Stripe Payment Intents guide: [docs.stripe.com/payments/payment-intents](https://docs.stripe.com/payments/payment-intents)
-- PayPal Orders v2: [developer.paypal.com/docs/api/orders/v2/](https://developer.paypal.com/docs/api/orders/v2/)
-- PayPal Orders integration guide: [developer.paypal.com/api/rest/integration/orders-api/](https://developer.paypal.com/api/rest/integration/orders-api/)
-- Mercado Pago crear preferencia: [mercadopago.com.mx/developers/es/reference/preferences/_checkout_preferences/post](https://www.mercadopago.com.mx/developers/es/reference/preferences/_checkout_preferences/post)
-- Mercado Pago Checkout Pro: [mercadopago.com.mx/developers/en/docs/checkout-pro/create-payment-preference](https://www.mercadopago.com.mx/developers/en/docs/checkout-pro/create-payment-preference)
+Actualmente el panel admin acepta:
+
+- URL directa
+- data URL base64
+
+Eso permite subir archivos desde el navegador sin depender de otro servicio durante el arranque del proyecto.
+
+Para produccion real se recomienda mover medios a:
+
+- Cloudflare R2
+- Cloudinary
+- S3 compatible
+
+## Seguridad aplicada
+
+- contraseñas hasheadas
+- JWT para sesiones
+- roles `customer` y `admin`
+- rutas admin protegidas
+- validaciones basicas de formularios
+- consultas parametrizadas
+- proteccion CORS
+- helmet en backend
+
+## Estado del proyecto
+
+Esta version ya es una base funcional amplia y mucho mas cercana a un marketplace profesional que la version anterior.
+
+Siguientes mejoras naturales:
+
+- integrar almacenamiento externo real para medios
+- mejorar gestion de variantes por combinacion
+- cupones completos desde admin
+- respuestas de preguntas desde admin
+- paqueterias reales
+- pagos productivos finales

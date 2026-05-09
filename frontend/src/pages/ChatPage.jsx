@@ -13,13 +13,9 @@ export function ChatPage() {
   const [status, setStatus] = useState("Conectando...");
 
   const loadThreads = async () => {
-    if (!isAdmin) {
-      return;
-    }
-
+    if (!isAdmin) return;
     const payload = await apiFetch("/messages/threads", { token });
     setThreads(payload.items);
-
     if (!selectedUserId && payload.items[0]) {
       setSelectedUserId(payload.items[0].usuarioId);
     }
@@ -40,44 +36,26 @@ export function ChatPage() {
   }, [isAdmin, user?.id, token]);
 
   useEffect(() => {
-    if (!token || (!selectedUserId && isAdmin)) {
-      return;
-    }
-
+    if (!token || (!selectedUserId && isAdmin)) return;
     loadMessages(selectedUserId).catch(() => {});
   }, [token, selectedUserId, isAdmin]);
 
   useEffect(() => {
-    if (!token) {
-      return;
-    }
+    if (!token) return;
 
-    const socket = io(SOCKET_URL, {
-      auth: { token }
-    });
-
+    const socket = io(SOCKET_URL, { auth: { token } });
     socketRef.current = socket;
 
-    socket.on("connect", () => {
-      setStatus("Conectado");
-    });
-
+    socket.on("connect", () => setStatus("Conectado"));
+    socket.on("disconnect", () => setStatus("Desconectado"));
+    socket.on("chat:error", (payload) => setStatus(payload.message || "No se pudo enviar el mensaje."));
     socket.on("chat:message", (message) => {
       if (!isAdmin || message.usuarioId === selectedUserId) {
         setMessages((current) => [...current, message]);
       }
-
       if (isAdmin) {
         loadThreads().catch(() => {});
       }
-    });
-
-    socket.on("chat:error", (payload) => {
-      setStatus(payload.message || "No se pudo enviar el mensaje.");
-    });
-
-    socket.on("disconnect", () => {
-      setStatus("Desconectado");
     });
 
     return () => {
@@ -88,10 +66,7 @@ export function ChatPage() {
 
   const handleSend = (event) => {
     event.preventDefault();
-
-    if (!draft.trim() || !socketRef.current) {
-      return;
-    }
+    if (!draft.trim() || !socketRef.current) return;
 
     socketRef.current.emit("chat:send", {
       userId: isAdmin ? selectedUserId : undefined,
@@ -102,67 +77,59 @@ export function ChatPage() {
   };
 
   return (
-    <div className="page-section page-section--spaced">
-      <div className="chat-layout">
-        {isAdmin && (
-          <aside className="card chat-sidebar">
-            <div className="section-header">
-              <div>
-                <p className="section-label">Conversaciones</p>
-                <h2>Clientes</h2>
-              </div>
-            </div>
-            <div className="list-stack">
-              {threads.map((thread) => (
-                <button
-                  key={thread.usuarioId}
-                  type="button"
-                  className={`thread-card ${selectedUserId === thread.usuarioId ? "is-active" : ""}`}
-                  onClick={() => setSelectedUserId(thread.usuarioId)}
-                >
-                  <strong>{thread.nombre}</strong>
-                  <span>{thread.email}</span>
-                  <small>{thread.mensajesSinLeer} sin leer</small>
-                </button>
-              ))}
-            </div>
-          </aside>
-        )}
-
-        <section className="card chat-main">
-          <div className="section-header">
+    <div className="chat-layout">
+      {isAdmin && (
+        <aside className="chat-sidebar">
+          <div className="section-heading section-heading--compact">
             <div>
-              <p className="section-label">Soporte</p>
-              <h2>{isAdmin ? "Atencion a clientes" : "Habla con nosotros"}</h2>
+              <p className="section-label">Conversaciones</p>
+              <h2>Clientes</h2>
             </div>
-            <span className="status-pill">{status}</span>
           </div>
-
-          <div className="messages-box">
-            {messages.map((message) => (
-              <article
-                key={`${message.id}-${message.fecha}`}
-                className={`message ${message.rolRemitente === "admin" ? "message--admin" : "message--customer"}`}
+          <div className="list-stack">
+            {threads.map((thread) => (
+              <button
+                key={thread.usuarioId}
+                type="button"
+                className={`thread-card ${selectedUserId === thread.usuarioId ? "is-active" : ""}`}
+                onClick={() => setSelectedUserId(thread.usuarioId)}
               >
-                <strong>{message.rolRemitente === "admin" ? "Soporte" : "Cliente"}</strong>
-                <p>{message.mensaje}</p>
-              </article>
+                <strong>{thread.nombre}</strong>
+                <span>{thread.email}</span>
+              </button>
             ))}
           </div>
+        </aside>
+      )}
 
-          <form className="chat-form" onSubmit={handleSend}>
-            <input
-              type="text"
-              placeholder="Escribe tu mensaje"
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-            />
-            <button type="submit" className="button button--primary" disabled={!selectedUserId && isAdmin}>
-              Enviar
-            </button>
-          </form>
-        </section>
-      </div>
+      <section className="chat-main">
+        <div className="section-heading section-heading--compact">
+          <div>
+            <p className="section-label">Soporte</p>
+            <h2>{isAdmin ? "Atencion al cliente" : "Habla con nosotros"}</h2>
+          </div>
+          <span className="status-pill">{status}</span>
+        </div>
+
+        <div className="messages-box">
+          {messages.map((message) => (
+            <article
+              key={`${message.id}-${message.fecha}`}
+              className={`message ${message.rolRemitente === "admin" ? "message--admin" : "message--customer"}`}
+            >
+              <strong>{message.rolRemitente === "admin" ? "Soporte" : "Cliente"}</strong>
+              <p>{message.mensaje}</p>
+            </article>
+          ))}
+        </div>
+
+        <form className="chat-form" onSubmit={handleSend}>
+          <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Escribe tu mensaje" />
+          <button type="submit" className="button button--primary" disabled={!selectedUserId && isAdmin}>
+            Enviar
+          </button>
+        </form>
+      </section>
     </div>
   );
 }

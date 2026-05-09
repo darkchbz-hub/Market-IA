@@ -1,7 +1,21 @@
-import { useEffect, useState } from "react";
-import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { apiFetch } from "../lib/api.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCart } from "../context/CartContext.jsx";
+
+const categoryIconMap = {
+  tecnologia: "⌘",
+  hogar: "⌂",
+  jardin: "❋",
+  automovil: "◈",
+  empresas: "▣",
+  mayoreo: "◫",
+  importados: "◎",
+  mascotas: "✦",
+  ropa: "◍",
+  juguetes: "★"
+};
 
 function navLinkClass({ isActive }) {
   return `market-nav__link${isActive ? " is-active" : ""}`;
@@ -10,15 +24,61 @@ function navLinkClass({ isActive }) {
 export function AppShell() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams] = useSearchParams();
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const { itemCount } = useCart();
-  const currentSearch = searchParams.get("search") || "";
-  const [search, setSearch] = useState(currentSearch);
+  const [search, setSearch] = useState("");
+  const [siteData, setSiteData] = useState({ settings: {}, categories: [], music: [] });
+  const [musicEnabled, setMusicEnabled] = useState(false);
+  const [musicVolume, setMusicVolume] = useState(0.35);
+  const [trackIndex, setTrackIndex] = useState(0);
+  const audioRef = useRef(null);
 
   useEffect(() => {
-    setSearch(currentSearch);
-  }, [currentSearch]);
+    apiFetch("/products/home")
+      .then((payload) => {
+        setSiteData({
+          settings: payload.settings || {},
+          categories: payload.categories || [],
+          music: payload.music || []
+        });
+      })
+      .catch(() => {
+        setSiteData({ settings: {}, categories: [], music: [] });
+      });
+  }, []);
+
+  const currentTrack = useMemo(() => siteData.music?.[trackIndex] || null, [siteData.music, trackIndex]);
+
+  useEffect(() => {
+    if (!audioRef.current) {
+      return;
+    }
+
+    audioRef.current.volume = musicVolume;
+  }, [musicVolume]);
+
+  useEffect(() => {
+    if (!audioRef.current) {
+      return;
+    }
+
+    if (!musicEnabled) {
+      audioRef.current.pause();
+      return;
+    }
+
+    audioRef.current
+      .play()
+      .then(() => {})
+      .catch(() => {
+        setMusicEnabled(false);
+      });
+  }, [musicEnabled, currentTrack]);
+
+  useEffect(() => {
+    const searchParam = new URLSearchParams(location.search).get("search") || "";
+    setSearch(searchParam);
+  }, [location.search]);
 
   const handleSearchSubmit = (event) => {
     event.preventDefault();
@@ -28,39 +88,47 @@ export function AppShell() {
       params.set("search", search.trim());
     }
 
-    const queryString = params.toString();
-    navigate(queryString ? `/?${queryString}` : "/");
+    navigate(`/catalogo${params.toString() ? `?${params.toString()}` : ""}`);
   };
 
-  const buildCategoryUrl = (category) => {
+  const openCategory = (slug) => {
     const params = new URLSearchParams();
-    const query = location.pathname === "/" ? searchParams.get("search") || "" : "";
+    if (slug) {
+      params.set("category", slug);
+    }
+    navigate(`/catalogo${params.toString() ? `?${params.toString()}` : ""}`);
+  };
 
-    if (query) {
-      params.set("search", query);
+  const nextTrack = () => {
+    if (!siteData.music.length) {
+      return;
     }
 
-    if (category) {
-      params.set("category", category);
-    }
-
-    const queryString = params.toString();
-    return queryString ? `/?${queryString}` : "/";
+    setTrackIndex((current) => (current + 1) % siteData.music.length);
   };
 
   return (
     <div className="marketplace">
       <header className="market-header">
+        <div className="market-announcement">
+          <span className="market-announcement__dot" />
+          <p>{siteData.settings.announcement || "Compra segura, devoluciones claras y experiencia premium."}</p>
+        </div>
+
         <div className="market-header__top">
           <Link to="/" className="brand">
-            <span className="brand__badge">MZ</span>
-            <span className="brand__text">MarketZone</span>
+            <span className="brand__badge">GC</span>
+            <span>
+              <strong>Gray C Shop</strong>
+              <small>{siteData.settings.heroEyebrow || "Marketplace elegante"}</small>
+            </span>
           </Link>
 
           <form className="searchbar" onSubmit={handleSearchSubmit}>
+            <span className="searchbar__icon">⌕</span>
             <input
               type="search"
-              placeholder="Buscar suscripciones, packs, apps o servicios"
+              placeholder="Buscar tecnologia, hogar, mascotas, mayoreo o importados"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
@@ -70,21 +138,21 @@ export function AppShell() {
           <div className="header-actions">
             {isAuthenticated ? (
               <>
-                <div className="account-chip">
-                  <span>Hola, {user?.nombre}</span>
-                  <small>{isAdmin ? "Administrador" : "Mi cuenta"}</small>
-                </div>
+                <Link to="/perfil" className="account-chip">
+                  <span>{user?.nombre}</span>
+                  <small>{isAdmin ? "Panel privado" : "Tu cuenta"}</small>
+                </Link>
                 <Link to="/carrito" className="cart-button">
                   Carrito
                   <span>{itemCount}</span>
                 </Link>
-                <button type="button" className="button button--light" onClick={logout}>
-                  Salir
+                <button type="button" className="button button--ghost" onClick={logout}>
+                  Cerrar sesion
                 </button>
               </>
             ) : (
               <>
-                <Link to="/login" className="button button--light">
+                <Link to="/login" className="button button--ghost">
                   Iniciar sesion
                 </Link>
                 <Link to="/register" className="button button--primary">
@@ -96,31 +164,31 @@ export function AppShell() {
         </div>
 
         <nav className="market-nav">
-          <NavLink to={buildCategoryUrl("")} className={navLinkClass}>
-            Todo
+          <NavLink to="/" end className={navLinkClass}>
+            Inicio
           </NavLink>
-          <NavLink to={buildCategoryUrl("apps")} className={navLinkClass}>
-            Apps IA
+          <NavLink to="/catalogo" className={navLinkClass}>
+            Catalogo
           </NavLink>
-          <NavLink to={buildCategoryUrl("packs")} className={navLinkClass}>
-            Packs
+          {siteData.categories.slice(0, 8).map((category) => (
+            <button
+              key={category.id}
+              type="button"
+              className={`market-nav__link market-nav__link--button${
+                new URLSearchParams(location.search).get("category") === category.slug ? " is-active" : ""
+              }`}
+              onClick={() => openCategory(category.slug)}
+            >
+              <span className="market-nav__icon">{categoryIconMap[category.slug] || "•"}</span>
+              {category.nombre}
+            </button>
+          ))}
+          <NavLink to="/chat" className={navLinkClass}>
+            Soporte
           </NavLink>
-          <NavLink to={buildCategoryUrl("webs")} className={navLinkClass}>
-            Servicios web
-          </NavLink>
-          {isAuthenticated && (
-            <NavLink to="/perfil" className={navLinkClass}>
-              Perfil
-            </NavLink>
-          )}
-          {isAuthenticated && (
-            <NavLink to="/chat" className={navLinkClass}>
-              Soporte
-            </NavLink>
-          )}
           {isAdmin && (
             <NavLink to="/admin" className={navLinkClass}>
-              Admin
+              Administrador
             </NavLink>
           )}
         </nav>
@@ -130,8 +198,41 @@ export function AppShell() {
         <Outlet />
       </main>
 
+      <aside className="music-player">
+        <audio ref={audioRef} src={currentTrack?.audioUrl || ""} onEnded={nextTrack} />
+        <div>
+          <p className="music-player__label">Musica ambiental</p>
+          <strong>{currentTrack?.titulo || "Sin pistas activas"}</strong>
+          <small>{currentTrack?.artista || "Configurable desde administrador"}</small>
+        </div>
+        <div className="music-player__controls">
+          <button type="button" className="button button--ghost" onClick={() => setMusicEnabled((value) => !value)}>
+            {musicEnabled ? "Pausar" : "Reproducir"}
+          </button>
+          <button type="button" className="button button--ghost" onClick={nextTrack}>
+            Cambiar
+          </button>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={musicVolume}
+            onChange={(event) => setMusicVolume(Number(event.target.value))}
+          />
+        </div>
+      </aside>
+
       <footer className="market-footer">
-        <p>MarketZone. Marketplace para suscripciones IA, herramientas y servicios digitales.</p>
+        <div>
+          <strong>Gray C Shop</strong>
+          <p>Marketplace formal, moderno y listo para crecer con categorias, pedidos y panel administrador.</p>
+        </div>
+        <div className="market-footer__links">
+          <Link to="/catalogo">Catalogo</Link>
+          <Link to="/perfil">Mi cuenta</Link>
+          <Link to="/chat">Soporte</Link>
+        </div>
       </footer>
     </div>
   );

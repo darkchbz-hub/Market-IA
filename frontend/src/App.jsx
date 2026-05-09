@@ -3,11 +3,13 @@ import { AppShell } from "./components/AppShell.jsx";
 import { ProtectedRoute } from "./components/ProtectedRoute.jsx";
 import { AdminPage } from "./pages/AdminPage.jsx";
 import { CartPage } from "./pages/CartPage.jsx";
+import { CatalogPage } from "./pages/CatalogPage.jsx";
 import { ChatPage } from "./pages/ChatPage.jsx";
 import { CheckoutPage } from "./pages/CheckoutPage.jsx";
 import { HomePage } from "./pages/HomePage.jsx";
 import { LoginPage } from "./pages/LoginPage.jsx";
 import { PaymentStatusPage } from "./pages/PaymentStatusPage.jsx";
+import { ProductPage } from "./pages/ProductPage.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
 import { RegisterPage } from "./pages/RegisterPage.jsx";
 
@@ -16,6 +18,8 @@ export default function App() {
     <Routes>
       <Route element={<AppShell />}>
         <Route index element={<HomePage />} />
+        <Route path="/catalogo" element={<CatalogPage />} />
+        <Route path="/producto/:productId" element={<ProductPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route

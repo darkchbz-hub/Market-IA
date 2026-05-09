@@ -9,7 +9,7 @@ import { errorHandler } from "./middlewares/error-handler.js";
 import { apiRouter } from "./routes/index.js";
 
 export const app = express();
-const jsonParser = express.json({ limit: "2mb" });
+const jsonParser = express.json({ limit: "20mb" });
 const rawStripeParser = express.raw({ type: "application/json" });
 const allowedOrigins = new Set(env.clientUrls);
 const currentFile = fileURLToPath(import.meta.url);

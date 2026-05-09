@@ -2,6 +2,22 @@ import { query, withTransaction } from "../../db/pool.js";
 import { HttpError } from "../../shared/http-error.js";
 import { clearCart, getCart } from "../cart/service.js";
 
+function parseJson(value, fallback) {
+  if (value === null || value === undefined) {
+    return fallback;
+  }
+
+  if (typeof value === "object") {
+    return value;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
 function mapOrderItem(row) {
   return {
     id: row.id,
@@ -11,7 +27,9 @@ function mapOrderItem(row) {
     precio: Number(row.precio_cents) / 100,
     precioCents: Number(row.precio_cents),
     subtotal: (Number(row.precio_cents) * Number(row.cantidad)) / 100,
-    subtotalCents: Number(row.precio_cents) * Number(row.cantidad)
+    subtotalCents: Number(row.precio_cents) * Number(row.cantidad),
+    estado: row.estado,
+    variante: parseJson(row.variante, {})
   };
 }
 
@@ -19,13 +37,21 @@ function mapOrderRow(row, items = []) {
   return {
     id: row.id,
     usuarioId: row.user_id,
+    subtotal: Number(row.subtotal_cents || 0) / 100,
+    shipping: Number(row.shipping_cents || 0) / 100,
+    discount: Number(row.discount_cents || 0) / 100,
     total: Number(row.total_cents) / 100,
     totalCents: Number(row.total_cents),
     moneda: row.moneda,
     estado: row.estado,
-    direccionEnvio: row.direccion_envio || {},
+    paymentStatus: row.payment_status,
+    shippingStatus: row.shipping_status,
+    direccionEnvio: parseJson(row.direccion_envio, {}),
     proveedorPago: row.payment_provider,
     referenciaPago: row.payment_reference,
+    fechaEstimada: row.estimated_delivery_at,
+    adminNote: row.admin_note || "",
+    history: parseJson(row.status_history, []),
     fecha: row.created_at,
     actualizadoEn: row.updated_at,
     items
@@ -45,6 +71,42 @@ function validateAddress(direccion) {
   }
 }
 
+async function getCouponDiscount(couponCode, subtotalCents, db) {
+  if (!couponCode?.trim()) {
+    return { amountCents: 0, coupon: null };
+  }
+
+  const executor = db ?? { query };
+  const { rows } = await executor.query(
+    `
+      SELECT *
+      FROM coupons
+      WHERE codigo = $1
+        AND activo = TRUE
+        AND (vence_en IS NULL OR vence_en > NOW())
+      LIMIT 1
+    `,
+    [couponCode.trim().toUpperCase()]
+  );
+
+  const coupon = rows[0];
+
+  if (!coupon) {
+    throw new HttpError(404, "El cupon no existe o ya vencio.");
+  }
+
+  if (subtotalCents < Number(coupon.minimo_cents || 0)) {
+    throw new HttpError(400, "El subtotal no alcanza el minimo requerido por el cupon.");
+  }
+
+  const amountCents =
+    coupon.tipo === "fixed"
+      ? Math.min(Number(coupon.valor || 0), subtotalCents)
+      : Math.round(subtotalCents * (Number(coupon.valor || 0) / 100));
+
+  return { amountCents, coupon };
+}
+
 export async function getCheckoutSummary(userId) {
   const cart = await getCart(userId);
 
@@ -52,7 +114,11 @@ export async function getCheckoutSummary(userId) {
     throw new HttpError(400, "Tu carrito esta vacio.");
   }
 
-  return cart;
+  return {
+    ...cart,
+    shipping: 0,
+    shippingCents: 0
+  };
 }
 
 export async function getOrderById(orderId, userId, db) {
@@ -138,18 +204,35 @@ export async function createOrderFromCart(userId, payload) {
       throw new HttpError(400, "Tu carrito esta vacio.");
     }
 
+    const subtotalCents = cart.totalCents;
+    const shippingCents = Math.max(Number(payload.shippingCents || 0), 0);
+    const discountData = await getCouponDiscount(payload.couponCode, subtotalCents, client);
+    const discountCents = discountData.amountCents;
+    const totalCents = Math.max(subtotalCents + shippingCents - discountCents, 0);
+    const estimatedDate = new Date(Date.now() + 1000 * 60 * 60 * 24 * 5);
+
     const { rows } = await client.query(
       `
-        INSERT INTO orders (user_id, total_cents, moneda, estado, direccion_envio, payment_provider)
-        VALUES ($1, $2, $3, 'pending', $4::jsonb, $5)
+        INSERT INTO orders (
+          user_id, subtotal_cents, shipping_cents, discount_cents, total_cents, moneda, estado,
+          payment_status, shipping_status, direccion_envio, payment_provider, estimated_delivery_at, status_history
+        )
+        VALUES (
+          $1, $2, $3, $4, $5, $6, 'pendiente', 'pending', 'pending', $7::jsonb, $8, $9, $10::jsonb
+        )
         RETURNING *
       `,
       [
         userId,
-        cart.totalCents,
+        subtotalCents,
+        shippingCents,
+        discountCents,
+        totalCents,
         payload.moneda || cart.moneda || "MXN",
         JSON.stringify(payload.direccion),
-        payload.proveedorPago || null
+        payload.proveedorPago || null,
+        estimatedDate,
+        JSON.stringify([{ estado: "pendiente", fecha: new Date().toISOString(), origen: "sistema" }])
       ]
     );
 
@@ -172,10 +255,10 @@ export async function createOrderFromCart(userId, payload) {
 
       await client.query(
         `
-          INSERT INTO order_items (order_id, product_id, nombre_producto, cantidad, precio_cents)
-          VALUES ($1, $2, $3, $4, $5)
+          INSERT INTO order_items (order_id, product_id, nombre_producto, cantidad, precio_cents, variante, estado)
+          VALUES ($1, $2, $3, $4, $5, $6::jsonb, 'pendiente')
         `,
-        [order.id, item.productoId, item.nombre, item.cantidad, item.precioCents]
+        [order.id, item.productoId, item.nombre, item.cantidad, item.precioCents, JSON.stringify(item.variante || {})]
       );
     }
 

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { StripeCheckoutBox } from "../components/StripeCheckoutBox.jsx";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCart } from "../context/CartContext.jsx";
 import { apiFetch } from "../lib/api.js";
@@ -10,10 +9,11 @@ const initialAddress = {
   ciudad: "",
   estado: "",
   cp: "",
-  pais: "MX"
+  pais: "Mexico"
 };
 
 export function CheckoutPage() {
+  const navigate = useNavigate();
   const { token, user } = useAuth();
   const { refreshCart } = useCart();
   const [summary, setSummary] = useState(null);
@@ -22,50 +22,17 @@ export function CheckoutPage() {
     ...(user?.direccion || {})
   }));
   const [provider, setProvider] = useState("mercadopago");
-  const [order, setOrder] = useState(null);
-  const [stripeClientSecret, setStripeClientSecret] = useState("");
   const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [order, setOrder] = useState(null);
 
   useEffect(() => {
-    let active = true;
-
     apiFetch("/checkout/summary", { token })
-      .then((payload) => {
-        if (active) {
-          setSummary(payload);
-        }
-      })
-      .catch((error) => {
-        if (active) {
-          setMessage(error.message);
-        }
-      })
-      .finally(() => {
-        if (active) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
+      .then((payload) => setSummary(payload))
+      .catch((error) => setMessage(error.message));
   }, [token]);
 
-  const startProviderFlow = async (createdOrder) => {
-    if (provider === "stripe") {
-      const payload = await apiFetch("/payments/stripe/payment-intent", {
-        method: "POST",
-        token,
-        body: { orderId: createdOrder.id }
-      });
-
-      setStripeClientSecret(payload.clientSecret);
-      setMessage("Orden creada. Completa el formulario de Stripe.");
-      return;
-    }
-
+  const continueWithProvider = async (createdOrder) => {
     if (provider === "paypal") {
       const payload = await apiFetch("/payments/paypal/order", {
         method: "POST",
@@ -77,30 +44,36 @@ export function CheckoutPage() {
         window.location.href = payload.approvalUrl;
         return;
       }
-
-      setMessage("Se creo la orden de PayPal, pero no llego la URL de aprobacion.");
-      return;
     }
 
-    const payload = await apiFetch("/payments/mercadopago/preference", {
-      method: "POST",
-      token,
-      body: { orderId: createdOrder.id }
-    });
+    if (provider === "mercadopago") {
+      const payload = await apiFetch("/payments/mercadopago/preference", {
+        method: "POST",
+        token,
+        body: { orderId: createdOrder.id }
+      });
 
-    if (payload.initPoint) {
-      window.location.href = payload.initPoint;
-      return;
+      if (payload.initPoint) {
+        window.location.href = payload.initPoint;
+        return;
+      }
     }
 
-    setMessage("Se creo la preferencia de Mercado Pago, pero no llego la URL de pago.");
+    if (provider === "stripe") {
+      await apiFetch("/payments/stripe/payment-intent", {
+        method: "POST",
+        token,
+        body: { orderId: createdOrder.id }
+      });
+    }
+
+    navigate(`/checkout/success?orderId=${createdOrder.id}`);
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setSubmitting(true);
     setMessage("");
-    setStripeClientSecret("");
 
     try {
       const payload = await apiFetch("/checkout/orders", {
@@ -114,7 +87,7 @@ export function CheckoutPage() {
 
       setOrder(payload.order);
       await refreshCart();
-      await startProviderFlow(payload.order);
+      await continueWithProvider(payload.order);
     } catch (error) {
       setMessage(error.message);
     } finally {
@@ -122,139 +95,116 @@ export function CheckoutPage() {
     }
   };
 
-  if (loading) {
-    return <div className="page-loader">Preparando checkout...</div>;
+  if (!summary?.items?.length) {
+    return (
+      <div className="empty-state">
+        <p>No hay productos listos para checkout.</p>
+        <Link to="/catalogo" className="button button--primary">
+          Ir al catalogo
+        </Link>
+      </div>
+    );
   }
 
   return (
-    <div className="page-section page-section--spaced">
-      <div className="section-header">
-        <div>
-          <p className="section-label">Checkout</p>
-          <h1>Confirma envio y elige como quieres pagar</h1>
+    <div className="checkout-layout">
+      <form className="section-card" onSubmit={handleSubmit}>
+        <div className="section-heading">
+          <div>
+            <p className="section-label">Checkout</p>
+            <h1>Confirma tu direccion y metodo de pago</h1>
+          </div>
         </div>
-      </div>
 
-      {summary?.items?.length ? (
-        <div className="checkout-layout">
-          <form className="card" onSubmit={handleSubmit}>
-            <h2>Direccion de envio</h2>
-            <div className="form-grid">
-              <label>
-                Calle
-                <input
-                  type="text"
-                  value={address.calle}
-                  onChange={(event) => setAddress((current) => ({ ...current, calle: event.target.value }))}
-                  required
-                />
-              </label>
-              <label>
-                Ciudad
-                <input
-                  type="text"
-                  value={address.ciudad}
-                  onChange={(event) => setAddress((current) => ({ ...current, ciudad: event.target.value }))}
-                  required
-                />
-              </label>
-              <label>
-                Estado
-                <input
-                  type="text"
-                  value={address.estado}
-                  onChange={(event) => setAddress((current) => ({ ...current, estado: event.target.value }))}
-                  required
-                />
-              </label>
-              <label>
-                Codigo postal
-                <input
-                  type="text"
-                  value={address.cp}
-                  onChange={(event) => setAddress((current) => ({ ...current, cp: event.target.value }))}
-                  required
-                />
-              </label>
-            </div>
+        <div className="form-grid form-grid--wide">
+          <label>
+            Calle
+            <input value={address.calle} onChange={(event) => setAddress((current) => ({ ...current, calle: event.target.value }))} required />
+          </label>
+          <label>
+            Ciudad
+            <input value={address.ciudad} onChange={(event) => setAddress((current) => ({ ...current, ciudad: event.target.value }))} required />
+          </label>
+          <label>
+            Estado
+            <input value={address.estado} onChange={(event) => setAddress((current) => ({ ...current, estado: event.target.value }))} required />
+          </label>
+          <label>
+            Codigo postal
+            <input value={address.cp} onChange={(event) => setAddress((current) => ({ ...current, cp: event.target.value }))} required />
+          </label>
+        </div>
 
-            <label>
-              Pais
-              <input
-                type="text"
-                value={address.pais}
-                onChange={(event) => setAddress((current) => ({ ...current, pais: event.target.value }))}
-                required
-              />
-            </label>
+        <label>
+          Pais
+          <input value={address.pais} onChange={(event) => setAddress((current) => ({ ...current, pais: event.target.value }))} required />
+        </label>
 
-            <div className="payment-grid">
-              <button
-                type="button"
-                className={`payment-card ${provider === "mercadopago" ? "is-selected" : ""}`}
-                onClick={() => setProvider("mercadopago")}
-              >
-                <strong>Mercado Pago</strong>
-                <span>Recomendado para Mexico</span>
-              </button>
-              <button
-                type="button"
-                className={`payment-card ${provider === "paypal" ? "is-selected" : ""}`}
-                onClick={() => setProvider("paypal")}
-              >
-                <strong>PayPal</strong>
-                <span>Pago y aprobacion externa</span>
-              </button>
-              <button
-                type="button"
-                className={`payment-card ${provider === "stripe" ? "is-selected" : ""}`}
-                onClick={() => setProvider("stripe")}
-              >
-                <strong>Stripe</strong>
-                <span>Pago embebido con tarjeta</span>
-              </button>
-            </div>
+        <div className="section-heading section-heading--compact">
+          <div>
+            <p className="section-label">Pago</p>
+            <h2>Selecciona tu metodo</h2>
+          </div>
+        </div>
 
-            {message && <p className="inline-message">{message}</p>}
-
-            <button type="submit" className="button button--primary" disabled={submitting}>
-              {submitting ? "Creando orden..." : "Crear orden y continuar"}
+        <div className="payment-grid">
+          {[
+            { id: "mercadopago", title: "Mercado Pago", description: "Checkout externo pensado para Mexico." },
+            { id: "paypal", title: "PayPal", description: "Aprobacion externa con redireccion segura." },
+            { id: "stripe", title: "Tarjeta", description: "Preparado para flujo con tarjeta y tokenizacion." }
+          ].map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`payment-card ${provider === item.id ? "is-selected" : ""}`}
+              onClick={() => setProvider(item.id)}
+            >
+              <strong>{item.title}</strong>
+              <span>{item.description}</span>
             </button>
-
-            {stripeClientSecret && <StripeCheckoutBox clientSecret={stripeClientSecret} orderId={order?.id} />}
-          </form>
-
-          <aside className="card summary-card">
-            <p className="section-label">Resumen</p>
-            <h2>${summary.total.toFixed(2)}</h2>
-            <div className="list-stack">
-              {summary.items.map((item) => (
-                <article key={item.productoId} className="mini-item">
-                  <strong>{item.nombre}</strong>
-                  <span>
-                    {item.cantidad} x ${item.precio.toFixed(2)}
-                  </span>
-                </article>
-              ))}
-            </div>
-
-            {order && (
-              <div className="status-box">
-                <strong>Orden creada</strong>
-                <span>{order.id}</span>
-                <span>{order.estado}</span>
-              </div>
-            )}
-          </aside>
+          ))}
         </div>
-      ) : (
-        <div className="empty-state">
-          <p>No hay productos en tu carrito para continuar.</p>
-          <Link to="/" className="button button--primary">
-            Volver al catalogo
-          </Link>
+
+        {message && <p className="inline-message">{message}</p>}
+
+        <button type="submit" className="button button--primary" disabled={submitting}>
+          {submitting ? "Generando pedido..." : "Crear pedido y continuar"}
+        </button>
+      </form>
+
+      <aside className="section-card order-summary">
+        <p className="section-label">Resumen del pedido</p>
+        <div className="list-stack">
+          {summary.items.map((item) => (
+            <article key={item.productoId} className="mini-item">
+              <strong>{item.nombre}</strong>
+              <span>
+                {item.cantidad} x ${item.precio.toFixed(2)}
+              </span>
+            </article>
+          ))}
         </div>
-      )}
+        <div className="summary-row">
+          <span>Subtotal</span>
+          <strong>${summary.total.toFixed(2)}</strong>
+        </div>
+        <div className="summary-row">
+          <span>Envio</span>
+          <strong>$0.00</strong>
+        </div>
+        <div className="summary-row summary-row--total">
+          <span>Total</span>
+          <strong>${summary.total.toFixed(2)}</strong>
+        </div>
+
+        {order && (
+          <div className="status-box">
+            <strong>Pedido creado</strong>
+            <span>{order.id}</span>
+            <span>{order.estado}</span>
+          </div>
+        )}
+      </aside>
     </div>
   );
 }

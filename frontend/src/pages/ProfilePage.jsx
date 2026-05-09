@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { apiFetch } from "../lib/api.js";
 
@@ -7,7 +8,7 @@ const initialAddress = {
   ciudad: "",
   estado: "",
   cp: "",
-  pais: "MX"
+  pais: "Mexico"
 };
 
 export function ProfilePage() {
@@ -16,45 +17,32 @@ export function ProfilePage() {
   const [form, setForm] = useState({
     nombre: "",
     email: "",
+    telefono: "",
+    nickname: "",
+    avatarUrl: "",
     direccion: initialAddress
   });
   const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const loadDashboard = async () => {
+    const payload = await apiFetch("/users/me", { token });
+    setDashboard(payload);
+    setForm({
+      nombre: payload.user.nombre || "",
+      email: payload.user.email || "",
+      telefono: payload.user.telefono || "",
+      nickname: payload.user.nickname || "",
+      avatarUrl: payload.user.avatarUrl || "",
+      direccion: {
+        ...initialAddress,
+        ...(payload.user.direccion || {})
+      }
+    });
+  };
+
   useEffect(() => {
-    let active = true;
-
-    apiFetch("/users/me", { token })
-      .then((payload) => {
-        if (!active) {
-          return;
-        }
-
-        setDashboard(payload);
-        setForm({
-          nombre: payload.user.nombre || "",
-          email: payload.user.email || "",
-          direccion: {
-            ...initialAddress,
-            ...(payload.user.direccion || {})
-          }
-        });
-      })
-      .catch((error) => {
-        if (active) {
-          setMessage(error.message);
-        }
-      })
-      .finally(() => {
-        if (active) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
+    loadDashboard().catch((error) => setMessage(error.message));
   }, [token]);
 
   const handleSubmit = async (event) => {
@@ -70,8 +58,7 @@ export function ProfilePage() {
       });
 
       await refreshUser();
-      const payload = await apiFetch("/users/me", { token });
-      setDashboard(payload);
+      await loadDashboard();
       setMessage("Perfil actualizado correctamente.");
     } catch (error) {
       setMessage(error.message);
@@ -80,89 +67,104 @@ export function ProfilePage() {
     }
   };
 
-  if (loading) {
-    return <div className="page-loader">Cargando perfil...</div>;
+  const toggleFavorite = async (productId, isSaved) => {
+    try {
+      await apiFetch(`/users/me/favorites/${productId}`, {
+        method: isSaved ? "DELETE" : "POST",
+        token
+      });
+      await loadDashboard();
+    } catch (error) {
+      setMessage(error.message);
+    }
+  };
+
+  const cancelOrder = async (orderId) => {
+    try {
+      await apiFetch(`/users/me/orders/${orderId}/cancel`, {
+        method: "POST",
+        token
+      });
+      await loadDashboard();
+      setMessage("Pedido cancelado correctamente.");
+    } catch (error) {
+      setMessage(error.message);
+    }
+  };
+
+  if (!dashboard) {
+    return <div className="page-loader">{message || "Cargando tu cuenta..."}</div>;
   }
 
   return (
-    <div className="page-section page-section--spaced">
-      <section className="profile-layout">
-        <form className="card" onSubmit={handleSubmit}>
-          <div className="section-header">
+    <div className="page-stack">
+      <div className="profile-shell">
+        <form className="section-card" onSubmit={handleSubmit}>
+          <div className="section-heading">
             <div>
-              <p className="section-label">Perfil</p>
-              <h2>Datos de tu cuenta</h2>
+              <p className="section-label">Tu cuenta</p>
+              <h1>Administra tu informacion personal</h1>
             </div>
           </div>
 
-          <label>
-            Nombre
-            <input
-              type="text"
-              value={form.nombre}
-              onChange={(event) => setForm((current) => ({ ...current, nombre: event.target.value }))}
-            />
-          </label>
+          <div className="form-grid form-grid--wide">
+            <label>
+              Nombre
+              <input value={form.nombre} onChange={(event) => setForm((current) => ({ ...current, nombre: event.target.value }))} />
+            </label>
+            <label>
+              Correo
+              <input value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} />
+            </label>
+            <label>
+              Telefono
+              <input value={form.telefono} onChange={(event) => setForm((current) => ({ ...current, telefono: event.target.value }))} />
+            </label>
+            <label>
+              Nickname
+              <input value={form.nickname} onChange={(event) => setForm((current) => ({ ...current, nickname: event.target.value }))} />
+            </label>
+          </div>
 
           <label>
-            Email
-            <input
-              type="email"
-              value={form.email}
-              onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
-            />
+            Foto de perfil (URL o data URL)
+            <input value={form.avatarUrl} onChange={(event) => setForm((current) => ({ ...current, avatarUrl: event.target.value }))} />
           </label>
 
-          <div className="form-grid">
+          <div className="form-grid form-grid--wide">
             <label>
               Calle
               <input
-                type="text"
                 value={form.direccion.calle}
                 onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    direccion: { ...current.direccion, calle: event.target.value }
-                  }))
+                  setForm((current) => ({ ...current, direccion: { ...current.direccion, calle: event.target.value } }))
                 }
               />
             </label>
             <label>
               Ciudad
               <input
-                type="text"
                 value={form.direccion.ciudad}
                 onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    direccion: { ...current.direccion, ciudad: event.target.value }
-                  }))
+                  setForm((current) => ({ ...current, direccion: { ...current.direccion, ciudad: event.target.value } }))
                 }
               />
             </label>
             <label>
               Estado
               <input
-                type="text"
                 value={form.direccion.estado}
                 onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    direccion: { ...current.direccion, estado: event.target.value }
-                  }))
+                  setForm((current) => ({ ...current, direccion: { ...current.direccion, estado: event.target.value } }))
                 }
               />
             </label>
             <label>
               Codigo postal
               <input
-                type="text"
                 value={form.direccion.cp}
                 onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    direccion: { ...current.direccion, cp: event.target.value }
-                  }))
+                  setForm((current) => ({ ...current, direccion: { ...current.direccion, cp: event.target.value } }))
                 }
               />
             </label>
@@ -171,13 +173,9 @@ export function ProfilePage() {
           <label>
             Pais
             <input
-              type="text"
               value={form.direccion.pais}
               onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  direccion: { ...current.direccion, pais: event.target.value }
-                }))
+                setForm((current) => ({ ...current, direccion: { ...current.direccion, pais: event.target.value } }))
               }
             />
           </label>
@@ -188,72 +186,85 @@ export function ProfilePage() {
           </button>
         </form>
 
-        <div className="history-column">
-          <section className="card">
-            <div className="section-header">
+        <div className="profile-shell__side">
+          <section className="section-card">
+            <div className="section-heading section-heading--compact">
               <div>
-                <p className="section-label">Ordenes</p>
-                <h2>Compras recientes</h2>
+                <p className="section-label">Tus compras</p>
+                <h2>Historial de pedidos</h2>
               </div>
             </div>
             <div className="list-stack">
-              {dashboard?.historial.ordenes.length ? (
-                dashboard.historial.ordenes.map((order) => (
-                  <article key={order.id} className="mini-item">
+              {dashboard.historial.ordenes.map((order) => (
+                <article key={order.id} className="order-card">
+                  <div className="order-card__head">
                     <strong>{order.id.slice(0, 8)}</strong>
                     <span>{order.estado}</span>
-                    <span>${order.total.toFixed(2)}</span>
+                  </div>
+                  <small>{new Date(order.fecha).toLocaleString()}</small>
+                  <p>Metodo: {order.metodoPago || "Por definir"} · Total: ${order.total.toFixed(2)}</p>
+                  <p>Entrega estimada: {order.fechaEstimada ? new Date(order.fechaEstimada).toLocaleDateString() : "Por definir"}</p>
+                  {order.cancelable && (
+                    <button type="button" className="button button--ghost" onClick={() => cancelOrder(order.id)}>
+                      Cancelar pedido
+                    </button>
+                  )}
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="section-card">
+            <div className="section-heading section-heading--compact">
+              <div>
+                <p className="section-label">Favoritos</p>
+                <h2>Tu wishlist</h2>
+              </div>
+            </div>
+            <div className="list-stack">
+              {dashboard.historial.favoritos.length ? (
+                dashboard.historial.favoritos.map((item) => (
+                  <article key={item.id} className="mini-item mini-item--product">
+                    <img src={item.imagenes?.[0]} alt={item.nombre} />
+                    <div>
+                      <strong>{item.nombre}</strong>
+                      <span>{item.categoria}</span>
+                    </div>
+                    <button type="button" className="button button--ghost" onClick={() => toggleFavorite(item.id, true)}>
+                      Quitar
+                    </button>
                   </article>
                 ))
               ) : (
-                <p className="muted-text">Todavia no tienes ordenes.</p>
+                <p className="muted-text">Todavia no guardas favoritos.</p>
               )}
             </div>
           </section>
 
-          <section className="card">
-            <div className="section-header">
+          <section className="section-card">
+            <div className="section-heading section-heading--compact">
               <div>
-                <p className="section-label">Busquedas</p>
-                <h2>Ultimas consultas</h2>
+                <p className="section-label">Actividad</p>
+                <h2>Busquedas y productos vistos</h2>
               </div>
             </div>
             <div className="list-stack">
-              {dashboard?.historial.busquedas.length ? (
-                dashboard.historial.busquedas.map((item) => (
-                  <article key={item.id} className="mini-item">
-                    <strong>{item.busqueda}</strong>
-                    <span>{new Date(item.fecha).toLocaleString()}</span>
-                  </article>
-                ))
-              ) : (
-                <p className="muted-text">Aun no hay busquedas registradas.</p>
-              )}
-            </div>
-          </section>
-
-          <section className="card">
-            <div className="section-header">
-              <div>
-                <p className="section-label">Productos vistos</p>
-                <h2>Actividad reciente</h2>
-              </div>
-            </div>
-            <div className="list-stack">
-              {dashboard?.historial.productosVistos.length ? (
-                dashboard.historial.productosVistos.map((item) => (
-                  <article key={item.id} className="mini-item">
-                    <strong>{item.producto.nombre}</strong>
-                    <span>{new Date(item.fecha).toLocaleString()}</span>
-                  </article>
-                ))
-              ) : (
-                <p className="muted-text">Aun no has visto productos.</p>
-              )}
+              {dashboard.historial.busquedas.map((item) => (
+                <article key={item.id} className="mini-item">
+                  <strong>{item.busqueda}</strong>
+                  <small>{new Date(item.fecha).toLocaleString()}</small>
+                </article>
+              ))}
+              {dashboard.historial.productosVistos.map((item) => (
+                <article key={item.id} className="mini-item">
+                  <Link to={`/producto/${item.producto.slug}`}>{item.producto.nombre}</Link>
+                  <small>{new Date(item.fecha).toLocaleString()}</small>
+                </article>
+              ))}
             </div>
           </section>
         </div>
-      </section>
+      </div>
     </div>
   );
 }
