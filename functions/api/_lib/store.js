@@ -279,10 +279,9 @@ async function seedDatabase(db, env) {
 
   const adminEmail = getAdminEmail(env);
   const existingAdmin = await db.prepare("SELECT id FROM users WHERE email = ?").bind(adminEmail).first();
+  const passwordHash = await hashPassword(getAdminPassword(env));
 
   if (!existingAdmin) {
-    const passwordHash = await hashPassword(getAdminPassword(env));
-
     await db
       .prepare(
         `
@@ -306,8 +305,8 @@ async function seedDatabase(db, env) {
       .run();
   } else {
     await db
-      .prepare("UPDATE users SET nombre = ?, role = 'admin' WHERE email = ?")
-      .bind("Administrador Gray C Shop", adminEmail)
+      .prepare("UPDATE users SET nombre = ?, role = 'admin', password_hash = ? WHERE email = ?")
+      .bind("Administrador Gray C Shop", passwordHash, adminEmail)
       .run();
   }
 
