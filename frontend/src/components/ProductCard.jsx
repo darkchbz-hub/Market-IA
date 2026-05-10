@@ -21,7 +21,6 @@ export function ProductCard({ product, onAddToCart, onBuyNow, busy }) {
         <Link to={`/producto/${product.slug || product.id}`} className="product-card__title">
           {product.nombre}
         </Link>
-        <p className="product-card__description">{product.descripcionCorta || product.descripcion}</p>
 
         <div className="rating-row">
           <strong>{renderStars(product.ratingPromedio || 0)}</strong>

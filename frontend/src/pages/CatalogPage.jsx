@@ -15,6 +15,7 @@ export function CatalogPage() {
   const [message, setMessage] = useState("");
   const [busyId, setBusyId] = useState("");
   const [loading, setLoading] = useState(true);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const filters = useMemo(
     () => ({
@@ -112,12 +113,24 @@ export function CatalogPage() {
 
   return (
     <div className="catalog-shell">
-      <aside className="filter-panel">
+      <button type="button" className="filters-fab" onClick={() => setFiltersOpen(true)} aria-label="Abrir filtros">
+        <span />
+        <span />
+        <span />
+        Filtros
+      </button>
+
+      {filtersOpen && <button type="button" className="filters-backdrop" onClick={() => setFiltersOpen(false)} aria-label="Cerrar filtros" />}
+
+      <aside className={`filter-panel filter-panel--floating${filtersOpen ? " is-open" : ""}`}>
         <div className="section-heading section-heading--compact">
           <div>
             <p className="section-label">Filtros</p>
             <h2>Refina tu busqueda</h2>
           </div>
+          <button type="button" className="button button--ghost" onClick={() => setFiltersOpen(false)}>
+            Cerrar
+          </button>
         </div>
 
         <label>
@@ -125,7 +138,9 @@ export function CatalogPage() {
           <input
             type="search"
             value={filters.search}
-            onChange={(event) => updateFilters({ ...filters, search: event.target.value })}
+            onChange={(event) => {
+              updateFilters({ ...filters, search: event.target.value });
+            }}
             placeholder="Producto, marca o descripcion"
           />
         </label>

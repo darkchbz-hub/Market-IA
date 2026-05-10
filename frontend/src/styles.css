@@ -88,6 +88,13 @@ textarea {
   backdrop-filter: blur(18px);
   background: rgba(9, 17, 31, 0.9);
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: transform 0.28s ease, opacity 0.28s ease;
+  will-change: transform;
+}
+
+.market-header.is-hidden {
+  transform: translateY(-115%);
+  opacity: 0.98;
 }
 
 .market-header__top,
@@ -488,13 +495,65 @@ textarea {
 }
 
 .catalog-shell {
-  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  position: relative;
+}
+
+.filters-fab {
+  position: fixed;
+  right: 18px;
+  top: 148px;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(56, 189, 248, 0.38);
+  background: rgba(14, 23, 39, 0.94);
+  color: #fff;
+  box-shadow: var(--shadow);
+  font-weight: 600;
+}
+
+.filters-fab span {
+  width: 14px;
+  height: 2px;
+  border-radius: 999px;
+  background: #9fd0ff;
+  display: block;
+}
+
+.filters-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 38;
+  border: 0;
+  background: rgba(2, 6, 13, 0.62);
 }
 
 .filter-panel {
-  position: sticky;
-  top: 156px;
   align-self: start;
+}
+
+.filter-panel--floating {
+  position: fixed;
+  top: 136px;
+  right: 18px;
+  z-index: 39;
+  width: min(360px, calc(100vw - 28px));
+  max-height: calc(100vh - 160px);
+  overflow: auto;
+  transform: translateX(115%);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.24s ease, opacity 0.24s ease;
+}
+
+.filter-panel--floating.is-open {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .catalog-results,
@@ -1060,6 +1119,17 @@ textarea {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .filters-fab {
+    top: 122px;
+    right: 12px;
+  }
+
+  .filter-panel--floating {
+    top: 110px;
+    right: 10px;
+    max-height: calc(100vh - 124px);
+  }
+
   .product-gallery {
     grid-template-columns: 1fr;
   }
@@ -1088,7 +1158,6 @@ textarea {
 
   .hero-panel,
   .section-card,
-  .filter-panel,
   .auth-card,
   .chat-sidebar,
   .chat-main,
@@ -1098,7 +1167,22 @@ textarea {
   }
 
   .product-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filter-panel--floating {
+    width: calc(100vw - 20px);
+    right: 10px;
+    top: 102px;
+    max-height: calc(100vh - 116px);
+    padding: 16px;
+  }
+
+  .filters-fab {
+    top: 110px;
+    right: 10px;
+    padding: 9px 12px;
+    font-size: 0.9rem;
   }
 
   .market-nav {
