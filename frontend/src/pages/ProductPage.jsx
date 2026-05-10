@@ -77,6 +77,7 @@ export function ProductPage() {
   }, [product, isAuthenticated, token]);
 
   const mainImage = useMemo(() => product?.imagenes?.[activeImage] || product?.imagenes?.[0] || "", [product, activeImage]);
+  const totalImages = product?.imagenes?.length || 0;
 
   const reloadProduct = async () => {
     const response = await apiFetch(`/products/${productId}`);
@@ -152,31 +153,68 @@ export function ProductPage() {
     return <div className="page-loader">{message || "Cargando producto..."}</div>;
   }
 
+  const goPrevImage = () => {
+    if (totalImages <= 1) {
+      return;
+    }
+    setActiveImage((current) => (current - 1 + totalImages) % totalImages);
+  };
+
+  const goNextImage = () => {
+    if (totalImages <= 1) {
+      return;
+    }
+    setActiveImage((current) => (current + 1) % totalImages);
+  };
+
   return (
     <div className="page-stack">
       {message && <p className="inline-message">{message}</p>}
 
-      <section className="product-detail-shell">
-        <div className="product-gallery">
-          <div className="product-gallery__thumbs">
-            {product.imagenes.map((image, index) => (
+      <section className="product-detail-shell product-detail-shell--market">
+        <div className="product-visual-card">
+          <div className="product-gallery">
+            <div className="product-gallery__thumbs">
+              {product.imagenes.map((image, index) => (
+                <button
+                  key={`${image}-${index}`}
+                  type="button"
+                  className={`product-gallery__thumb${activeImage === index ? " is-active" : ""}`}
+                  onClick={() => setActiveImage(index)}
+                >
+                  <img src={image} alt={`${product.nombre} ${index + 1}`} />
+                </button>
+              ))}
+            </div>
+            <div className="product-gallery__main">
               <button
-                key={`${image}-${index}`}
                 type="button"
-                className={`product-gallery__thumb${activeImage === index ? " is-active" : ""}`}
-                onClick={() => setActiveImage(index)}
+                className="product-gallery__arrow product-gallery__arrow--left"
+                onClick={goPrevImage}
+                disabled={totalImages <= 1}
+                aria-label="Imagen anterior"
               >
-                <img src={image} alt={`${product.nombre} ${index + 1}`} />
+                ‹
               </button>
-            ))}
-          </div>
-          <div className="product-gallery__main">
-            <img src={mainImage} alt={product.nombre} />
+              <img src={mainImage} alt={product.nombre} />
+              <button
+                type="button"
+                className="product-gallery__arrow product-gallery__arrow--right"
+                onClick={goNextImage}
+                disabled={totalImages <= 1}
+                aria-label="Imagen siguiente"
+              >
+                ›
+              </button>
+            </div>
           </div>
         </div>
 
         <div className="product-summary">
-          <p className="section-label">{product.categoria}</p>
+          <p className="section-label">
+            {product.disponibilidad || "Nuevo"} · {product.ratingTotal || 0} vendidos
+          </p>
+          <span className="product-category-link">{product.categoria}</span>
           <h1>{product.nombre}</h1>
           <div className="rating-row">
             <strong>{renderStars(product.ratingPromedio)}</strong>
@@ -184,7 +222,7 @@ export function ProductPage() {
               {Number(product.ratingPromedio || 0).toFixed(1)} · {product.ratingTotal || 0} opiniones verificadas
             </span>
           </div>
-          <p className="muted-text">{product.descripcionCorta || product.descripcion}</p>
+          <p className="muted-text">{product.descripcionCorta || "Producto con garantia y soporte especializado."}</p>
 
           {!!product.tags?.length && (
             <div className="pill-row">
@@ -202,23 +240,38 @@ export function ProductPage() {
             {product.descuento > 0 && <span>{product.descuento}% de descuento</span>}
           </div>
 
-          <div className="product-summary__info">
-            <span>Marca: {product.marca || "Gray C Shop"}</span>
-            <span>Stock: {product.stock}</span>
-            <span>Estado: {product.disponibilidad}</span>
-            <span>Entrega: {product.fechaEstimada || "Por confirmar"}</span>
-            <span>Envío: {product.infoEnvio || "Envio nacional con seguimiento"}</span>
-            <span>Garantía: {product.garantia || "Garantia segun producto"}</span>
-            {product.mostrarEnvioGratis && <span>{product.envioGratis ? "Envío gratis" : "Envío con costo"}</span>}
+          <div className="product-summary__payment-note">
+            {product.metodosPago || "Pagos seguros con tarjeta, transferencia y wallets compatibles"}
           </div>
 
-          <div className="product-summary__actions">
-            <button type="button" className="button button--primary" disabled={busyId === product.id} onClick={handleAddToCart}>
-              {busyId === product.id ? "Agregando..." : "Agregar al carrito"}
-            </button>
+          <div className="product-summary__info product-summary__info--market">
+            <span>Marca: {product.marca || "Gray C Shop"}</span>
+            <span>Estado: {product.disponibilidad}</span>
+            <span>Entrega: {product.fechaEstimada || "Por confirmar"}</span>
+            <span>Envio: {product.infoEnvio || "Envio nacional con seguimiento"}</span>
+            <span>Garantia: {product.garantia || "Garantia segun producto"}</span>
+            {product.mostrarEnvioGratis && <span>{product.envioGratis ? "Envio gratis" : "Envio con costo"}</span>}
+          </div>
+        </div>
+
+        <aside className="purchase-panel">
+          <div className="purchase-panel__block">
+            <strong className="purchase-panel__title">Llega {product.envioGratis ? "gratis" : "segun zona"}</strong>
+            <p>{product.fechaEstimada || "Entrega estimada por confirmar"}</p>
+          </div>
+
+          <div className="purchase-panel__block">
+            <strong className="purchase-panel__title">Stock disponible</strong>
+            <p>
+              Cantidad: 1 unidad · <span>{product.stock} disponibles</span>
+            </p>
+          </div>
+
+          <div className="product-summary__actions product-summary__actions--stack">
             <button
               type="button"
-              className="button button--ghost"
+              className="button button--primary"
+              disabled={busyId === product.id}
               onClick={async () => {
                 const added = await handleAddToCart();
                 if (added) {
@@ -228,8 +281,16 @@ export function ProductPage() {
             >
               Comprar ahora
             </button>
+            <button type="button" className="button button--ghost" disabled={busyId === product.id} onClick={handleAddToCart}>
+              {busyId === product.id ? "Agregando..." : "Agregar al carrito"}
+            </button>
           </div>
-        </div>
+
+          <div className="purchase-panel__block">
+            <p>Devolucion: {product.devolucion || "Segun producto"}</p>
+            <p>Garantia: {product.garantia || "Garantia segun producto"}</p>
+          </div>
+        </aside>
       </section>
 
       <section className="section-card">
@@ -256,7 +317,7 @@ export function ProductPage() {
             <h3>Informacion adicional</h3>
             <ul className="feature-list">
               <li>Devolucion: {product.devolucion || "Segun producto"}</li>
-              <li>Categoría: {product.categoria}</li>
+              <li>Categoria: {product.categoria}</li>
               <li>Disponibilidad: {product.disponibilidad}</li>
             </ul>
           </article>
@@ -330,7 +391,7 @@ export function ProductPage() {
                 </article>
               ))
             ) : (
-              <p className="muted-text">Todavía no hay preguntas publicadas para este producto.</p>
+              <p className="muted-text">Todavia no hay preguntas publicadas para este producto.</p>
             )}
           </div>
 

@@ -693,6 +693,18 @@ textarea {
   gap: 26px;
 }
 
+.product-detail-shell--market {
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr) 320px;
+  align-items: start;
+}
+
+.product-visual-card {
+  border: 1px solid var(--line);
+  background: rgba(13, 22, 38, 0.86);
+  border-radius: 24px;
+  padding: 18px;
+}
+
 .product-gallery,
 .product-summary,
 .detail-card,
@@ -737,6 +749,8 @@ textarea {
 
 .product-gallery__main {
   aspect-ratio: 1 / 1;
+  position: relative;
+  border: 1px solid rgba(148, 163, 184, 0.14);
 }
 
 .product-gallery__main img,
@@ -746,15 +760,100 @@ textarea {
   object-fit: cover;
 }
 
+.product-gallery__arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(7, 13, 24, 0.78);
+  color: #f1f6ff;
+  font-size: 1.5rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-gallery__arrow--left {
+  left: 10px;
+}
+
+.product-gallery__arrow--right {
+  right: 10px;
+}
+
+.product-gallery__arrow:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .product-summary {
   padding: 26px;
   display: grid;
   gap: 18px;
 }
 
+.product-category-link {
+  color: #86c5ff;
+  font-size: 0.95rem;
+}
+
+.product-summary__payment-note {
+  padding: 10px 12px;
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  border-radius: 14px;
+  background: rgba(31, 77, 120, 0.16);
+  color: #b8defd;
+  font-size: 0.92rem;
+}
+
 .product-summary__info {
   display: grid;
   gap: 8px;
+}
+
+.product-summary__info--market span {
+  font-size: 0.94rem;
+}
+
+.product-summary__actions--stack {
+  flex-direction: column;
+}
+
+.product-summary__actions--stack .button {
+  width: 100%;
+}
+
+.purchase-panel {
+  border: 1px solid var(--line);
+  background: rgba(13, 22, 38, 0.86);
+  border-radius: 24px;
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+  position: sticky;
+  top: 124px;
+}
+
+.purchase-panel__block {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  padding-bottom: 12px;
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+}
+
+.purchase-panel__block:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.purchase-panel__title {
+  color: #f0f7ff;
 }
 
 .detail-columns,
@@ -1079,11 +1178,18 @@ textarea {
 
   .catalog-shell,
   .profile-shell,
-  .product-detail-shell,
   .hero-shell,
   .admin-grid,
   .chat-layout {
     grid-template-columns: 1fr;
+  }
+
+  .product-detail-shell--market {
+    grid-template-columns: 1fr;
+  }
+
+  .purchase-panel {
+    position: static;
   }
 
   .filter-panel,
