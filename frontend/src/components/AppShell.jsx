@@ -31,7 +31,6 @@ export function AppShell() {
   const [musicEnabled, setMusicEnabled] = useState(false);
   const [musicVolume, setMusicVolume] = useState(0.35);
   const [trackIndex, setTrackIndex] = useState(0);
-  const [announcementHidden, setAnnouncementHidden] = useState(false);
   const audioRef = useRef(null);
 
   useEffect(() => {
@@ -82,38 +81,6 @@ export function AppShell() {
     setSearch(searchParam);
   }, [location.search]);
 
-  useEffect(() => {
-    let lastY = window.scrollY;
-    let ticking = false;
-
-    const onScroll = () => {
-      if (ticking) {
-        return;
-      }
-
-      window.requestAnimationFrame(() => {
-        const currentY = window.scrollY;
-        const delta = currentY - lastY;
-        const goingDown = delta > 8;
-        const goingUp = delta < -8;
-
-        if (currentY < 40 || goingUp) {
-          setAnnouncementHidden(false);
-        } else if (goingDown && currentY > 90) {
-          setAnnouncementHidden(true);
-        }
-
-        lastY = currentY;
-        ticking = false;
-      });
-
-      ticking = true;
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
   const handleSearchSubmit = (event) => {
     event.preventDefault();
     const params = new URLSearchParams();
@@ -144,10 +111,6 @@ export function AppShell() {
   return (
     <div className="marketplace">
       <header className="market-header">
-        <div className={`market-announcement${announcementHidden ? " is-hidden" : ""}`}>
-          <p>{siteData.settings.announcement || "Compra segura, devoluciones claras y experiencia premium."}</p>
-        </div>
-
         <div className="market-header__top">
           <Link to="/" className="brand">
             <span className="brand__badge">GC</span>
