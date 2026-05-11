@@ -105,6 +105,16 @@ export function ProfilePage() {
     return orderProviders[order.id] || order.metodoPago || "mercadopago";
   };
 
+  const isOrderPendingPayment = (order) => {
+    const estado = String(order.estado || "").toLowerCase();
+    const paymentStatus = String(order.paymentStatus || "").toLowerCase();
+
+    const pendingOrderStates = ["pendiente", "pending", "pending_payment", "created", "pago_pendiente"];
+    const pendingPaymentStates = ["pending", "pending_payment", "created", "processing", "requires_payment_method"];
+
+    return pendingOrderStates.includes(estado) || pendingPaymentStates.includes(paymentStatus);
+  };
+
   const buildRedirectUrl = (baseUrl, order, provider) => {
     if (!baseUrl) {
       return "";
@@ -272,8 +282,16 @@ export function ProfilePage() {
                   </div>
                   <small>{new Date(order.fecha).toLocaleString()}</small>
                   <p>Metodo: {order.metodoPago || "Por definir"} · Total: ${order.total.toFixed(2)}</p>
+                  {order.items?.length > 0 && (
+                    <p>
+                      Productos:{" "}
+                      {order.items
+                        .map((item) => `${item.nombre}${item.cantidad > 1 ? ` x${item.cantidad}` : ""}`)
+                        .join(", ")}
+                    </p>
+                  )}
                   <p>Entrega estimada: {order.fechaEstimada ? new Date(order.fechaEstimada).toLocaleDateString() : "Por definir"}</p>
-                  {(order.paymentStatus === "pending" || order.estado === "pendiente") && order.estado !== "cancelado" && (
+                  {isOrderPendingPayment(order) && String(order.estado || "").toLowerCase() !== "cancelado" && (
                     <div className="form-inline">
                       <label>
                         Forma de pago
