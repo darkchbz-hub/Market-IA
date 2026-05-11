@@ -881,10 +881,10 @@ export function AdminPage() {
                   <input value={musicForm.artista} onChange={(event) => setMusicForm((current) => ({ ...current, artista: event.target.value }))} />
                 </label>
                 <label>
-                  Audio
+                  Audio o video musical
                   <input
                     type="file"
-                    accept="audio/*"
+                    accept="audio/*,video/mp4,video/webm"
                     onChange={async (event) => {
                       const [file] = Array.from(event.target.files || []);
                       if (!file) return;
@@ -894,9 +894,10 @@ export function AdminPage() {
                   />
                 </label>
                 <label>
-                  O pega link del audio
+                  O pega link directo (.mp3, .m4a, .ogg, .wav, .mp4, .webm)
                   <input value={musicForm.audioUrl} onChange={(event) => setMusicForm((current) => ({ ...current, audioUrl: event.target.value }))} />
                 </label>
+                <small className="muted-text">Nota: enlaces de YouTube/TikTok/Facebook no funcionan como audio directo. Usa link directo al archivo.</small>
                 <label className="checkbox-chip">
                   <input
                     type="checkbox"

@@ -21,6 +21,10 @@ function navLinkClass({ isActive }) {
   return `market-nav__link${isActive ? " is-active" : ""}`;
 }
 
+function isVideoAudioSource(url = "") {
+  return /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(url);
+}
+
 export function AppShell() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -31,6 +35,7 @@ export function AppShell() {
   const [musicEnabled, setMusicEnabled] = useState(true);
   const [headerHidden, setHeaderHidden] = useState(false);
   const audioRef = useRef(null);
+  const videoRef = useRef(null);
 
   useEffect(() => {
     apiFetch("/products/home")
@@ -48,24 +53,32 @@ export function AppShell() {
   }, []);
 
   const currentTrack = useMemo(() => siteData.music?.[0] || null, [siteData.music]);
+  const useVideoSource = useMemo(() => isVideoAudioSource(currentTrack?.audioUrl || ""), [currentTrack]);
 
   useEffect(() => {
-    if (!audioRef.current) {
+    const mediaRef = useVideoSource ? videoRef.current : audioRef.current;
+    const otherRef = useVideoSource ? audioRef.current : videoRef.current;
+    if (!mediaRef) {
       return;
+    }
+    if (otherRef) {
+      otherRef.pause();
+      otherRef.currentTime = 0;
     }
 
     if (!musicEnabled) {
-      audioRef.current.pause();
+      mediaRef.pause();
       return;
     }
 
-    audioRef.current
+    mediaRef.volume = 0.35;
+    mediaRef
       .play()
       .then(() => {})
       .catch(() => {
         setMusicEnabled(false);
       });
-  }, [musicEnabled, currentTrack]);
+  }, [musicEnabled, currentTrack, useVideoSource]);
 
   useEffect(() => {
     if (musicEnabled || !currentTrack?.audioUrl) {
@@ -232,7 +245,8 @@ export function AppShell() {
         <Outlet />
       </main>
 
-      <audio ref={audioRef} src={currentTrack?.audioUrl || ""} loop preload="auto" style={{ display: "none" }} />
+      <audio ref={audioRef} src={useVideoSource ? "" : currentTrack?.audioUrl || ""} loop preload="auto" style={{ display: "none" }} />
+      <video ref={videoRef} src={useVideoSource ? currentTrack?.audioUrl || "" : ""} loop preload="auto" style={{ display: "none" }} />
 
       <footer className="market-footer">
         <div>
