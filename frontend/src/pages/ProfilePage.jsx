@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { apiFetch } from "../lib/api.js";
 
@@ -12,8 +12,11 @@ const initialAddress = {
 };
 
 export function ProfilePage() {
+  const navigate = useNavigate();
   const { token, refreshUser, isAdmin } = useAuth();
   const [dashboard, setDashboard] = useState(null);
+  const [paymentLinks, setPaymentLinks] = useState({});
+  const [orderProviders, setOrderProviders] = useState({});
   const [form, setForm] = useState({
     nombre: "",
     email: "",
@@ -44,6 +47,12 @@ export function ProfilePage() {
   useEffect(() => {
     loadDashboard().catch((error) => setMessage(error.message));
   }, [token]);
+
+  useEffect(() => {
+    apiFetch("/products/home")
+      .then((payload) => setPaymentLinks(payload?.general?.paymentLinks || {}))
+      .catch(() => setPaymentLinks({}));
+  }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -92,6 +101,86 @@ export function ProfilePage() {
     }
   };
 
+  const resolveProviderForOrder = (order) => {
+    return orderProviders[order.id] || order.metodoPago || "mercadopago";
+  };
+
+  const buildRedirectUrl = (baseUrl, order, provider) => {
+    if (!baseUrl) {
+      return "";
+    }
+
+    const text = `Pedido ${order.id} | Total $${order.total.toFixed(2)} | Metodo ${provider}`;
+    const isWhatsapp = /wa\.me|whatsapp\.com/i.test(baseUrl);
+
+    try {
+      const parsed = new URL(baseUrl);
+      if (isWhatsapp) {
+        parsed.searchParams.set("text", text);
+      } else {
+        parsed.searchParams.set("orderId", order.id);
+        parsed.searchParams.set("provider", provider);
+      }
+      return parsed.toString();
+    } catch {
+      return baseUrl;
+    }
+  };
+
+  const retryPayment = async (order) => {
+    const provider = resolveProviderForOrder(order);
+    setMessage("");
+
+    const customLink = paymentLinks?.[provider] || "";
+    const whatsappFallback = paymentLinks?.whatsapp || "";
+    const redirectLink = buildRedirectUrl(customLink || whatsappFallback, order, provider);
+
+    if (redirectLink) {
+      window.location.href = redirectLink;
+      return;
+    }
+
+    try {
+      if (provider === "paypal") {
+        const payload = await apiFetch("/payments/paypal/order", {
+          method: "POST",
+          token,
+          body: { orderId: order.id }
+        });
+
+        if (payload.approvalUrl) {
+          window.location.href = payload.approvalUrl;
+          return;
+        }
+      }
+
+      if (provider === "mercadopago") {
+        const payload = await apiFetch("/payments/mercadopago/preference", {
+          method: "POST",
+          token,
+          body: { orderId: order.id }
+        });
+
+        if (payload.initPoint) {
+          window.location.href = payload.initPoint;
+          return;
+        }
+      }
+
+      if (provider === "stripe") {
+        await apiFetch("/payments/stripe/payment-intent", {
+          method: "POST",
+          token,
+          body: { orderId: order.id }
+        });
+      }
+
+      navigate(`/checkout/success?orderId=${order.id}`);
+    } catch (error) {
+      setMessage(error.message);
+    }
+  };
+
   if (!dashboard) {
     return <div className="page-loader">{message || "Cargando tu cuenta..."}</div>;
   }
@@ -134,50 +223,25 @@ export function ProfilePage() {
           <div className="form-grid form-grid--wide">
             <label>
               Calle
-              <input
-                value={form.direccion.calle}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, direccion: { ...current.direccion, calle: event.target.value } }))
-                }
-              />
+              <input value={form.direccion.calle} onChange={(event) => setForm((current) => ({ ...current, direccion: { ...current.direccion, calle: event.target.value } }))} />
             </label>
             <label>
               Ciudad
-              <input
-                value={form.direccion.ciudad}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, direccion: { ...current.direccion, ciudad: event.target.value } }))
-                }
-              />
+              <input value={form.direccion.ciudad} onChange={(event) => setForm((current) => ({ ...current, direccion: { ...current.direccion, ciudad: event.target.value } }))} />
             </label>
             <label>
               Estado
-              <input
-                value={form.direccion.estado}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, direccion: { ...current.direccion, estado: event.target.value } }))
-                }
-              />
+              <input value={form.direccion.estado} onChange={(event) => setForm((current) => ({ ...current, direccion: { ...current.direccion, estado: event.target.value } }))} />
             </label>
             <label>
               Codigo postal
-              <input
-                value={form.direccion.cp}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, direccion: { ...current.direccion, cp: event.target.value } }))
-                }
-              />
+              <input value={form.direccion.cp} onChange={(event) => setForm((current) => ({ ...current, direccion: { ...current.direccion, cp: event.target.value } }))} />
             </label>
           </div>
 
           <label>
             Pais
-            <input
-              value={form.direccion.pais}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, direccion: { ...current.direccion, pais: event.target.value } }))
-              }
-            />
+            <input value={form.direccion.pais} onChange={(event) => setForm((current) => ({ ...current, direccion: { ...current.direccion, pais: event.target.value } }))} />
           </label>
 
           {message && <p className="inline-message">{message}</p>}
@@ -209,6 +273,29 @@ export function ProfilePage() {
                   <small>{new Date(order.fecha).toLocaleString()}</small>
                   <p>Metodo: {order.metodoPago || "Por definir"} · Total: ${order.total.toFixed(2)}</p>
                   <p>Entrega estimada: {order.fechaEstimada ? new Date(order.fechaEstimada).toLocaleDateString() : "Por definir"}</p>
+                  {(order.paymentStatus === "pending" || order.estado === "pendiente") && order.estado !== "cancelado" && (
+                    <div className="form-inline">
+                      <label>
+                        Forma de pago
+                        <select
+                          value={resolveProviderForOrder(order)}
+                          onChange={(event) =>
+                            setOrderProviders((current) => ({
+                              ...current,
+                              [order.id]: event.target.value
+                            }))
+                          }
+                        >
+                          <option value="mercadopago">Mercado Pago</option>
+                          <option value="paypal">PayPal</option>
+                          <option value="stripe">Tarjeta</option>
+                        </select>
+                      </label>
+                      <button type="button" className="button button--primary" onClick={() => retryPayment(order)}>
+                        Reintentar pago
+                      </button>
+                    </div>
+                  )}
                   {order.cancelable && (
                     <button type="button" className="button button--ghost" onClick={() => cancelOrder(order.id)}>
                       Cancelar pedido
