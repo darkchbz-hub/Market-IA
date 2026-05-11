@@ -12,6 +12,7 @@ import { PaymentStatusPage } from "./pages/PaymentStatusPage.jsx";
 import { ProductPage } from "./pages/ProductPage.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
 import { RegisterPage } from "./pages/RegisterPage.jsx";
+import { TermsPage } from "./pages/TermsPage.jsx";
 
 export default function App() {
   return (
@@ -63,6 +64,7 @@ export default function App() {
           }
         />
         <Route path="/checkout/:status" element={<PaymentStatusPage />} />
+        <Route path="/terminos" element={<TermsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

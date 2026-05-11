@@ -752,6 +752,19 @@ export function AdminPage() {
               <input value={content.general.partnerTitle || ""} onChange={(event) => setContent((current) => ({ ...current, general: { ...current.general, partnerTitle: event.target.value } }))} />
             </label>
             <label>
+              Terminos y condiciones (texto publico)
+              <textarea
+                rows="8"
+                value={content.general.termsAndConditions || ""}
+                onChange={(event) =>
+                  setContent((current) => ({
+                    ...current,
+                    general: { ...current.general, termsAndConditions: event.target.value }
+                  }))
+                }
+              />
+            </label>
+            <label>
               Volumen musica ambiental ({Number(content.general.backgroundMusicVolume ?? 35)}%)
               <input
                 type="range"

@@ -280,6 +280,9 @@ export function AppShell() {
           <NavLink to="/chat" className={navLinkClass}>
             Soporte
           </NavLink>
+          <NavLink to="/terminos" className={navLinkClass}>
+            Terminos
+          </NavLink>
           {isAdmin && (
             <NavLink to="/admin" className={navLinkClass}>
               Administrador
@@ -305,6 +308,9 @@ export function AppShell() {
             </NavLink>
             <NavLink to="/catalogo" className={navLinkClass}>
               Todo
+            </NavLink>
+            <NavLink to="/terminos" className={navLinkClass}>
+              Terminos
             </NavLink>
             {siteData.categories.slice(0, 6).map((category) => (
               <button
@@ -362,6 +368,7 @@ export function AppShell() {
           <Link to="/catalogo">Catalogo</Link>
           <Link to="/perfil">Mi cuenta</Link>
           <Link to="/chat">Soporte</Link>
+          <Link to="/terminos">Terminos y condiciones</Link>
         </div>
       </footer>
     </div>
