@@ -286,6 +286,40 @@ export function AppShell() {
             </NavLink>
           )}
         </nav>
+
+        <div className="mobile-nav-shell">
+          <div className="mobile-top-actions">
+            <Link to="/catalogo" className="mobile-action-pill">
+              Explorar
+            </Link>
+            <Link to="/carrito" className="mobile-action-pill">
+              Carrito ({itemCount})
+            </Link>
+            <Link to={isAuthenticated ? "/perfil" : "/login"} className="mobile-action-pill">
+              {isAuthenticated ? "Mi cuenta" : "Entrar"}
+            </Link>
+          </div>
+          <nav className="mobile-categories">
+            <NavLink to="/" end className={navLinkClass}>
+              Inicio
+            </NavLink>
+            <NavLink to="/catalogo" className={navLinkClass}>
+              Todo
+            </NavLink>
+            {siteData.categories.slice(0, 6).map((category) => (
+              <button
+                key={`mobile-${category.id}`}
+                type="button"
+                className={`market-nav__link market-nav__link--button${
+                  new URLSearchParams(location.search).get("category") === category.slug ? " is-active" : ""
+                }`}
+                onClick={() => openCategory(category.slug)}
+              >
+                {category.nombre}
+              </button>
+            ))}
+          </nav>
+        </div>
       </header>
 
       <main className="market-content">
