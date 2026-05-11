@@ -897,7 +897,7 @@ export function AdminPage() {
                   O pega link directo (.mp3, .m4a, .ogg, .wav, .mp4, .webm)
                   <input value={musicForm.audioUrl} onChange={(event) => setMusicForm((current) => ({ ...current, audioUrl: event.target.value }))} />
                 </label>
-                <small className="muted-text">Nota: enlaces de YouTube/TikTok/Facebook no funcionan como audio directo. Usa link directo al archivo.</small>
+                <small className="muted-text">Acepta links directos de audio/video y tambien YouTube (youtube.com o youtu.be).</small>
                 <label className="checkbox-chip">
                   <input
                     type="checkbox"

@@ -25,6 +25,33 @@ function isVideoAudioSource(url = "") {
   return /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(url);
 }
 
+function extractYouTubeId(url = "") {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace("www.", "");
+
+    if (host === "youtube.com" || host === "m.youtube.com") {
+      if (parsed.pathname === "/watch") {
+        return parsed.searchParams.get("v") || "";
+      }
+      if (parsed.pathname.startsWith("/shorts/")) {
+        return parsed.pathname.split("/shorts/")[1]?.split("/")[0] || "";
+      }
+      if (parsed.pathname.startsWith("/embed/")) {
+        return parsed.pathname.split("/embed/")[1]?.split("/")[0] || "";
+      }
+    }
+
+    if (host === "youtu.be") {
+      return parsed.pathname.replace("/", "").split("/")[0] || "";
+    }
+  } catch {
+    return "";
+  }
+
+  return "";
+}
+
 export function AppShell() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -53,9 +80,15 @@ export function AppShell() {
   }, []);
 
   const currentTrack = useMemo(() => siteData.music?.[0] || null, [siteData.music]);
+  const youtubeId = useMemo(() => extractYouTubeId(currentTrack?.audioUrl || ""), [currentTrack]);
+  const useYoutubeSource = Boolean(youtubeId);
   const useVideoSource = useMemo(() => isVideoAudioSource(currentTrack?.audioUrl || ""), [currentTrack]);
 
   useEffect(() => {
+    if (useYoutubeSource) {
+      return;
+    }
+
     const mediaRef = useVideoSource ? videoRef.current : audioRef.current;
     const otherRef = useVideoSource ? audioRef.current : videoRef.current;
     if (!mediaRef) {
@@ -78,7 +111,7 @@ export function AppShell() {
       .catch(() => {
         setMusicEnabled(false);
       });
-  }, [musicEnabled, currentTrack, useVideoSource]);
+  }, [musicEnabled, currentTrack, useVideoSource, useYoutubeSource]);
 
   useEffect(() => {
     if (musicEnabled || !currentTrack?.audioUrl) {
@@ -97,6 +130,13 @@ export function AppShell() {
       window.removeEventListener("keydown", enableByInteraction);
     };
   }, [musicEnabled, currentTrack]);
+
+  const youtubeEmbedUrl = useMemo(() => {
+    if (!youtubeId || !musicEnabled) {
+      return "";
+    }
+    return `https://www.youtube.com/embed/${youtubeId}?autoplay=1&loop=1&playlist=${youtubeId}&controls=0&modestbranding=1&playsinline=1`;
+  }, [youtubeId, musicEnabled]);
 
   useEffect(() => {
     const searchParam = new URLSearchParams(location.search).get("search") || "";
@@ -245,8 +285,32 @@ export function AppShell() {
         <Outlet />
       </main>
 
-      <audio ref={audioRef} src={useVideoSource ? "" : currentTrack?.audioUrl || ""} loop preload="auto" style={{ display: "none" }} />
-      <video ref={videoRef} src={useVideoSource ? currentTrack?.audioUrl || "" : ""} loop preload="auto" style={{ display: "none" }} />
+      {!useYoutubeSource && (
+        <>
+          <audio ref={audioRef} src={useVideoSource ? "" : currentTrack?.audioUrl || ""} loop preload="auto" style={{ display: "none" }} />
+          <video ref={videoRef} src={useVideoSource ? currentTrack?.audioUrl || "" : ""} loop preload="auto" style={{ display: "none" }} />
+        </>
+      )}
+
+      {useYoutubeSource && youtubeEmbedUrl && (
+        <iframe
+          key={youtubeEmbedUrl}
+          title="bg-music-youtube"
+          src={youtubeEmbedUrl}
+          allow="autoplay; encrypted-media"
+          referrerPolicy="strict-origin-when-cross-origin"
+          style={{
+            position: "fixed",
+            width: "1px",
+            height: "1px",
+            left: "-9999px",
+            top: "0",
+            border: "0",
+            opacity: 0,
+            pointerEvents: "none"
+          }}
+        />
+      )}
 
       <footer className="market-footer">
         <div>
