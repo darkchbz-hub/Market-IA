@@ -236,6 +236,19 @@ export function AdminPage() {
     setMessage("Portada y datos generales actualizados.");
   };
 
+  const saveTerms = async () => {
+    await apiFetch("/admin/content/general", {
+      method: "PUT",
+      token,
+      body: {
+        ...content.general,
+        termsAndConditions: content.general.termsAndConditions || ""
+      }
+    });
+    await loadAdmin();
+    setMessage("Terminos y condiciones actualizados.");
+  };
+
   const saveBanner = async (event) => {
     event.preventDefault();
     await apiFetch("/admin/banners", {
@@ -354,7 +367,8 @@ export function AdminPage() {
             ["orders", "Pedidos"],
             ["reviews", "Reseñas"],
             ["categories", "Categorias"],
-            ["content", "Portada y medios"]
+            ["content", "Portada y medios"],
+            ["terms", "Terminos"]
           ].map(([id, label]) => (
             <button key={id} type="button" className={`pill${tab === id ? " is-active" : ""}`} onClick={() => setTab(id)}>
               {label}
@@ -1039,6 +1053,33 @@ export function AdminPage() {
             </div>
           </section>
         </div>
+      )}
+
+      {tab === "terms" && (
+        <section className="section-card">
+          <div className="section-heading section-heading--compact">
+            <div>
+              <p className="section-label">Legal</p>
+              <h2>Editor de terminos y condiciones</h2>
+            </div>
+          </div>
+          <label>
+            Texto publico
+            <textarea
+              rows="16"
+              value={content.general.termsAndConditions || ""}
+              onChange={(event) =>
+                setContent((current) => ({
+                  ...current,
+                  general: { ...current.general, termsAndConditions: event.target.value }
+                }))
+              }
+            />
+          </label>
+          <button type="button" className="button button--primary" onClick={saveTerms}>
+            Guardar terminos y condiciones
+          </button>
+        </section>
       )}
     </div>
   );
