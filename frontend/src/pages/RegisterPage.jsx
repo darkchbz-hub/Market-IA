@@ -17,7 +17,8 @@ export function RegisterPage() {
       estado: "",
       cp: "",
       pais: "Mexico"
-    }
+    },
+    acceptedTerms: false
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -124,6 +125,16 @@ export function RegisterPage() {
               setForm((current) => ({ ...current, direccion: { ...current.direccion, pais: event.target.value } }))
             }
           />
+        </label>
+
+        <label className="checkbox-chip">
+          <input
+            type="checkbox"
+            checked={Boolean(form.acceptedTerms)}
+            onChange={(event) => setForm((current) => ({ ...current, acceptedTerms: event.target.checked }))}
+            required
+          />
+          Acepto los <Link to="/terminos">Terminos y Condiciones de Gray C Shop</Link>
         </label>
 
         {message && <p className="inline-message">{message}</p>}

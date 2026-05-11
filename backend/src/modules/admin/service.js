@@ -239,6 +239,27 @@ export async function getAdminUserDetail(userId) {
   };
 }
 
+export async function deleteAdminUser(adminId, userId) {
+  const userResult = await query(`SELECT id, role, nombre, email FROM users WHERE id = $1`, [userId]);
+  const user = userResult.rows[0];
+
+  if (!user) {
+    throw new HttpError(404, "Usuario no encontrado.");
+  }
+
+  if (user.role === "admin") {
+    throw new HttpError(403, "No puedes eliminar cuentas administrador.");
+  }
+
+  await query(`DELETE FROM users WHERE id = $1`, [userId]);
+  await logAdminAction(adminId, "delete_user", "user", userId, {
+    nombre: user.nombre,
+    email: user.email
+  });
+
+  return { ok: true };
+}
+
 export async function listAdminOrders(filters = {}) {
   const values = [];
   const conditions = ["1 = 1"];

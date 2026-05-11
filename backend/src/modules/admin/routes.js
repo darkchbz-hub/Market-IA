@@ -6,6 +6,7 @@ import { archiveProduct, createProduct, updateProduct } from "../products/servic
 import {
   createAdminCategory,
   deleteAdminCategory,
+  deleteAdminUser,
   deleteAdminMedia,
   deleteAdminReview,
   getAdminContent,
@@ -51,6 +52,14 @@ adminRouter.get(
   asyncHandler(async (req, res) => {
     const detail = await getAdminUserDetail(req.params.userId);
     res.json(detail);
+  })
+);
+
+adminRouter.delete(
+  "/users/:userId",
+  asyncHandler(async (req, res) => {
+    const result = await deleteAdminUser(req.auth.sub, req.params.userId);
+    res.json(result);
   })
 );
 

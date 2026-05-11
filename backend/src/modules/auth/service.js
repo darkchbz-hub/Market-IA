@@ -15,7 +15,7 @@ function buildTokenPayload(user) {
   };
 }
 
-function validateRegisterInput({ nombre, email, password, telefono }) {
+function validateRegisterInput({ nombre, email, password, telefono, acceptedTerms }) {
   if (!nombre?.trim()) {
     throw new HttpError(400, "El nombre es obligatorio.");
   }
@@ -31,10 +31,14 @@ function validateRegisterInput({ nombre, email, password, telefono }) {
   if (!password || password.length < 8) {
     throw new HttpError(400, "La contrasena debe tener al menos 8 caracteres.");
   }
+
+  if (acceptedTerms !== true) {
+    throw new HttpError(400, "Debes aceptar los terminos y condiciones de Gray C Shop.");
+  }
 }
 
-export async function registerUser({ nombre, email, password, telefono = "", nickname = "", direccion = {} }) {
-  validateRegisterInput({ nombre, email, password, telefono });
+export async function registerUser({ nombre, email, password, telefono = "", nickname = "", direccion = {}, acceptedTerms = false }) {
+  validateRegisterInput({ nombre, email, password, telefono, acceptedTerms });
 
   const normalizedEmail = email.trim().toLowerCase();
   const existingUser = await getUserByEmail(normalizedEmail);

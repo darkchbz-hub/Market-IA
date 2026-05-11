@@ -221,6 +221,21 @@ export function AdminPage() {
     setTab("users");
   };
 
+  const deleteUserAccount = async (userId) => {
+    if (!window.confirm("Se eliminara esta cuenta de usuario y su informacion relacionada. Deseas continuar?")) {
+      return;
+    }
+
+    await apiFetch(`/admin/users/${userId}`, {
+      method: "DELETE",
+      token
+    });
+
+    setSelectedUser(null);
+    await loadAdmin();
+    setMessage("Cuenta de usuario eliminada.");
+  };
+
   const saveHomepage = async () => {
     await apiFetch("/admin/content/homepage", {
       method: "PUT",
@@ -594,6 +609,9 @@ export function AdminPage() {
                 <article className="mini-item"><strong>Correo</strong><span>{selectedUser.user.email}</span></article>
                 <article className="mini-item"><strong>Telefono</strong><span>{selectedUser.user.telefono || "Sin telefono"}</span></article>
                 <article className="mini-item"><strong>Direccion</strong><span>{Object.values(selectedUser.user.direccion || {}).filter(Boolean).join(", ") || "Sin direccion"}</span></article>
+                <button type="button" className="button button--ghost" onClick={() => deleteUserAccount(selectedUser.user.id)}>
+                  Eliminar cuenta de este usuario
+                </button>
 
                 <article className="detail-card">
                   <h3>Carrito actual</h3>
