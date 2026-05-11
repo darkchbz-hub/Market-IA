@@ -226,12 +226,14 @@ export function AdminPage() {
       return;
     }
     try {
-      await apiFetch(`/admin/users/${userId}/delete`, {
+      const result = await apiFetch(`/admin/users/${userId}/delete`, {
         method: "POST",
         token
       });
 
-      setSelectedUser(null);
+      const deletedId = result?.deletedUserId || userId;
+      setUsers((current) => current.filter((item) => String(item.id) !== String(deletedId)));
+      setSelectedUser((current) => (String(current?.user?.id || "") === String(deletedId) ? null : current));
       await loadAdmin();
       setMessage("Cuenta de usuario eliminada.");
     } catch (error) {
@@ -591,10 +593,15 @@ export function AdminPage() {
             </label>
             <div className="list-stack">
               {users.map((user) => (
-                <button key={user.id} type="button" className="user-list-button" onClick={() => openUser(user.id)}>
-                  <strong>{user.nombre}</strong>
-                  <span>{user.telefono || user.email}</span>
-                </button>
+                <article key={user.id} className="mini-item">
+                  <button type="button" className="user-list-button" onClick={() => openUser(user.id)}>
+                    <strong>{user.nombre}</strong>
+                    <span>{user.telefono || user.email}</span>
+                  </button>
+                  <button type="button" className="button button--ghost" onClick={() => deleteUserAccount(user.id)}>
+                    Eliminar
+                  </button>
+                </article>
               ))}
             </div>
           </section>

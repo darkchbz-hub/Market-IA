@@ -251,13 +251,17 @@ export async function deleteAdminUser(adminId, userId) {
     throw new HttpError(403, "No puedes eliminar cuentas administrador.");
   }
 
-  await query(`DELETE FROM users WHERE id = $1`, [userId]);
+  const deleteResult = await query(`DELETE FROM users WHERE id = $1`, [userId]);
+
+  if (!deleteResult.rowCount) {
+    throw new HttpError(404, "No se pudo eliminar la cuenta de usuario.");
+  }
   await logAdminAction(adminId, "delete_user", "user", userId, {
     nombre: user.nombre,
     email: user.email
   });
 
-  return { ok: true };
+  return { ok: true, deletedUserId: userId };
 }
 
 export async function listAdminOrders(filters = {}) {
