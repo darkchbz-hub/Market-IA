@@ -764,6 +764,75 @@ export function AdminPage() {
                 }
               />
             </label>
+            <article className="detail-card">
+              <h3>Formas y links de pago</h3>
+              <div className="form-grid">
+                <label>
+                  Link Mercado Pago
+                  <input
+                    value={content.general.paymentLinks?.mercadopago || ""}
+                    onChange={(event) =>
+                      setContent((current) => ({
+                        ...current,
+                        general: {
+                          ...current.general,
+                          paymentLinks: { ...(current.general.paymentLinks || {}), mercadopago: event.target.value }
+                        }
+                      }))
+                    }
+                    placeholder="https://..."
+                  />
+                </label>
+                <label>
+                  Link PayPal
+                  <input
+                    value={content.general.paymentLinks?.paypal || ""}
+                    onChange={(event) =>
+                      setContent((current) => ({
+                        ...current,
+                        general: {
+                          ...current.general,
+                          paymentLinks: { ...(current.general.paymentLinks || {}), paypal: event.target.value }
+                        }
+                      }))
+                    }
+                    placeholder="https://..."
+                  />
+                </label>
+                <label>
+                  Link Tarjeta (Visa / Mastercard)
+                  <input
+                    value={content.general.paymentLinks?.stripe || ""}
+                    onChange={(event) =>
+                      setContent((current) => ({
+                        ...current,
+                        general: {
+                          ...current.general,
+                          paymentLinks: { ...(current.general.paymentLinks || {}), stripe: event.target.value }
+                        }
+                      }))
+                    }
+                    placeholder="https://..."
+                  />
+                </label>
+                <label>
+                  Link WhatsApp general (opcional)
+                  <input
+                    value={content.general.paymentLinks?.whatsapp || ""}
+                    onChange={(event) =>
+                      setContent((current) => ({
+                        ...current,
+                        general: {
+                          ...current.general,
+                          paymentLinks: { ...(current.general.paymentLinks || {}), whatsapp: event.target.value }
+                        }
+                      }))
+                    }
+                    placeholder="https://wa.me/..."
+                  />
+                </label>
+              </div>
+            </article>
             <label>
               Volumen musica ambiental ({Number(content.general.backgroundMusicVolume ?? 35)}%)
               <input

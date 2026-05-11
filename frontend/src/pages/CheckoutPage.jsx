@@ -22,6 +22,7 @@ export function CheckoutPage() {
     ...(user?.direccion || {})
   }));
   const [provider, setProvider] = useState("mercadopago");
+  const [paymentLinks, setPaymentLinks] = useState({});
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [order, setOrder] = useState(null);
@@ -32,7 +33,44 @@ export function CheckoutPage() {
       .catch((error) => setMessage(error.message));
   }, [token]);
 
+  useEffect(() => {
+    apiFetch("/products/home")
+      .then((payload) => setPaymentLinks(payload?.general?.paymentLinks || {}))
+      .catch(() => setPaymentLinks({}));
+  }, []);
+
+  const buildRedirectUrl = (baseUrl, createdOrder) => {
+    if (!baseUrl) {
+      return "";
+    }
+
+    const text = `Pedido ${createdOrder.id} | Total $${(createdOrder.total || 0).toFixed(2)} | Metodo ${provider}`;
+    const isWhatsapp = /wa\.me|whatsapp\.com/i.test(baseUrl);
+
+    try {
+      const parsed = new URL(baseUrl);
+      if (isWhatsapp) {
+        parsed.searchParams.set("text", text);
+      } else {
+        parsed.searchParams.set("orderId", createdOrder.id);
+        parsed.searchParams.set("provider", provider);
+      }
+      return parsed.toString();
+    } catch {
+      return baseUrl;
+    }
+  };
+
   const continueWithProvider = async (createdOrder) => {
+    const customLink = paymentLinks?.[provider] || "";
+    const whatsappFallback = paymentLinks?.whatsapp || "";
+    const redirectLink = buildRedirectUrl(customLink || whatsappFallback, createdOrder);
+
+    if (redirectLink) {
+      window.location.href = redirectLink;
+      return;
+    }
+
     if (provider === "paypal") {
       const payload = await apiFetch("/payments/paypal/order", {
         method: "POST",
@@ -149,9 +187,9 @@ export function CheckoutPage() {
 
         <div className="payment-grid">
           {[
-            { id: "mercadopago", title: "Mercado Pago", description: "Checkout externo pensado para Mexico." },
-            { id: "paypal", title: "PayPal", description: "Aprobacion externa con redireccion segura." },
-            { id: "stripe", title: "Tarjeta", description: "Preparado para flujo con tarjeta y tokenizacion." }
+            { id: "mercadopago", title: "Mercado Pago", description: "Transferencia o pago guiado por link personalizado." },
+            { id: "paypal", title: "PayPal", description: "Pago con posible comision segun tu configuracion." },
+            { id: "stripe", title: "Tarjeta", description: "Visa / Mastercard por link configurado." }
           ].map((item) => (
             <button
               key={item.id}
@@ -161,6 +199,7 @@ export function CheckoutPage() {
             >
               <strong>{item.title}</strong>
               <span>{item.description}</span>
+              {paymentLinks?.[item.id] && <small>Link activo</small>}
             </button>
           ))}
         </div>
