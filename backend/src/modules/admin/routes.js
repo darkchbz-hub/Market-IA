@@ -63,6 +63,14 @@ adminRouter.delete(
   })
 );
 
+adminRouter.post(
+  "/users/:userId/delete",
+  asyncHandler(async (req, res) => {
+    const result = await deleteAdminUser(req.auth.sub, req.params.userId);
+    res.json(result);
+  })
+);
+
 adminRouter.get(
   "/orders",
   asyncHandler(async (req, res) => {

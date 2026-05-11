@@ -225,15 +225,18 @@ export function AdminPage() {
     if (!window.confirm("Se eliminara esta cuenta de usuario y su informacion relacionada. Deseas continuar?")) {
       return;
     }
+    try {
+      await apiFetch(`/admin/users/${userId}/delete`, {
+        method: "POST",
+        token
+      });
 
-    await apiFetch(`/admin/users/${userId}`, {
-      method: "DELETE",
-      token
-    });
-
-    setSelectedUser(null);
-    await loadAdmin();
-    setMessage("Cuenta de usuario eliminada.");
+      setSelectedUser(null);
+      await loadAdmin();
+      setMessage("Cuenta de usuario eliminada.");
+    } catch (error) {
+      setMessage(error.message || "No se pudo eliminar la cuenta.");
+    }
   };
 
   const saveHomepage = async () => {
