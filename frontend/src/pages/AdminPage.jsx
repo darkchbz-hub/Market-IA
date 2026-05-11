@@ -39,6 +39,44 @@ function fileToDataUrl(file) {
   });
 }
 
+function removeWhiteBackgroundFromImage(dataUrl, threshold = 242) {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = image.width;
+      canvas.height = image.height;
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+
+      if (!context) {
+        resolve(dataUrl);
+        return;
+      }
+
+      context.drawImage(image, 0, 0);
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      const pixels = imageData.data;
+
+      for (let index = 0; index < pixels.length; index += 4) {
+        const red = pixels[index];
+        const green = pixels[index + 1];
+        const blue = pixels[index + 2];
+
+        // Remove near-white backgrounds (common in logos exported with white canvas).
+        if (red >= threshold && green >= threshold && blue >= threshold) {
+          pixels[index + 3] = 0;
+        }
+      }
+
+      context.putImageData(imageData, 0, 0);
+      resolve(canvas.toDataURL("image/png"));
+    };
+
+    image.onerror = () => resolve(dataUrl);
+    image.src = dataUrl;
+  });
+}
+
 export function AdminPage() {
   const { token } = useAuth();
   const [tab, setTab] = useState("dashboard");
@@ -910,7 +948,11 @@ export function AdminPage() {
                     onChange={async (event) => {
                       const [file] = Array.from(event.target.files || []);
                       if (!file) return;
-                      const logoUrl = await fileToDataUrl(file);
+                      const rawLogo = await fileToDataUrl(file);
+                      const logoUrl =
+                        file.type === "image/png"
+                          ? await removeWhiteBackgroundFromImage(rawLogo)
+                          : rawLogo;
                       setPartnerForm((current) => ({ ...current, logoUrl }));
                     }}
                   />
