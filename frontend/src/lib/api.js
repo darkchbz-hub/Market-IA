@@ -40,7 +40,7 @@ export const SOCKET_URL = resolveSocketUrl();
 export const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "";
 
 export async function apiFetch(path, options = {}) {
-  const { method = "GET", body, token, headers = {}, ...rest } = options;
+  const { method = "GET", body, token, headers = {}, timeoutMs = 15000, ...rest } = options;
   const requestHeaders = new Headers(headers);
 
   if (body !== undefined && !(body instanceof FormData) && !requestHeaders.has("Content-Type")) {
@@ -58,19 +58,35 @@ export async function apiFetch(path, options = {}) {
     ...rest
   };
 
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort("timeout"), timeoutMs);
+  fetchOptions.signal = controller.signal;
+
   let response;
 
   try {
     response = await fetch(`${API_URL}${path}`, fetchOptions);
   } catch (networkError) {
+    clearTimeout(timer);
+    if (networkError?.name === "AbortError") {
+      throw new Error("La solicitud tardo demasiado. Intenta de nuevo.");
+    }
     const fallbackUrl = isBrowser ? `${window.location.origin}/api${path}` : `${defaultApiUrl}${path}`;
 
     if (`${API_URL}${path}` !== fallbackUrl) {
-      response = await fetch(fallbackUrl, fetchOptions);
+      try {
+        response = await fetch(fallbackUrl, fetchOptions);
+      } catch (fallbackError) {
+        if (fallbackError?.name === "AbortError") {
+          throw new Error("La solicitud tardo demasiado. Intenta de nuevo.");
+        }
+        throw new Error("No se pudo conectar con el servidor. Recarga la pagina e intenta de nuevo.");
+      }
     } else {
       throw new Error("No se pudo conectar con el servidor. Recarga la pagina e intenta de nuevo.");
     }
   }
+  clearTimeout(timer);
 
   const contentType = response.headers.get("content-type") || "";
   const payload = contentType.includes("application/json") ? await response.json() : await response.text();

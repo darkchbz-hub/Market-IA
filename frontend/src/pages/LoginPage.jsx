@@ -64,7 +64,14 @@ export function LoginPage() {
         {message && <p className="inline-message">{message}</p>}
         <div className="action-row">
           <button type="submit" className="button button--primary" disabled={loading}>
-            {loading ? "Entrando..." : "Entrar"}
+            {loading ? (
+              <>
+                <span className="button-spinner" aria-hidden="true" />
+                Entrando...
+              </>
+            ) : (
+              "Entrar"
+            )}
           </button>
           <button type="button" className="button button--ghost" onClick={requestReset}>
             Recuperar acceso
