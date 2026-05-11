@@ -28,9 +28,7 @@ export function AppShell() {
   const { itemCount } = useCart();
   const [search, setSearch] = useState("");
   const [siteData, setSiteData] = useState({ settings: {}, general: {}, categories: [], music: [] });
-  const [musicEnabled, setMusicEnabled] = useState(false);
-  const [musicVolume, setMusicVolume] = useState(0.35);
-  const [trackIndex, setTrackIndex] = useState(0);
+  const [musicEnabled, setMusicEnabled] = useState(true);
   const [headerHidden, setHeaderHidden] = useState(false);
   const audioRef = useRef(null);
 
@@ -49,15 +47,7 @@ export function AppShell() {
       });
   }, []);
 
-  const currentTrack = useMemo(() => siteData.music?.[trackIndex] || null, [siteData.music, trackIndex]);
-
-  useEffect(() => {
-    if (!audioRef.current) {
-      return;
-    }
-
-    audioRef.current.volume = musicVolume;
-  }, [musicVolume]);
+  const currentTrack = useMemo(() => siteData.music?.[0] || null, [siteData.music]);
 
   useEffect(() => {
     if (!audioRef.current) {
@@ -75,6 +65,24 @@ export function AppShell() {
       .catch(() => {
         setMusicEnabled(false);
       });
+  }, [musicEnabled, currentTrack]);
+
+  useEffect(() => {
+    if (musicEnabled || !currentTrack?.audioUrl) {
+      return;
+    }
+
+    const enableByInteraction = () => {
+      setMusicEnabled(true);
+    };
+
+    window.addEventListener("pointerdown", enableByInteraction, { once: true });
+    window.addEventListener("keydown", enableByInteraction, { once: true });
+
+    return () => {
+      window.removeEventListener("pointerdown", enableByInteraction);
+      window.removeEventListener("keydown", enableByInteraction);
+    };
   }, [musicEnabled, currentTrack]);
 
   useEffect(() => {
@@ -131,14 +139,6 @@ export function AppShell() {
       params.set("category", slug);
     }
     navigate(`/catalogo${params.toString() ? `?${params.toString()}` : ""}`);
-  };
-
-  const nextTrack = () => {
-    if (!siteData.music.length) {
-      return;
-    }
-
-    setTrackIndex((current) => (current + 1) % siteData.music.length);
   };
 
   return (
@@ -232,30 +232,7 @@ export function AppShell() {
         <Outlet />
       </main>
 
-      <aside className="music-player">
-        <audio ref={audioRef} src={currentTrack?.audioUrl || ""} onEnded={nextTrack} />
-        <div>
-          <p className="music-player__label">Musica ambiental</p>
-          <strong>{currentTrack?.titulo || "Sin pistas activas"}</strong>
-          <small>{currentTrack?.artista || "Configurable desde administrador"}</small>
-        </div>
-        <div className="music-player__controls">
-          <button type="button" className="button button--ghost" onClick={() => setMusicEnabled((value) => !value)}>
-            {musicEnabled ? "Pausar" : "Reproducir"}
-          </button>
-          <button type="button" className="button button--ghost" onClick={nextTrack}>
-            Cambiar
-          </button>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.05"
-            value={musicVolume}
-            onChange={(event) => setMusicVolume(Number(event.target.value))}
-          />
-        </div>
-      </aside>
+      <audio ref={audioRef} src={currentTrack?.audioUrl || ""} loop preload="auto" style={{ display: "none" }} />
 
       <footer className="market-footer">
         <div>

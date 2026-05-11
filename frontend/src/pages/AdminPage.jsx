@@ -272,6 +272,22 @@ export function AdminPage() {
     setMessage("Pista guardada.");
   };
 
+  const setTrackAsActive = async (track) => {
+    const requests = (content.music || []).map((item) =>
+      apiFetch(`/admin/music/${item.id}`, {
+        method: "PUT",
+        token,
+        body: {
+          ...item,
+          activa: Number(item.id) === Number(track.id)
+        }
+      })
+    );
+    await Promise.all(requests);
+    await loadAdmin();
+    setMessage(`Pista activa actual: ${track.titulo}`);
+  };
+
   const addPartnerLogo = async (event) => {
     event.preventDefault();
     const logos = Array.isArray(content.general.partnerLogos) ? content.general.partnerLogos : [];
@@ -881,6 +897,14 @@ export function AdminPage() {
                   O pega link del audio
                   <input value={musicForm.audioUrl} onChange={(event) => setMusicForm((current) => ({ ...current, audioUrl: event.target.value }))} />
                 </label>
+                <label className="checkbox-chip">
+                  <input
+                    type="checkbox"
+                    checked={musicForm.activa}
+                    onChange={(event) => setMusicForm((current) => ({ ...current, activa: event.target.checked }))}
+                  />
+                  Activar esta pista al guardarla
+                </label>
                 <button type="submit" className="button button--ghost">Guardar pista</button>
               </form>
             </article>
@@ -906,7 +930,10 @@ export function AdminPage() {
               {content.music.map((track) => (
                 <article key={track.id} className="mini-item">
                   <strong>{track.titulo}</strong>
-                  <span>{track.artista}</span>
+                  <span>{track.artista || "Sin artista"} · {track.activa ? "Activa" : "Inactiva"}</span>
+                  <button type="button" className="button button--ghost" onClick={() => setTrackAsActive(track)}>
+                    Usar esta pista
+                  </button>
                   <button type="button" className="button button--ghost" onClick={() => deleteMedia("music", track.id)}>Eliminar</button>
                 </article>
               ))}
