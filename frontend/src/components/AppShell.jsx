@@ -83,6 +83,13 @@ export function AppShell() {
   const youtubeId = useMemo(() => extractYouTubeId(currentTrack?.audioUrl || ""), [currentTrack]);
   const useYoutubeSource = Boolean(youtubeId);
   const useVideoSource = useMemo(() => isVideoAudioSource(currentTrack?.audioUrl || ""), [currentTrack]);
+  const backgroundMusicVolume = useMemo(() => {
+    const raw = Number(siteData.general?.backgroundMusicVolume ?? 35);
+    if (!Number.isFinite(raw)) {
+      return 0.35;
+    }
+    return Math.min(1, Math.max(0, raw / 100));
+  }, [siteData.general]);
 
   useEffect(() => {
     if (useYoutubeSource) {
@@ -104,14 +111,14 @@ export function AppShell() {
       return;
     }
 
-    mediaRef.volume = 0.35;
+    mediaRef.volume = backgroundMusicVolume;
     mediaRef
       .play()
       .then(() => {})
       .catch(() => {
         setMusicEnabled(false);
       });
-  }, [musicEnabled, currentTrack, useVideoSource, useYoutubeSource]);
+  }, [musicEnabled, currentTrack, useVideoSource, useYoutubeSource, backgroundMusicVolume]);
 
   useEffect(() => {
     if (musicEnabled || !currentTrack?.audioUrl) {

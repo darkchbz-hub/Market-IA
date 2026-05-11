@@ -1201,6 +1201,59 @@ textarea {
 @media (max-width: 820px) {
   .market-header__top {
     grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 10px 0;
+  }
+
+  .brand {
+    gap: 10px;
+  }
+
+  .brand__badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    font-size: 0.95rem;
+  }
+
+  .brand strong {
+    font-size: 1rem;
+  }
+
+  .brand small {
+    font-size: 0.88rem;
+  }
+
+  .searchbar {
+    border-radius: 14px;
+  }
+
+  .searchbar button {
+    min-width: 92px;
+    padding: 0 14px;
+  }
+
+  .header-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .header-actions .button,
+  .header-actions .cart-button,
+  .header-actions .account-chip {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .account-chip {
+    align-items: center;
+  }
+
+  .account-chip small {
+    font-size: 0.78rem;
   }
 
   .header-actions,
@@ -1295,10 +1348,43 @@ textarea {
     overflow-x: auto;
     flex-wrap: nowrap;
     padding-bottom: 14px;
+    scrollbar-width: none;
+  }
+
+  .market-nav::-webkit-scrollbar {
+    display: none;
   }
 
   .market-nav__link {
     white-space: nowrap;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+  }
+
+  .searchbar {
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .searchbar__icon {
+    padding: 0 10px;
+  }
+
+  .searchbar input {
+    padding: 10px 8px;
+    font-size: 0.95rem;
+  }
+
+  .searchbar button {
+    min-width: 84px;
+    font-size: 0.92rem;
+  }
+
+  .header-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .market-content {
+    padding-top: 16px;
   }
 
   .music-player {

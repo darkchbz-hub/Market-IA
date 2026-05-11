@@ -751,6 +751,22 @@ export function AdminPage() {
               Titulo empresas asociadas
               <input value={content.general.partnerTitle || ""} onChange={(event) => setContent((current) => ({ ...current, general: { ...current.general, partnerTitle: event.target.value } }))} />
             </label>
+            <label>
+              Volumen musica ambiental ({Number(content.general.backgroundMusicVolume ?? 35)}%)
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                value={Number(content.general.backgroundMusicVolume ?? 35)}
+                onChange={(event) =>
+                  setContent((current) => ({
+                    ...current,
+                    general: { ...current.general, backgroundMusicVolume: Number(event.target.value) }
+                  }))
+                }
+              />
+            </label>
             <button type="button" className="button button--primary" onClick={saveHomepage}>
               Guardar textos y portada
             </button>
