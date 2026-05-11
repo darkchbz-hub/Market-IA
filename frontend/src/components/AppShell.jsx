@@ -59,7 +59,7 @@ export function AppShell() {
   const { itemCount } = useCart();
   const [search, setSearch] = useState("");
   const [siteData, setSiteData] = useState({ settings: {}, general: {}, categories: [], music: [] });
-  const [musicEnabled, setMusicEnabled] = useState(true);
+  const [musicEnabled] = useState(true);
   const [headerHidden, setHeaderHidden] = useState(false);
   const audioRef = useRef(null);
   const videoRef = useRef(null);
@@ -91,7 +91,7 @@ export function AppShell() {
     return Math.min(1, Math.max(0, raw / 100));
   }, [siteData.general]);
 
-  useEffect(() => {
+  const playActiveMedia = () => {
     if (useYoutubeSource) {
       return;
     }
@@ -112,31 +112,44 @@ export function AppShell() {
     }
 
     mediaRef.volume = backgroundMusicVolume;
-    mediaRef
-      .play()
-      .then(() => {})
-      .catch(() => {
-        setMusicEnabled(false);
-      });
+    mediaRef.play().catch(() => {});
+  };
+
+  useEffect(() => {
+    playActiveMedia();
   }, [musicEnabled, currentTrack, useVideoSource, useYoutubeSource, backgroundMusicVolume]);
 
   useEffect(() => {
-    if (musicEnabled || !currentTrack?.audioUrl) {
+    if (!currentTrack?.audioUrl) {
       return;
     }
 
-    const enableByInteraction = () => {
-      setMusicEnabled(true);
+    const resumeMusic = () => {
+      playActiveMedia();
     };
 
-    window.addEventListener("pointerdown", enableByInteraction, { once: true });
-    window.addEventListener("keydown", enableByInteraction, { once: true });
+    const onVisible = () => {
+      if (!document.hidden) {
+        playActiveMedia();
+      }
+    };
+
+    window.addEventListener("pointerdown", resumeMusic);
+    window.addEventListener("touchstart", resumeMusic);
+    window.addEventListener("keydown", resumeMusic);
+    window.addEventListener("focus", resumeMusic);
+    window.addEventListener("pageshow", resumeMusic);
+    document.addEventListener("visibilitychange", onVisible);
 
     return () => {
-      window.removeEventListener("pointerdown", enableByInteraction);
-      window.removeEventListener("keydown", enableByInteraction);
+      window.removeEventListener("pointerdown", resumeMusic);
+      window.removeEventListener("touchstart", resumeMusic);
+      window.removeEventListener("keydown", resumeMusic);
+      window.removeEventListener("focus", resumeMusic);
+      window.removeEventListener("pageshow", resumeMusic);
+      document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [musicEnabled, currentTrack]);
+  }, [currentTrack, useVideoSource, useYoutubeSource, backgroundMusicVolume]);
 
   const youtubeEmbedUrl = useMemo(() => {
     if (!youtubeId || !musicEnabled) {
@@ -334,8 +347,25 @@ export function AppShell() {
 
       {!useYoutubeSource && (
         <>
-          <audio ref={audioRef} src={useVideoSource ? "" : currentTrack?.audioUrl || ""} loop preload="auto" style={{ display: "none" }} />
-          <video ref={videoRef} src={useVideoSource ? currentTrack?.audioUrl || "" : ""} loop preload="auto" style={{ display: "none" }} />
+          <audio
+            ref={audioRef}
+            src={useVideoSource ? "" : currentTrack?.audioUrl || ""}
+            loop
+            preload="auto"
+            onPause={playActiveMedia}
+            onEnded={playActiveMedia}
+            style={{ display: "none" }}
+          />
+          <video
+            ref={videoRef}
+            src={useVideoSource ? currentTrack?.audioUrl || "" : ""}
+            loop
+            preload="auto"
+            playsInline
+            onPause={playActiveMedia}
+            onEnded={playActiveMedia}
+            style={{ display: "none" }}
+          />
         </>
       )}
 
