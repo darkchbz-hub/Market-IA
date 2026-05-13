@@ -1097,8 +1097,9 @@ textarea {
   justify-items: center;
   padding: 18px;
   border-radius: 18px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(203, 213, 225, 0.9);
+  background: #ffffff;
+  color: #0f172a;
   text-align: center;
 }
 
@@ -1107,6 +1108,13 @@ textarea {
   max-width: 110px;
   height: 48px;
   object-fit: contain;
+}
+
+/* Force associated partner cards to white in all themes/build variants */
+.partner-grid .partner-card {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: rgba(203, 213, 225, 0.9) !important;
 }
 
 .market-footer {
