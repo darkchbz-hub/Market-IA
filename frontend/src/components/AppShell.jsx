@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCart } from "../context/CartContext.jsx";
@@ -55,7 +55,7 @@ function extractYouTubeId(url = "") {
 export function AppShell() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const { user, loading, isAuthenticated, isAdmin, logout } = useAuth();
   const { itemCount } = useCart();
   const [search, setSearch] = useState("");
   const [siteData, setSiteData] = useState({ settings: {}, general: {}, categories: [], music: [] });
@@ -63,6 +63,7 @@ export function AppShell() {
   const [headerHidden, setHeaderHidden] = useState(false);
   const audioRef = useRef(null);
   const videoRef = useRef(null);
+  const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
 
   useEffect(() => {
     apiFetch("/products/home")
@@ -214,13 +215,35 @@ export function AppShell() {
     navigate(`/catalogo${params.toString() ? `?${params.toString()}` : ""}`);
   };
 
+  if (isAuthPage) {
+    return (
+      <div className="marketplace">
+        <main className="market-content">
+          <Outlet />
+        </main>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return <div className="page-loader">Cargando sesion...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
   return (
     <div className="marketplace">
       <header className={`market-header${headerHidden ? " is-hidden" : ""}`}>
         <div className="market-header__top">
           <Link to="/" className="brand">
             <span className="brand__badge">
-              <img src="/assets/gray-c-shop-logo.png" alt={siteData.general.siteName || "Gray C Shop"} className="brand__logo" />
+              <img
+                src={siteData.general?.logoUrl || "/assets/gray-c-shop-logo.png?v=20260514-2"}
+                alt={siteData.general.siteName || "Gray C Shop"}
+                className="brand__logo"
+              />
             </span>
             <span>
               <strong>{siteData.general.siteName || "Gray C Shop"}</strong>
@@ -279,6 +302,9 @@ export function AppShell() {
           <NavLink to="/catalogo" className={navLinkClass}>
             Catalogo
           </NavLink>
+          <NavLink to="/sobre-nosotros" className={navLinkClass}>
+            Sobre nosotros
+          </NavLink>
           {siteData.categories.slice(0, 8).map((category) => (
             <button
               key={category.id}
@@ -326,6 +352,9 @@ export function AppShell() {
             </NavLink>
             <NavLink to="/terminos" className={navLinkClass}>
               Terminos
+            </NavLink>
+            <NavLink to="/sobre-nosotros" className={navLinkClass}>
+              Sobre nosotros
             </NavLink>
             {siteData.categories.slice(0, 6).map((category) => (
               <button
@@ -401,6 +430,7 @@ export function AppShell() {
           <Link to="/perfil">Mi cuenta</Link>
           <Link to="/chat">Soporte</Link>
           <Link to="/terminos">Terminos y condiciones</Link>
+          <Link to="/sobre-nosotros">Sobre nosotros</Link>
         </div>
       </footer>
     </div>

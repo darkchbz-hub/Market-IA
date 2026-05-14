@@ -166,6 +166,18 @@ function buildCategoryItems() {
   }));
 }
 
+function sanitizePublicGeneral(general) {
+  const safeGeneral = { ...(general || {}) };
+  const rawLogo = String(safeGeneral.logoUrl || "");
+
+  // Avoid sending huge base64 images in public payloads (can hit Worker limits).
+  if (rawLogo.startsWith("data:image/") && rawLogo.length > 12000) {
+    safeGeneral.logoUrl = "";
+  }
+
+  return safeGeneral;
+}
+
 async function buildHomePayload(db) {
   const siteContent = await getSiteContent(db);
   const [featured, offers, bestsellers] = await Promise.all([
@@ -178,7 +190,7 @@ async function buildHomePayload(db) {
 
   return {
     settings: siteContent.home || {},
-    general: siteContent.general || {},
+    general: sanitizePublicGeneral(siteContent.general),
     categories: buildCategoryItems(),
     banners: Array.isArray(siteContent.banners) && siteContent.banners.length
       ? siteContent.banners

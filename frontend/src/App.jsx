@@ -12,17 +12,39 @@ import { PaymentStatusPage } from "./pages/PaymentStatusPage.jsx";
 import { ProductPage } from "./pages/ProductPage.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
 import { RegisterPage } from "./pages/RegisterPage.jsx";
+import { AboutPage } from "./pages/AboutPage.jsx";
 import { TermsPage } from "./pages/TermsPage.jsx";
 
 export default function App() {
   return (
     <Routes>
       <Route element={<AppShell />}>
-        <Route index element={<HomePage />} />
-        <Route path="/catalogo" element={<CatalogPage />} />
-        <Route path="/producto/:productId" element={<ProductPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route
+          index
+          element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/catalogo"
+          element={
+            <ProtectedRoute>
+              <CatalogPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/producto/:productId"
+          element={
+            <ProtectedRoute>
+              <ProductPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/perfil"
           element={
@@ -63,8 +85,30 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="/checkout/:status" element={<PaymentStatusPage />} />
-        <Route path="/terminos" element={<TermsPage />} />
+        <Route
+          path="/checkout/:status"
+          element={
+            <ProtectedRoute>
+              <PaymentStatusPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/terminos"
+          element={
+            <ProtectedRoute>
+              <TermsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sobre-nosotros"
+          element={
+            <ProtectedRoute>
+              <AboutPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

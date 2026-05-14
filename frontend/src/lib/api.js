@@ -92,6 +92,12 @@ export async function apiFetch(path, options = {}) {
   const payload = contentType.includes("application/json") ? await response.json() : await response.text();
 
   if (!response.ok) {
+    if (typeof payload === "string" && payload.includes("Worker exceeded resource limits")) {
+      throw new Error("Servidor saturado temporalmente (Cloudflare 1102). Intenta de nuevo en 30-60 segundos.");
+    }
+    if (typeof payload === "string" && /<!doctype html/i.test(payload)) {
+      throw new Error("El servidor devolvio una pagina de error inesperada. Intenta recargar.");
+    }
     const message = payload?.message || payload || "Ocurrio un error en la solicitud.";
     throw new Error(message);
   }

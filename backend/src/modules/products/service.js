@@ -222,9 +222,10 @@ export async function listCategories() {
 }
 
 export async function getHomepageData() {
-  const [settingsResult, bannersResult, videosResult, musicResult, categories, featured, offers, bestsellers] =
+  const [settingsResult, generalResult, bannersResult, videosResult, musicResult, categories, featured, offers, bestsellers] =
     await Promise.all([
       query(`SELECT content FROM site_settings WHERE scope = 'homepage' LIMIT 1`),
+      query(`SELECT content FROM site_settings WHERE scope = 'general' LIMIT 1`),
       query(`SELECT * FROM site_banners WHERE is_active = TRUE ORDER BY orden ASC, created_at DESC LIMIT 6`),
       query(`SELECT * FROM promo_videos WHERE is_active = TRUE ORDER BY orden ASC, created_at DESC LIMIT 4`),
       query(`SELECT * FROM music_tracks WHERE is_active = TRUE ORDER BY orden ASC, created_at DESC LIMIT 10`),
@@ -236,6 +237,7 @@ export async function getHomepageData() {
 
   return {
     settings: parseJson(settingsResult.rows[0]?.content, {}),
+    general: parseJson(generalResult.rows[0]?.content, {}),
     categories,
     banners: bannersResult.rows.map((row) => ({
       id: row.id,

@@ -873,6 +873,19 @@ export function AdminPage() {
                 }
               />
             </label>
+            <label>
+              Sobre nosotros (texto publico)
+              <textarea
+                rows="8"
+                value={content.general.aboutUs || ""}
+                onChange={(event) =>
+                  setContent((current) => ({
+                    ...current,
+                    general: { ...current.general, aboutUs: event.target.value }
+                  }))
+                }
+              />
+            </label>
             <article className="detail-card">
               <h3>Formas y links de pago</h3>
               <div className="form-grid">

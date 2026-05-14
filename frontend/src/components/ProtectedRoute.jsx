@@ -17,5 +17,5 @@ export function ProtectedRoute({ children, adminOnly = false }) {
     return <Navigate to="/" replace />;
   }
 
-  return children;
+  return children ?? null;
 }
