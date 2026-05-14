@@ -816,6 +816,35 @@ export function AdminPage() {
               <input value={content.general.tagline || ""} onChange={(event) => setContent((current) => ({ ...current, general: { ...current.general, tagline: event.target.value } }))} />
             </label>
             <label>
+              Logo principal (subir imagen)
+              <input
+                type="file"
+                accept="image/*"
+                onChange={async (event) => {
+                  const [file] = Array.from(event.target.files || []);
+                  if (!file) return;
+                  const logoUrl = await fileToDataUrl(file);
+                  setContent((current) => ({
+                    ...current,
+                    general: { ...current.general, logoUrl }
+                  }));
+                }}
+              />
+            </label>
+            <label>
+              O pega URL/base64 del logo principal
+              <input
+                value={content.general.logoUrl || ""}
+                onChange={(event) =>
+                  setContent((current) => ({
+                    ...current,
+                    general: { ...current.general, logoUrl: event.target.value }
+                  }))
+                }
+                placeholder="https://... o data:image/..."
+              />
+            </label>
+            <label>
               Mensaje superior
               <input value={content.homepage.announcement || ""} onChange={(event) => setContent((current) => ({ ...current, homepage: { ...current.homepage, announcement: event.target.value } }))} />
             </label>

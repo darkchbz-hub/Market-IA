@@ -220,7 +220,7 @@ export function AppShell() {
         <div className="market-header__top">
           <Link to="/" className="brand">
             <span className="brand__badge">
-              <img src="/assets/gray-c-shop-logo.png" alt="Gray C Shop" className="brand__logo" />
+              <img src="/assets/gray-c-shop-logo.png" alt={siteData.general.siteName || "Gray C Shop"} className="brand__logo" />
             </span>
             <span>
               <strong>{siteData.general.siteName || "Gray C Shop"}</strong>
