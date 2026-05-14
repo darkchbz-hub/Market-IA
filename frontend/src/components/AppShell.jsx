@@ -219,7 +219,9 @@ export function AppShell() {
       <header className={`market-header${headerHidden ? " is-hidden" : ""}`}>
         <div className="market-header__top">
           <Link to="/" className="brand">
-            <span className="brand__badge">GC</span>
+            <span className="brand__badge">
+              <img src="/assets/gray-c-shop-logo.png" alt="Gray C Shop" className="brand__logo" />
+            </span>
             <span>
               <strong>{siteData.general.siteName || "Gray C Shop"}</strong>
               <small>{siteData.general.tagline || siteData.settings.heroEyebrow || "Marketplace elegante"}</small>
