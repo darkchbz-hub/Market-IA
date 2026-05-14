@@ -1,21 +1,21 @@
 :root {
   color-scheme: dark;
   font-family: Inter, "Segoe UI", sans-serif;
-  --bg: #09111f;
-  --panel: #0f1728;
-  --panel-strong: #111c31;
-  --surface: #f6f8fb;
-  --surface-soft: #eef2f8;
-  --text: #ecf2ff;
-  --text-dark: #152033;
-  --muted: #97a8c4;
-  --line: rgba(148, 163, 184, 0.18);
-  --primary: #f59e0b;
-  --primary-strong: #ffb84d;
-  --accent: #38bdf8;
-  --success: #16a34a;
+  --bg: #040506;
+  --panel: #0e1013;
+  --panel-strong: #14181d;
+  --surface: #f4f5f7;
+  --surface-soft: #e7ebf0;
+  --text: #f2f4f8;
+  --text-dark: #0f1720;
+  --muted: #a4adb9;
+  --line: rgba(196, 202, 211, 0.22);
+  --primary: #c5ccd5;
+  --primary-strong: #eef2f7;
+  --accent: #9aa6b6;
+  --success: #7fd0a7;
   --danger: #ef4444;
-  --shadow: 0 22px 44px rgba(3, 8, 18, 0.28);
+  --shadow: 0 22px 44px rgba(0, 0, 0, 0.45);
   background: var(--bg);
 }
 
@@ -33,9 +33,9 @@ body {
   margin: 0;
   color: var(--text);
   background:
-    radial-gradient(circle at top left, rgba(59, 130, 246, 0.24), transparent 26%),
-    radial-gradient(circle at top right, rgba(245, 158, 11, 0.16), transparent 20%),
-    linear-gradient(180deg, #08101d 0%, #09111f 42%, #0c1321 100%);
+    radial-gradient(circle at top left, rgba(201, 210, 221, 0.12), transparent 28%),
+    radial-gradient(circle at top right, rgba(158, 168, 182, 0.1), transparent 24%),
+    linear-gradient(180deg, #020304 0%, #050608 42%, #07090c 100%);
 }
 
 img,
@@ -86,7 +86,7 @@ textarea {
   top: 0;
   z-index: 25;
   backdrop-filter: blur(18px);
-  background: rgba(9, 17, 31, 0.9);
+  background: rgba(8, 10, 13, 0.92);
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   transition: transform 0.28s ease, opacity 0.28s ease;
   will-change: transform;
@@ -125,9 +125,9 @@ textarea {
   width: 48px;
   height: 48px;
   border-radius: 14px;
-  background: linear-gradient(135deg, #09172f, #172d55);
-  border: 1px solid rgba(56, 189, 248, 0.45);
-  box-shadow: 0 0 20px rgba(37, 99, 235, 0.2);
+  background: linear-gradient(135deg, #1b2027, #8e97a3);
+  border: 1px solid rgba(233, 237, 243, 0.44);
+  box-shadow: 0 0 24px rgba(169, 177, 188, 0.28);
   font-weight: 800;
 }
 
@@ -170,8 +170,8 @@ textarea {
   min-width: 112px;
   border: 0;
   border-radius: 0;
-  background: linear-gradient(135deg, #f59e0b, #f97316);
-  color: #fff;
+  background: linear-gradient(135deg, #aeb7c2, #e9eef5);
+  color: #0b111a;
   font-weight: 700;
 }
 
@@ -248,7 +248,7 @@ textarea {
 }
 
 .market-nav__icon {
-  color: var(--primary-strong);
+  color: #e2e8f0;
 }
 
 .market-content {
@@ -384,9 +384,9 @@ textarea {
 }
 
 .button--primary {
-  background: linear-gradient(135deg, #f59e0b, #f97316);
+  background: linear-gradient(135deg, #9aa5b3, #dfe5ee);
   border-color: transparent;
-  color: #fff;
+  color: #0c121a;
   font-weight: 700;
 }
 
