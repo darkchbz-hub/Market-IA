@@ -133,7 +133,7 @@ async function validateRegisterPayloadOrThrow(db, payload) {
 async function sendVerificationEmail(env, toEmail, code) {
   const apiKey = String(env.RESEND_API_KEY || "").trim();
   const fromEmail = String(env.RESEND_FROM_EMAIL || "").trim();
-  const allowMailchannelsFallback = String(env.ENABLE_MAILCHANNELS_FALLBACK || "false").toLowerCase() === "true";
+  const allowMailchannelsFallback = String(env.ENABLE_MAILCHANNELS_FALLBACK || "true").toLowerCase() === "true";
   const fallbackFrom = String(env.MAIL_FROM_EMAIL || fromEmail || "noreply@graycshop.trade").trim();
 
   if (!apiKey || !fromEmail) {
