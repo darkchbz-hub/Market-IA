@@ -223,10 +223,10 @@ export function ChatPage() {
           <span className="status-pill">{status}</span>
         </div>
 
-        {!isAdmin && (
-          <section className="support-bot-card">
-            <div className="support-bot-card__head">
-              <strong>Asistente de Soporte</strong>
+        <section className="support-bot-card">
+          <div className="support-bot-card__head">
+            <strong>{isAdmin ? "Asistente de respuestas" : "Asistente de Soporte"}</strong>
+            {!isAdmin && (
               <button
                 type="button"
                 className="button button--ghost"
@@ -234,17 +234,21 @@ export function ChatPage() {
               >
                 {botEnabled ? "Bot activo" : "Bot inactivo"}
               </button>
-            </div>
-            <p className="muted-text">Respuestas rapidas para dudas frecuentes, sin salir del apartado de Soporte.</p>
-            <div className="pill-row">
-              {quickSupportTopics.map((topic) => (
-                <button key={topic} type="button" className="pill pill--small" onClick={() => setDraft(topic)}>
-                  {topic}
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
+            )}
+          </div>
+          <p className="muted-text">
+            {isAdmin
+              ? "Usa plantillas rapidas para responder clientes en segundos."
+              : "Respuestas rapidas para dudas frecuentes, sin salir del apartado de Soporte."}
+          </p>
+          <div className="pill-row">
+            {quickSupportTopics.map((topic) => (
+              <button key={topic} type="button" className="pill pill--small" onClick={() => setDraft(topic)}>
+                {topic}
+              </button>
+            ))}
+          </div>
+        </section>
 
         <div className="messages-box">
           {messages.map((message) => (
