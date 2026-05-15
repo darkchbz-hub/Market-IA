@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { io } from "socket.io-client";
 import { useAuth } from "../context/AuthContext.jsx";
-import { SOCKET_URL, apiFetch } from "../lib/api.js";
+import { apiFetch } from "../lib/api.js";
 
 const quickSupportTopics = [
   "Metodos de pago",
@@ -44,13 +43,14 @@ function buildSupportBotReply(rawText) {
 
 export function ChatPage() {
   const { token, user, isAdmin } = useAuth();
-  const socketRef = useRef(null);
+  const refreshTimerRef = useRef(null);
   const [threads, setThreads] = useState([]);
   const [selectedUserId, setSelectedUserId] = useState("");
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState("");
   const [botEnabled, setBotEnabled] = useState(true);
-  const [status, setStatus] = useState("Conectando...");
+  const [status, setStatus] = useState("Conectado por API");
+  const [sending, setSending] = useState(false);
 
   const loadThreads = async () => {
     if (!isAdmin) return;
@@ -69,7 +69,7 @@ export function ChatPage() {
 
   useEffect(() => {
     if (isAdmin) {
-      loadThreads().catch(() => {});
+      loadThreads().catch((error) => setStatus(error.message));
     } else if (user?.id) {
       setSelectedUserId(user.id);
     }
@@ -77,36 +77,48 @@ export function ChatPage() {
 
   useEffect(() => {
     if (!token || (!selectedUserId && isAdmin)) return;
-    loadMessages(selectedUserId).catch(() => {});
+    loadMessages(selectedUserId).catch((error) => setStatus(error.message));
   }, [token, selectedUserId, isAdmin]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      return () => {};
+    }
 
-    const socket = io(SOCKET_URL, { auth: { token } });
-    socketRef.current = socket;
+    if (refreshTimerRef.current) {
+      clearInterval(refreshTimerRef.current);
+      refreshTimerRef.current = null;
+    }
 
-    socket.on("connect", () => setStatus("Conectado"));
-    socket.on("disconnect", () => setStatus("Desconectado"));
-    socket.on("chat:error", (payload) => setStatus(payload.message || "No se pudo enviar el mensaje."));
-    socket.on("chat:message", (message) => {
-      if (!isAdmin || message.usuarioId === selectedUserId) {
-        setMessages((current) => [...current, message]);
+    const refresh = async () => {
+      try {
+        if (isAdmin) {
+          await loadThreads();
+        }
+        await loadMessages(selectedUserId);
+        setStatus("Conectado por API");
+      } catch (error) {
+        setStatus(error.message || "No se pudo sincronizar soporte.");
       }
-      if (isAdmin) {
-        loadThreads().catch(() => {});
-      }
-    });
+    };
+
+    refresh().catch(() => {});
+    refreshTimerRef.current = setInterval(() => {
+      refresh().catch(() => {});
+    }, 4000);
 
     return () => {
-      socket.disconnect();
-      socketRef.current = null;
+      if (refreshTimerRef.current) {
+        clearInterval(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
     };
   }, [token, isAdmin, selectedUserId]);
 
-  const handleSend = (event) => {
+  const handleSend = async (event) => {
     event.preventDefault();
-    if (!draft.trim() || !socketRef.current) return;
+    if (!draft.trim()) return;
+    setSending(true);
 
     if (!isAdmin && botEnabled) {
       const userMessage = {
@@ -120,6 +132,17 @@ export function ChatPage() {
       setMessages((current) => [...current, userMessage]);
       setDraft("");
       setStatus("Asistente respondiendo...");
+      try {
+        await apiFetch("/messages", {
+          method: "POST",
+          token,
+          body: {
+            mensaje: userText
+          }
+        });
+      } catch (error) {
+        setStatus(error.message || "No se pudo guardar el mensaje.");
+      }
 
       window.setTimeout(() => {
         const botReply = buildSupportBotReply(userText);
@@ -136,19 +159,33 @@ export function ChatPage() {
           setBotEnabled(false);
           setStatus("Conectado con soporte humano");
         } else {
-          setStatus("Conectado");
+          setStatus("Conectado por API");
         }
       }, 550);
-
+      setSending(false);
       return;
     }
 
-    socketRef.current.emit("chat:send", {
-      userId: isAdmin ? selectedUserId : undefined,
-      mensaje: draft.trim()
-    });
-
-    setDraft("");
+    try {
+      const payload = await apiFetch("/messages", {
+        method: "POST",
+        token,
+        body: {
+          userId: isAdmin ? selectedUserId : undefined,
+          mensaje: draft.trim()
+        }
+      });
+      setMessages((current) => [...current, payload.message]);
+      setDraft("");
+      if (isAdmin) {
+        await loadThreads();
+      }
+      setStatus("Conectado por API");
+    } catch (error) {
+      setStatus(error.message || "No se pudo enviar el mensaje.");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -226,7 +263,7 @@ export function ChatPage() {
         <form className="chat-form" onSubmit={handleSend}>
           <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Escribe tu mensaje" />
           <button type="submit" className="button button--primary" disabled={!selectedUserId && isAdmin}>
-            Enviar
+            {sending ? "Enviando..." : "Enviar"}
           </button>
         </form>
       </section>

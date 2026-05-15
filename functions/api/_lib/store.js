@@ -151,6 +151,16 @@ const schemaStatements = [
     )
   `,
   `
+    CREATE TABLE IF NOT EXISTS messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      sender_role TEXT NOT NULL,
+      mensaje TEXT NOT NULL,
+      leido INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `,
+  `
     CREATE TABLE IF NOT EXISTS registration_codes (
       email TEXT PRIMARY KEY,
       payload TEXT NOT NULL,
@@ -265,6 +275,94 @@ export function serializeProduct(row) {
     ratingPromedio: Number(row.rating_promedio || 0),
     ratingTotal: Number(row.rating_total || 0)
   };
+}
+
+function serializeChatMessage(row) {
+  return {
+    id: Number(row.id),
+    usuarioId: Number(row.user_id),
+    rolRemitente: String(row.sender_role || "customer"),
+    mensaje: String(row.mensaje || ""),
+    leido: Boolean(Number(row.leido || 0)),
+    fecha: row.created_at
+  };
+}
+
+export async function createChatMessage(db, { userId, senderRole, mensaje }) {
+  const payload = String(mensaje || "").trim();
+  if (!payload) {
+    throw new Error("El mensaje no puede ir vacio.");
+  }
+
+  await db
+    .prepare(
+      `
+      INSERT INTO messages (user_id, sender_role, mensaje, leido, created_at)
+      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `
+    )
+    .bind(
+      Number(userId),
+      String(senderRole || "customer"),
+      payload,
+      senderRole === "admin" || senderRole === "bot" ? 1 : 0
+    )
+    .run();
+
+  const created = await db.prepare("SELECT * FROM messages WHERE id = last_insert_rowid()").first();
+  return serializeChatMessage(created);
+}
+
+export async function listChatMessagesByUser(db, userId) {
+  const result = await db
+    .prepare(
+      `
+      SELECT *
+      FROM messages
+      WHERE user_id = ?
+      ORDER BY datetime(created_at) ASC, id ASC
+      LIMIT 400
+    `
+    )
+    .bind(Number(userId))
+    .all();
+
+  return (result.results || []).map(serializeChatMessage);
+}
+
+export async function listChatThreads(db) {
+  const result = await db
+    .prepare(
+      `
+      SELECT
+        u.id AS user_id,
+        u.nombre,
+        u.email,
+        MAX(m.created_at) AS ultima_fecha,
+        (
+          SELECT m2.mensaje
+          FROM messages m2
+          WHERE m2.user_id = u.id
+          ORDER BY datetime(m2.created_at) DESC, m2.id DESC
+          LIMIT 1
+        ) AS ultimo_mensaje,
+        SUM(CASE WHEN m.sender_role = 'customer' AND m.leido = 0 THEN 1 ELSE 0 END) AS pendientes
+      FROM messages m
+      INNER JOIN users u ON u.id = m.user_id
+      GROUP BY u.id, u.nombre, u.email
+      ORDER BY datetime(ultima_fecha) DESC
+    `
+    )
+    .all();
+
+  return (result.results || []).map((row) => ({
+    usuarioId: Number(row.user_id),
+    nombre: row.nombre,
+    email: row.email,
+    ultimoMensaje: row.ultimo_mensaje || "",
+    ultimaFecha: row.ultima_fecha || "",
+    pendientes: Number(row.pendientes || 0)
+  }));
 }
 
 async function ensureColumn(db, tableName, columnName, definition) {

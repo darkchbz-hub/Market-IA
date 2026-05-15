@@ -13,6 +13,7 @@ import {
   canUserCommentOnProduct,
   clearCart,
   clearAllProducts,
+  createChatMessage,
   createOrderFromCart,
   createProductComment,
   createProduct,
@@ -37,6 +38,8 @@ import {
   listAdminUsers,
   listAdminProducts,
   listAdminCarts,
+  listChatMessagesByUser,
+  listChatThreads,
   listAdminOrders,
   listProductComments,
   listProducts,
@@ -654,6 +657,38 @@ export async function onRequest(context) {
     if (first === "users" && second === "me" && third === "favorites" && request.method === "DELETE") {
       await authenticate(request, env, db);
       return json({ ok: true });
+    }
+
+    if (first === "messages" && second === "threads" && request.method === "GET") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      return json({ items: await listChatThreads(db) });
+    }
+
+    if (first === "messages" && !second && request.method === "GET") {
+      const user = await authenticate(request, env, db);
+      const requestedUserId = Number(url.searchParams.get("userId") || 0);
+      const targetUserId = user.role === "admin" && requestedUserId > 0 ? requestedUserId : Number(user.id);
+
+      return json({
+        items: await listChatMessagesByUser(db, targetUserId)
+      });
+    }
+
+    if (first === "messages" && !second && request.method === "POST") {
+      const user = await authenticate(request, env, db);
+      const body = await readJson(request);
+      const requestedUserId = Number(body.userId || 0);
+      const targetUserId = user.role === "admin" && requestedUserId > 0 ? requestedUserId : Number(user.id);
+      const senderRole = user.role === "admin" ? "admin" : "customer";
+
+      const message = await createChatMessage(db, {
+        userId: targetUserId,
+        senderRole,
+        mensaje: String(body.mensaje || body.message || "")
+      });
+
+      return json({ message }, 201);
     }
 
     if (first === "users" && second === "me" && third === "orders" && segments[3] && segments[4] === "cancel" && request.method === "POST") {
