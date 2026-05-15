@@ -1293,6 +1293,27 @@ textarea {
   background: rgba(59, 130, 246, 0.14);
 }
 
+.message--bot {
+  background: rgba(16, 185, 129, 0.16);
+}
+
+.support-bot-card {
+  border: 1px solid var(--line);
+  background: rgba(13, 22, 38, 0.86);
+  border-radius: 20px;
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.support-bot-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .chat-form {
   display: grid;
   grid-template-columns: 1fr auto;
