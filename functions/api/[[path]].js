@@ -203,10 +203,13 @@ async function sendVerificationEmail(env, toEmail, code) {
 
 function normalizeAddress(value) {
   const address = value && typeof value === "object" ? value : {};
+  const localidad = String(address.localidad || "").trim();
+  const ciudad = String(address.ciudad || "").trim() || localidad;
 
   return {
     calle: String(address.calle || "").trim(),
-    ciudad: String(address.ciudad || "").trim(),
+    localidad,
+    ciudad,
     estado: String(address.estado || "").trim(),
     cp: String(address.cp || "").trim(),
     pais: String(address.pais || "").trim()
@@ -505,6 +508,10 @@ export async function onRequest(context) {
       const country = url.searchParams.get("country") || "MX";
       const postalCode = url.searchParams.get("cp") || url.searchParams.get("postalCode") || "";
       return json(await lookupPostalLocations(country, postalCode));
+    }
+
+    if (first === "auth" && second === "register" && !third && request.method === "POST") {
+      throw httpError(400, "El registro ahora requiere verificacion por correo. Primero envia codigo y luego validalo.");
     }
 
     if (first === "auth" && second === "register" && third === "send-code" && request.method === "POST") {

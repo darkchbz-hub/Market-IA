@@ -42,6 +42,7 @@ export function RegisterPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const codeInputRefs = useRef([]);
+  const postalLookupRequestIdRef = useRef(0);
   const countries = useMemo(() => getCountryOptions(), []);
   const [form, setForm] = useState({
     nombre: "",
@@ -77,11 +78,16 @@ export function RegisterPage() {
       return;
     }
 
+    const requestId = postalLookupRequestIdRef.current + 1;
+    postalLookupRequestIdRef.current = requestId;
     setPostalLoading(true);
     setPostalMessage("");
 
     try {
       const result = await apiFetch(`/geo/postal-lookup?country=${encodeURIComponent(country)}&cp=${encodeURIComponent(cleanPostalCode)}`);
+      if (requestId !== postalLookupRequestIdRef.current) {
+        return;
+      }
       const localities = Array.isArray(result.localities) ? result.localities : [];
       const countryName =
         countries.find((item) => item.code === String(result.countryCode || "").toUpperCase())?.name ||
@@ -105,10 +111,15 @@ export function RegisterPage() {
       }));
       setPostalMessage(localities.length ? "Codigo postal validado." : "Codigo postal validado sin colonias listadas.");
     } catch (postalError) {
+      if (requestId !== postalLookupRequestIdRef.current) {
+        return;
+      }
       setPostalLocalities([]);
       setPostalMessage(postalError.message || "No se pudo consultar el codigo postal.");
     } finally {
-      setPostalLoading(false);
+      if (requestId === postalLookupRequestIdRef.current) {
+        setPostalLoading(false);
+      }
     }
   };
 
@@ -261,12 +272,13 @@ export function RegisterPage() {
               value={form.email}
               onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
               title="Solo se aceptan correos @gmail.com"
+              autoComplete="email"
               required
             />
           </label>
           <label>
             Telefono
-            <input value={form.telefono} onChange={(event) => setForm((current) => ({ ...current, telefono: event.target.value }))} required />
+            <input type="tel" autoComplete="tel" value={form.telefono} onChange={(event) => setForm((current) => ({ ...current, telefono: event.target.value }))} required />
           </label>
           <label>
             Nickname
@@ -300,10 +312,12 @@ export function RegisterPage() {
           <label>
             Codigo postal
             <input
+              inputMode="numeric"
               value={form.direccion.cp}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, direccion: { ...current.direccion, cp: event.target.value } }))
-              }
+              onChange={(event) => {
+                setPostalMessage("");
+                setForm((current) => ({ ...current, direccion: { ...current.direccion, cp: event.target.value } }));
+              }}
               onBlur={(event) => runPostalLookup(event.target.value, countryCode)}
               required
             />
