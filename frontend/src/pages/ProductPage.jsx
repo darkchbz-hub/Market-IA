@@ -212,7 +212,7 @@ export function ProductPage() {
 
         <div className="product-summary">
           <p className="section-label">
-            {product.disponibilidad || "Nuevo"} · {product.ratingTotal || 0} vendidos
+            {product.disponibilidad || "Nuevo"} · {product.vendidos || 0} vendidos
           </p>
           <span className="product-category-link">{product.categoria}</span>
           <h1>{product.nombre}</h1>

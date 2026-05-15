@@ -86,6 +86,14 @@ export default function App() {
           }
         />
         <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute adminOnly>
+              <AdminPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/checkout/:status"
           element={
             <ProtectedRoute>

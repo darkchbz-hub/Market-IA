@@ -10,6 +10,7 @@ export function RegisterPage() {
     email: "",
     telefono: "",
     nickname: "",
+    invitationCode: "",
     password: "",
     direccion: {
       calle: "",
@@ -55,7 +56,7 @@ export function RegisterPage() {
           </label>
           <label>
             Correo
-            <input value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} required />
+            <input type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} required />
           </label>
           <label>
             Telefono
@@ -74,6 +75,17 @@ export function RegisterPage() {
             value={form.password}
             onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
             minLength={8}
+            required
+          />
+        </label>
+
+        <label>
+          Codigo de invitacion (6 digitos)
+          <input
+            value={form.invitationCode}
+            onChange={(event) => setForm((current) => ({ ...current, invitationCode: event.target.value.replace(/\D/g, "").slice(0, 6) }))}
+            minLength={6}
+            maxLength={6}
             required
           />
         </label>

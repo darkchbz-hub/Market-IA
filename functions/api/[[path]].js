@@ -45,6 +45,7 @@ import {
   savePaymentRecord,
   serializeUser,
   setCartItem,
+  setUserActiveStatus,
   updateSiteContent,
   updateOrderItemStatus,
   updateOrderStatus,
@@ -61,6 +62,17 @@ function httpError(status, message) {
 
 function validateEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim().toLowerCase());
+}
+
+function normalizeEmailDomains(input) {
+  if (Array.isArray(input)) {
+    return input.map((item) => String(item || "").trim().toLowerCase()).filter(Boolean);
+  }
+
+  return String(input || "")
+    .split(/[,\s\r\n]+/)
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
 }
 
 function normalizeAddress(value) {
@@ -113,6 +125,9 @@ async function authenticate(request, env, db, required = true) {
 
     if (!user) {
       throw new Error("La sesion ya no existe.");
+    }
+    if (Number(user.is_active ?? 1) !== 1) {
+      throw new Error("Tu cuenta ha sido desactivada, contacta a soporte.");
     }
 
     return user;
@@ -272,9 +287,23 @@ export async function onRequest(context) {
       const direccion = normalizeAddress(body.direccion);
       const avatarUrl = String(body.avatarUrl || "").trim();
       const geoMeta = normalizeGeoMeta(body.geoMeta);
+      const invitationCode = String(body.invitationCode || "").trim();
+      const siteContent = await getSiteContent(db);
+      const configuredInviteCode = String(siteContent?.general?.signupInviteCode || "").trim();
+      const allowedDomains = normalizeEmailDomains(siteContent?.general?.allowedEmailDomains);
+      const emailDomain = email.split("@")[1] || "";
 
       if (!nombre || !validateEmail(email) || password.length < 6) {
         throw httpError(400, "Completa nombre, email valido y una contrasena de al menos 6 caracteres.");
+      }
+      if (!/^\d{6}$/.test(invitationCode)) {
+        throw httpError(400, "Ingresa el codigo de invitacion de 6 digitos.");
+      }
+      if (configuredInviteCode && invitationCode !== configuredInviteCode) {
+        throw httpError(400, "El codigo de invitacion no es valido.");
+      }
+      if (allowedDomains.length && !allowedDomains.includes(String(emailDomain).toLowerCase())) {
+        throw httpError(400, "Este dominio de correo no esta permitido para registro.");
       }
 
       if (!telefono || !direccion.calle || !direccion.ciudad || !direccion.estado || !direccion.cp || !direccion.pais) {
@@ -307,6 +336,9 @@ export async function onRequest(context) {
 
       if (!user || !(await verifyPassword(password, user.password_hash))) {
         throw httpError(401, "Email o contrasena incorrectos.");
+      }
+      if (Number(user.is_active ?? 1) !== 1) {
+        throw httpError(403, "Tu cuenta ha sido desactivada, contacta a soporte.");
       }
 
       return json(await buildAuthPayload(user, env));
@@ -646,6 +678,22 @@ export async function onRequest(context) {
       });
     }
 
+    if (first === "admin" && second === "users" && third && segments[3] === "status" && request.method === "PATCH") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      const body = await readJson(request);
+      const updated = await setUserActiveStatus(db, Number(third), Boolean(body?.isActive));
+
+      if (!updated) {
+        throw httpError(404, "El usuario no existe.");
+      }
+
+      return json({
+        ok: true,
+        user: serializeUser(updated)
+      });
+    }
+
     if (first === "admin" && second === "carts" && !third && request.method === "GET") {
       const user = await authenticate(request, env, db);
       requireAdmin(user);
@@ -718,7 +766,8 @@ export async function onRequest(context) {
         general: content.general || {},
         banners: Array.isArray(content.banners) ? content.banners : [],
         videos: Array.isArray(content.videos) ? content.videos : [],
-        music: Array.isArray(content.music) ? content.music : []
+        music: Array.isArray(content.music) ? content.music : [],
+        reviewDesk: Array.isArray(content.reviewDesk) ? content.reviewDesk : []
       });
     }
 

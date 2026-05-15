@@ -41,6 +41,8 @@ const defaultSiteContent = {
     tagline: "Marketplace elegante para categorias premium y compras confiables.",
     supportEmail: "ventas@graycshop.com",
     supportPhone: "+52 5512345678",
+    signupInviteCode: "123456",
+    allowedEmailDomains: ["gmail.com", "outlook.com", "hotmail.com", "live.com", "icloud.com", "yahoo.com"],
     partnerTitle: "Empresas asociadas",
     partnerLogos: []
   },
@@ -57,6 +59,7 @@ const schemaStatements = [
       nombre TEXT NOT NULL,
       email TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
+      is_active INTEGER NOT NULL DEFAULT 1,
       telefono TEXT NOT NULL DEFAULT '',
       nickname TEXT NOT NULL DEFAULT '',
       avatar_url TEXT NOT NULL DEFAULT '',
@@ -73,6 +76,7 @@ const schemaStatements = [
       descripcion TEXT NOT NULL,
       precio REAL NOT NULL,
       stock INTEGER NOT NULL DEFAULT 0,
+      vendidos INTEGER NOT NULL DEFAULT 0,
       categoria TEXT NOT NULL,
       tags TEXT NOT NULL DEFAULT '[]',
       imagenes TEXT NOT NULL DEFAULT '[]',
@@ -208,6 +212,7 @@ export function serializeUser(row) {
     role: row.role,
     nombre: row.nombre,
     email: row.email,
+    isActive: Boolean(Number(row.is_active ?? 1)),
     telefono: row.telefono || "",
     nickname: row.nickname || "",
     avatarUrl: row.avatar_url || "",
@@ -235,6 +240,7 @@ export function serializeProduct(row) {
     oferta: descuentoActivo,
     descuento: descuentoActivo && precioBase > 0 ? Math.round(((precioBase - precioDescuento) / precioBase) * 100) : 0,
     stock: Number(row.stock),
+    vendidos: Number(row.vendidos || 0),
     categoria: row.categoria,
     tags: parseJson(row.tags, []),
     imagenes: parseJson(row.imagenes, []),
@@ -360,10 +366,12 @@ export async function ensureDatabase(env) {
       await ensureColumn(env.DB, "products", "envio_gratis", "INTEGER NOT NULL DEFAULT 0");
       await ensureColumn(env.DB, "products", "mostrar_envio_gratis", "INTEGER NOT NULL DEFAULT 0");
       await ensureColumn(env.DB, "products", "precio_descuento", "REAL NOT NULL DEFAULT 0");
+      await ensureColumn(env.DB, "products", "vendidos", "INTEGER NOT NULL DEFAULT 0");
       await ensureColumn(env.DB, "order_items", "estado", "TEXT NOT NULL DEFAULT 'pendiente'");
       await ensureColumn(env.DB, "order_items", "updated_at", "TEXT NOT NULL DEFAULT ''");
       await ensureColumn(env.DB, "orders", "tracking", "TEXT NOT NULL DEFAULT '[]'");
       await ensureColumn(env.DB, "users", "telefono", "TEXT NOT NULL DEFAULT ''");
+      await ensureColumn(env.DB, "users", "is_active", "INTEGER NOT NULL DEFAULT 1");
       await ensureColumn(env.DB, "users", "nickname", "TEXT NOT NULL DEFAULT ''");
       await ensureColumn(env.DB, "users", "avatar_url", "TEXT NOT NULL DEFAULT ''");
       await ensureColumn(env.DB, "users", "geo_meta", "TEXT NOT NULL DEFAULT '{}'");
@@ -582,6 +590,7 @@ export async function createProduct(db, input) {
   const categoria = String(input.categoria || "").trim().toLowerCase();
   const precio = Number(input.precio);
   const stock = Number(input.stock);
+  const vendidos = Number(input.vendidos || 0);
   const tags = Array.isArray(input.tags)
     ? input.tags.map((tag) => String(tag).trim()).filter(Boolean)
     : String(input.tags || "")
@@ -624,6 +633,9 @@ export async function createProduct(db, input) {
   if (!Number.isFinite(stock) || stock < 0) {
     throw new Error("Ingresa un stock valido.");
   }
+  if (!Number.isFinite(vendidos) || vendidos < 0) {
+    throw new Error("Ingresa una cantidad valida de vendidos.");
+  }
 
   if (Number.isFinite(precioDescuento) && precioDescuento < 0) {
     throw new Error("Ingresa un descuento valido.");
@@ -642,10 +654,10 @@ export async function createProduct(db, input) {
     .prepare(
       `
       INSERT INTO products (
-        slug, nombre, descripcion, descripcion_corta, marca, precio, stock, categoria, tags, imagenes, caracteristicas,
+        slug, nombre, descripcion, descripcion_corta, marca, precio, stock, vendidos, categoria, tags, imagenes, caracteristicas,
         disponibilidad, info_envio, fecha_estimada, garantia, devolucion, envio_gratis, mostrar_envio_gratis, precio_descuento
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
     )
     .bind(
@@ -656,6 +668,7 @@ export async function createProduct(db, input) {
       marca,
       precio,
       stock,
+      vendidos,
       categoria,
       JSON.stringify(tags),
       JSON.stringify(imagenes),
@@ -688,6 +701,7 @@ export async function updateProduct(db, productId, input) {
   const categoria = String(input.categoria ?? existing.categoria).trim().toLowerCase();
   const precio = Number(input.precio ?? existing.precio);
   const stock = Number(input.stock ?? existing.stock);
+  const vendidos = Number(input.vendidos ?? existing.vendidos ?? 0);
   const tags = Array.isArray(input.tags)
     ? input.tags.map((tag) => String(tag).trim()).filter(Boolean)
     : input.tags !== undefined
@@ -741,6 +755,9 @@ export async function updateProduct(db, productId, input) {
   if (!Number.isFinite(stock) || stock < 0) {
     throw new Error("Ingresa un stock valido.");
   }
+  if (!Number.isFinite(vendidos) || vendidos < 0) {
+    throw new Error("Ingresa una cantidad valida de vendidos.");
+  }
 
   if (!Number.isFinite(precioDescuento) || precioDescuento < 0) {
     throw new Error("Ingresa un descuento valido.");
@@ -765,7 +782,7 @@ export async function updateProduct(db, productId, input) {
     .prepare(
       `
       UPDATE products
-      SET slug = ?, nombre = ?, descripcion = ?, descripcion_corta = ?, marca = ?, precio = ?, stock = ?, categoria = ?, tags = ?, imagenes = ?, caracteristicas = ?, disponibilidad = ?, info_envio = ?, fecha_estimada = ?, garantia = ?, devolucion = ?, envio_gratis = ?, mostrar_envio_gratis = ?, precio_descuento = ?
+      SET slug = ?, nombre = ?, descripcion = ?, descripcion_corta = ?, marca = ?, precio = ?, stock = ?, vendidos = ?, categoria = ?, tags = ?, imagenes = ?, caracteristicas = ?, disponibilidad = ?, info_envio = ?, fecha_estimada = ?, garantia = ?, devolucion = ?, envio_gratis = ?, mostrar_envio_gratis = ?, precio_descuento = ?
       WHERE id = ?
     `
     )
@@ -777,6 +794,7 @@ export async function updateProduct(db, productId, input) {
       marca,
       precio,
       stock,
+      vendidos,
       categoria,
       JSON.stringify(tags),
       JSON.stringify(imagenes),
@@ -1256,7 +1274,7 @@ export async function listAdminUsers(db) {
   const users = await db
     .prepare(
       `
-      SELECT id, nombre, email, telefono, nickname, avatar_url, direccion, created_at
+      SELECT id, nombre, email, telefono, nickname, avatar_url, direccion, is_active, created_at
       FROM users
       WHERE role != 'admin'
       ORDER BY created_at DESC
@@ -1272,6 +1290,7 @@ export async function listAdminUsers(db) {
     telefono: user.telefono || "",
     nickname: user.nickname || "",
     avatarUrl: user.avatar_url || "",
+    isActive: Boolean(Number(user.is_active ?? 1)),
     direccion: parseJson(user.direccion, {}),
     fechaRegistro: user.created_at
   }));
@@ -1292,6 +1311,26 @@ export async function getAdminUserDetail(db, userId) {
     historial: dashboard.historial,
     cart
   };
+}
+
+export async function setUserActiveStatus(db, userId, isActive) {
+  const targetId = Number(userId || 0);
+  if (!targetId) {
+    throw new Error("Usuario invalido.");
+  }
+
+  await db
+    .prepare(
+      `
+      UPDATE users
+      SET is_active = ?
+      WHERE id = ? AND role != 'admin'
+    `
+    )
+    .bind(isActive ? 1 : 0, targetId)
+    .run();
+
+  return getUserById(db, targetId);
 }
 
 export async function updateOrderItemStatus(db, itemId, estado) {

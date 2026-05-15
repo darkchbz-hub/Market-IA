@@ -274,6 +274,11 @@ export function AppShell() {
                     Administrar tienda
                   </Link>
                 )}
+                {isAdmin && (
+                  <Link to="/dashboard" className="button button--ghost">
+                    Dashboard
+                  </Link>
+                )}
                 <Link to="/carrito" className="cart-button">
                   Carrito
                   <span>{itemCount}</span>
@@ -327,6 +332,11 @@ export function AppShell() {
           {isAdmin && (
             <NavLink to="/admin" className={navLinkClass}>
               Administrador
+            </NavLink>
+          )}
+          {isAdmin && (
+            <NavLink to="/dashboard" className={navLinkClass}>
+              Dashboard
             </NavLink>
           )}
         </nav>

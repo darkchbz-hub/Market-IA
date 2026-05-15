@@ -12,6 +12,7 @@ const initialProduct = {
   precio: "",
   precioDescuento: "",
   stock: "",
+  vendidos: "",
   categoria: "tecnologia",
   imagenes: [],
   tags: "",
@@ -152,6 +153,7 @@ export function AdminPage() {
       precio: String(product.precioOriginal > 0 ? product.precioOriginal : product.precio || ""),
       precioDescuento: String(product.precioDescuento || ""),
       stock: String(product.stock || ""),
+      vendidos: String(product.vendidos || 0),
       categoria: product.categoria || "tecnologia",
       imagenes: product.imagenes || [],
       tags: Array.isArray(product.tags) ? product.tags.join(", ") : "",
@@ -183,6 +185,7 @@ export function AdminPage() {
         precio: Number(productForm.precio || 0),
         precioDescuento: Number(productForm.precioDescuento || 0),
         stock: Number(productForm.stock || 0),
+        vendidos: Number(productForm.vendidos || 0),
         tags: productForm.tags,
         caracteristicas: productForm.caracteristicas
       };
@@ -259,23 +262,20 @@ export function AdminPage() {
     setTab("users");
   };
 
-  const deleteUserAccount = async (userId) => {
-    if (!window.confirm("Se eliminara esta cuenta de usuario y su informacion relacionada. Deseas continuar?")) {
-      return;
-    }
+  const toggleUserActive = async (userId, nextIsActive) => {
     try {
-      const result = await apiFetch(`/admin/users/${userId}/delete`, {
-        method: "POST",
-        token
+      await apiFetch(`/admin/users/${userId}/status`, {
+        method: "PATCH",
+        token,
+        body: { isActive: nextIsActive }
       });
-
-      const deletedId = result?.deletedUserId || userId;
-      setUsers((current) => current.filter((item) => String(item.id) !== String(deletedId)));
-      setSelectedUser((current) => (String(current?.user?.id || "") === String(deletedId) ? null : current));
       await loadAdmin();
-      setMessage("Cuenta de usuario eliminada.");
+      if (selectedUser?.user?.id === userId) {
+        await openUser(userId);
+      }
+      setMessage(nextIsActive ? "Cuenta activada." : "Cuenta desactivada.");
     } catch (error) {
-      setMessage(error.message || "No se pudo eliminar la cuenta.");
+      setMessage(error.message || "No se pudo actualizar el estado de la cuenta.");
     }
   };
 
@@ -460,6 +460,33 @@ export function AdminPage() {
               <article className="mini-item"><strong>Pedidos</strong><span>Cambiar estado, ajustar seguimiento y eliminar si aplica.</span></article>
             </div>
           </section>
+
+          <section className="section-card">
+            <div className="section-heading section-heading--compact">
+              <div>
+                <p className="section-label">Dashboard editable</p>
+                <h2>Personaliza mensaje y portada principal</h2>
+              </div>
+            </div>
+            <label>
+              Mensaje superior
+              <input
+                value={content.homepage.announcement || ""}
+                onChange={(event) => setContent((current) => ({ ...current, homepage: { ...current.homepage, announcement: event.target.value } }))}
+              />
+            </label>
+            <label>
+              Titulo principal
+              <textarea
+                rows="3"
+                value={content.homepage.heroTitle || ""}
+                onChange={(event) => setContent((current) => ({ ...current, homepage: { ...current.homepage, heroTitle: event.target.value } }))}
+              />
+            </label>
+            <button type="button" className="button button--primary" onClick={saveHomepage}>
+              Guardar cambios del dashboard
+            </button>
+          </section>
         </>
       )}
 
@@ -511,6 +538,10 @@ export function AdminPage() {
               <label>
                 Stock
                 <input value={productForm.stock} onChange={(event) => setProductForm((current) => ({ ...current, stock: event.target.value }))} required />
+              </label>
+              <label>
+                Vendidos
+                <input value={productForm.vendidos} onChange={(event) => setProductForm((current) => ({ ...current, vendidos: event.target.value }))} />
               </label>
               <label>
                 Disponibilidad
@@ -601,7 +632,7 @@ export function AdminPage() {
                   <div>
                     <strong>{product.nombre}</strong>
                     <span>{product.categoria} · {product.marca || "Sin marca"}</span>
-                    <small>${product.precio.toFixed(2)} · stock {product.stock}</small>
+                    <small>${product.precio.toFixed(2)} · stock {product.stock} · vendidos {product.vendidos || 0}</small>
                   </div>
                   <button type="button" className="button button--ghost" onClick={() => fillProductForm(product)}>
                     Editar
@@ -635,9 +666,14 @@ export function AdminPage() {
                   <button type="button" className="user-list-button" onClick={() => openUser(user.id)}>
                     <strong>{user.nombre}</strong>
                     <span>{user.telefono || user.email}</span>
+                    <small>{user.isActive ? "Activa" : "Desactivada"}</small>
                   </button>
-                  <button type="button" className="button button--ghost" onClick={() => deleteUserAccount(user.id)}>
-                    Eliminar
+                  <button
+                    type="button"
+                    className="button button--ghost"
+                    onClick={() => toggleUserActive(user.id, !Boolean(user.isActive))}
+                  >
+                    {user.isActive ? "Desactivar" : "Activar"}
                   </button>
                 </article>
               ))}
@@ -655,10 +691,15 @@ export function AdminPage() {
             {selectedUser ? (
               <div className="list-stack">
                 <article className="mini-item"><strong>Correo</strong><span>{selectedUser.user.email}</span></article>
+                <article className="mini-item"><strong>Estado</strong><span>{selectedUser.user.isActive ? "Activa" : "Desactivada"}</span></article>
                 <article className="mini-item"><strong>Telefono</strong><span>{selectedUser.user.telefono || "Sin telefono"}</span></article>
                 <article className="mini-item"><strong>Direccion</strong><span>{Object.values(selectedUser.user.direccion || {}).filter(Boolean).join(", ") || "Sin direccion"}</span></article>
-                <button type="button" className="button button--ghost" onClick={() => deleteUserAccount(selectedUser.user.id)}>
-                  Eliminar cuenta de este usuario
+                <button
+                  type="button"
+                  className="button button--ghost"
+                  onClick={() => toggleUserActive(selectedUser.user.id, !Boolean(selectedUser.user.isActive))}
+                >
+                  {selectedUser.user.isActive ? "Desactivar cuenta de este usuario" : "Activar cuenta de este usuario"}
                 </button>
 
                 <article className="detail-card">
@@ -814,6 +855,38 @@ export function AdminPage() {
             <label>
               Eslogan
               <input value={content.general.tagline || ""} onChange={(event) => setContent((current) => ({ ...current, general: { ...current.general, tagline: event.target.value } }))} />
+            </label>
+            <label>
+              Codigo de invitacion (6 digitos)
+              <input
+                value={content.general.signupInviteCode || ""}
+                onChange={(event) =>
+                  setContent((current) => ({
+                    ...current,
+                    general: { ...current.general, signupInviteCode: event.target.value.replace(/\D/g, "").slice(0, 6) }
+                  }))
+                }
+                placeholder="123456"
+              />
+            </label>
+            <label>
+              Dominios permitidos para registro
+              <input
+                value={Array.isArray(content.general.allowedEmailDomains) ? content.general.allowedEmailDomains.join(", ") : content.general.allowedEmailDomains || ""}
+                onChange={(event) =>
+                  setContent((current) => ({
+                    ...current,
+                    general: {
+                      ...current.general,
+                      allowedEmailDomains: event.target.value
+                        .split(/[,\s\r\n]+/)
+                        .map((item) => item.trim().toLowerCase())
+                        .filter(Boolean)
+                    }
+                  }))
+                }
+                placeholder="gmail.com, outlook.com, hotmail.com"
+              />
             </label>
             <label>
               Logo principal (subir imagen)

@@ -42,7 +42,7 @@ export function ProductCard({ product, onAddToCart, onBuyNow, busy }) {
       </div>
 
       <div className="product-card__footer">
-        <small>{product.stock} disponibles</small>
+        <small>{product.stock} disponibles · {product.vendidos || 0} vendidos</small>
         <div className="product-card__actions">
           <button type="button" className="button button--ghost" onClick={() => onBuyNow?.(product)}>
             Comprar ahora
