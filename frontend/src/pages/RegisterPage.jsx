@@ -433,9 +433,11 @@ export function RegisterPage() {
         </label>
 
         {message && <p className="inline-message">{message}</p>}
-        <button type="submit" className="button button--primary" disabled={loading}>
-          {loading ? "Enviando..." : "Enviar codigo"}
-        </button>
+        <div className="auth-register-actions">
+          <button type="submit" className="button button--primary" disabled={loading}>
+            {loading ? "Enviando..." : "Enviar codigo"}
+          </button>
+        </div>
         <p className="muted-text">
           Ya tienes cuenta? <Link to="/login">Inicia sesion</Link>
         </p>

@@ -1167,6 +1167,44 @@ textarea {
 
 .auth-card {
   max-width: 720px;
+  display: grid;
+  gap: 14px;
+}
+
+.auth-card h2 {
+  margin: 0 0 4px;
+}
+
+.auth-card label {
+  display: grid;
+  gap: 8px;
+}
+
+.auth-card .muted-text {
+  margin: 2px 0 0;
+}
+
+.checkbox-chip {
+  display: flex !important;
+  align-items: flex-start;
+  gap: 10px !important;
+  line-height: 1.4;
+  margin-top: 6px;
+}
+
+.checkbox-chip input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  margin: 2px 0 0;
+  border-radius: 6px;
+  accent-color: #5ea1ff;
+}
+
+.auth-register-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 4px;
 }
 
 .auth-card--modal {
@@ -1442,6 +1480,10 @@ textarea {
   .auth-layout {
     grid-template-columns: 1fr;
     min-height: auto;
+  }
+
+  .auth-register-actions .button {
+    width: 100%;
   }
 
   .code-box-grid {
