@@ -90,7 +90,7 @@ export function RegisterPage() {
               type="email"
               value={form.email}
               onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
-              pattern="^[^\\s@]+@gmail\\.com$"
+              pattern={"^[^\\s@]+@gmail\\.com$"}
               title="Solo se aceptan correos @gmail.com"
               required
             />
