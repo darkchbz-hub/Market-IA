@@ -1047,6 +1047,16 @@ textarea {
   color: #b4e6ff;
 }
 
+.inline-message--error {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fecaca;
+}
+
+.inline-message--success {
+  background: rgba(16, 185, 129, 0.2);
+  color: #bbf7d0;
+}
+
 .empty-state,
 .page-loader,
 .status-page {
@@ -1157,6 +1167,64 @@ textarea {
 
 .auth-card {
   max-width: 720px;
+}
+
+.auth-card--modal {
+  width: min(680px, calc(100vw - 26px));
+  max-width: none;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  background: rgba(3, 8, 18, 0.72);
+  backdrop-filter: blur(3px);
+}
+
+.code-box-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.code-box-grid input {
+  text-align: center;
+  font-size: 1.26rem;
+  font-weight: 700;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+}
+
+.code-box-grid.is-error input {
+  border-color: rgba(239, 68, 68, 0.9);
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.35);
+}
+
+.code-box-grid.is-success input {
+  border-color: rgba(16, 185, 129, 0.9);
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.35);
+}
+
+.welcome-modal {
+  position: relative;
+}
+
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 .chat-layout {
@@ -1374,6 +1442,10 @@ textarea {
   .auth-layout {
     grid-template-columns: 1fr;
     min-height: auto;
+  }
+
+  .code-box-grid {
+    gap: 8px;
   }
 }
 

@@ -355,6 +355,104 @@ async function buildHomePayload(db) {
   };
 }
 
+function normalizeCountryCode(value) {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return "MX";
+  }
+
+  const upper = raw.toUpperCase();
+  if (/^[A-Z]{2}$/.test(upper)) {
+    return upper;
+  }
+
+  const key = raw
+    .toLowerCase()
+    .replace(/[áàäâ]/g, "a")
+    .replace(/[éèëê]/g, "e")
+    .replace(/[íìïî]/g, "i")
+    .replace(/[óòöô]/g, "o")
+    .replace(/[úùüû]/g, "u")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const map = {
+    mexico: "MX",
+    "estados unidos": "US",
+    "united states": "US",
+    espana: "ES",
+    spain: "ES",
+    colombia: "CO",
+    argentina: "AR",
+    chile: "CL",
+    peru: "PE",
+    ecuador: "EC",
+    bolivia: "BO",
+    paraguay: "PY",
+    uruguay: "UY",
+    venezuela: "VE",
+    brasil: "BR",
+    brazil: "BR",
+    canada: "CA",
+    germany: "DE",
+    alemania: "DE",
+    france: "FR",
+    francia: "FR",
+    italy: "IT",
+    italia: "IT",
+    japan: "JP",
+    japon: "JP",
+    china: "CN",
+    india: "IN",
+    "united kingdom": "GB",
+    "reino unido": "GB"
+  };
+
+  return map[key] || "MX";
+}
+
+async function lookupPostalLocations(countryInput, postalInput) {
+  const postalCode = String(postalInput || "").trim();
+  if (postalCode.length < 3) {
+    throw httpError(400, "Ingresa un codigo postal valido.");
+  }
+
+  const countryCode = normalizeCountryCode(countryInput);
+  const endpoint = `https://api.zippopotam.us/${countryCode.toLowerCase()}/${encodeURIComponent(postalCode)}`;
+
+  let response;
+  try {
+    response = await fetch(endpoint, { method: "GET" });
+  } catch {
+    throw httpError(502, "No se pudo consultar el servicio de codigos postales.");
+  }
+
+  if (!response.ok) {
+    throw httpError(404, "No encontramos coincidencias para ese codigo postal.");
+  }
+
+  const payload = await response.json();
+  const placesRaw = Array.isArray(payload.places) ? payload.places : [];
+
+  const localities = Array.from(
+    new Set(
+      placesRaw
+        .map((item) => String(item["place name"] || "").trim())
+        .filter(Boolean)
+    )
+  );
+
+  const state = String(placesRaw[0]?.state || "").trim();
+
+  return {
+    countryCode: String(payload["country abbreviation"] || countryCode).toUpperCase(),
+    country: String(payload.country || "").trim(),
+    postalCode: String(payload["post code"] || postalCode).trim(),
+    state,
+    localities
+  };
+}
+
 async function listAdminReviewItems(db) {
   const result = await db
     .prepare(
@@ -401,6 +499,12 @@ export async function onRequest(context) {
         runtime: "cloudflare-pages-functions",
         timestamp: new Date().toISOString()
       });
+    }
+
+    if (first === "geo" && second === "postal-lookup" && request.method === "GET") {
+      const country = url.searchParams.get("country") || "MX";
+      const postalCode = url.searchParams.get("cp") || url.searchParams.get("postalCode") || "";
+      return json(await lookupPostalLocations(country, postalCode));
     }
 
     if (first === "auth" && second === "register" && third === "send-code" && request.method === "POST") {
