@@ -19,6 +19,7 @@ import {
   createUser,
   deleteOrder,
   decrementStockForOrder,
+  deleteRegistrationCode,
   deleteProductComment,
   deleteProduct,
   ensureDatabase,
@@ -27,6 +28,7 @@ import {
   getOrderById,
   getOrderWithItems,
   getProductById,
+  getRegistrationCode,
   getSiteContent,
   getUserByEmail,
   getUserById,
@@ -43,6 +45,7 @@ import {
   recordProductView,
   recordSearch,
   savePaymentRecord,
+  saveRegistrationCode,
   serializeUser,
   setCartItem,
   setUserActiveStatus,
@@ -51,7 +54,8 @@ import {
   updateOrderStatus,
   updateOrderTracking,
   updateProduct,
-  updateUserAddress
+  updateUserAddress,
+  bumpRegistrationCodeAttempt
 } from "./_lib/store.js";
 
 function httpError(status, message) {
@@ -73,6 +77,85 @@ function normalizeEmailDomains(input) {
     .split(/[,\s\r\n]+/)
     .map((item) => item.trim().toLowerCase())
     .filter(Boolean);
+}
+
+function generateSixDigitCode() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+function getEmailDomain(email) {
+  return String(email || "").trim().toLowerCase().split("@")[1] || "";
+}
+
+function buildRegisterPayloadFromBody(body) {
+  return {
+    nombre: String(body.nombre || "").trim(),
+    email: String(body.email || "").trim().toLowerCase(),
+    password: String(body.password || ""),
+    telefono: String(body.telefono || "").trim(),
+    nickname: String(body.nickname || "").trim(),
+    direccion: normalizeAddress(body.direccion),
+    avatarUrl: String(body.avatarUrl || "").trim(),
+    geoMeta: normalizeGeoMeta(body.geoMeta),
+    acceptedTerms: Boolean(body.acceptedTerms)
+  };
+}
+
+async function validateRegisterPayloadOrThrow(db, payload) {
+  const siteContent = await getSiteContent(db);
+  const configuredInviteCode = String(siteContent?.general?.signupInviteCode || "").trim();
+  const allowedDomains = normalizeEmailDomains(siteContent?.general?.allowedEmailDomains);
+  const emailDomain = getEmailDomain(payload.email);
+
+  if (!payload.nombre || !validateEmail(payload.email) || payload.password.length < 6) {
+    throw httpError(400, "Completa nombre, email valido y una contrasena de al menos 6 caracteres.");
+  }
+  if (emailDomain !== "gmail.com") {
+    throw httpError(400, "Solo se aceptan correos Gmail (@gmail.com).");
+  }
+  if (allowedDomains.length && !allowedDomains.includes(emailDomain)) {
+    throw httpError(400, "Este dominio de correo no esta permitido para registro.");
+  }
+  if (!payload.nickname) {
+    throw httpError(400, "El nickname es obligatorio.");
+  }
+  if (!payload.acceptedTerms) {
+    throw httpError(400, "Debes aceptar los terminos y condiciones para crear tu cuenta.");
+  }
+  if (!payload.telefono || !payload.direccion.calle || !payload.direccion.ciudad || !payload.direccion.estado || !payload.direccion.cp || !payload.direccion.pais) {
+    throw httpError(400, "Completa todos los datos obligatorios para crear tu cuenta.");
+  }
+  if (!/^\d{6}$/.test(configuredInviteCode)) {
+    throw httpError(500, "El codigo de invitacion del sistema no esta configurado correctamente.");
+  }
+}
+
+async function sendVerificationEmail(env, toEmail, code) {
+  const apiKey = String(env.RESEND_API_KEY || "").trim();
+  const fromEmail = String(env.RESEND_FROM_EMAIL || "").trim();
+
+  if (!apiKey || !fromEmail) {
+    throw httpError(503, "El servicio de correo no esta configurado. Falta RESEND_API_KEY/RESEND_FROM_EMAIL.");
+  }
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      from: fromEmail,
+      to: [toEmail],
+      subject: "Codigo de verificacion Gray C Shop",
+      html: `<p>Tu codigo de verificacion es: <strong>${code}</strong></p><p>Este codigo expira en 10 minutos.</p>`
+    })
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw httpError(502, `No se pudo enviar el correo de verificacion. ${message || ""}`.trim());
+  }
 }
 
 function normalizeAddress(value) {
@@ -277,47 +360,90 @@ export async function onRequest(context) {
       });
     }
 
-    if (first === "auth" && second === "register" && request.method === "POST") {
+    if (first === "auth" && second === "register" && third === "send-code" && request.method === "POST") {
       const body = await readJson(request);
-      const nombre = String(body.nombre || "").trim();
-      const email = String(body.email || "").trim().toLowerCase();
-      const password = String(body.password || "");
-      const telefono = String(body.telefono || "").trim();
-      const nickname = String(body.nickname || "").trim();
-      const direccion = normalizeAddress(body.direccion);
-      const avatarUrl = String(body.avatarUrl || "").trim();
-      const geoMeta = normalizeGeoMeta(body.geoMeta);
+      const payload = buildRegisterPayloadFromBody(body);
       const invitationCode = String(body.invitationCode || "").trim();
       const siteContent = await getSiteContent(db);
       const configuredInviteCode = String(siteContent?.general?.signupInviteCode || "").trim();
-      const allowedDomains = normalizeEmailDomains(siteContent?.general?.allowedEmailDomains);
-      const emailDomain = email.split("@")[1] || "";
 
-      if (!nombre || !validateEmail(email) || password.length < 6) {
-        throw httpError(400, "Completa nombre, email valido y una contrasena de al menos 6 caracteres.");
-      }
+      await validateRegisterPayloadOrThrow(db, payload);
+
       if (!/^\d{6}$/.test(invitationCode)) {
         throw httpError(400, "Ingresa el codigo de invitacion de 6 digitos.");
       }
-      if (configuredInviteCode && invitationCode !== configuredInviteCode) {
+      if (invitationCode !== configuredInviteCode) {
         throw httpError(400, "El codigo de invitacion no es valido.");
       }
-      if (allowedDomains.length && !allowedDomains.includes(String(emailDomain).toLowerCase())) {
-        throw httpError(400, "Este dominio de correo no esta permitido para registro.");
-      }
 
-      if (!telefono || !direccion.calle || !direccion.ciudad || !direccion.estado || !direccion.cp || !direccion.pais) {
-        throw httpError(400, "Completa todos los datos obligatorios para crear tu cuenta.");
-      }
-
-      const existing = await getUserByEmail(db, email);
-
+      const existing = await getUserByEmail(db, payload.email);
       if (existing) {
         throw httpError(409, "Ese email ya esta registrado.");
       }
 
-      const passwordHash = await hashPassword(password);
-      const user = await createUser(db, { nombre, email, passwordHash, telefono, nickname, avatarUrl, direccion, geoMeta });
+      const code = generateSixDigitCode();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+      await saveRegistrationCode(db, payload.email, payload, code, expiresAt);
+      await sendVerificationEmail(env, payload.email, code);
+
+      return json({
+        ok: true,
+        message: "Te enviamos un codigo de verificacion a tu correo."
+      });
+    }
+
+    if (first === "auth" && second === "register" && third === "verify-code" && request.method === "POST") {
+      const body = await readJson(request);
+      const email = String(body.email || "").trim().toLowerCase();
+      const code = String(body.code || "").trim();
+
+      if (!validateEmail(email) || !/^\d{6}$/.test(code)) {
+        throw httpError(400, "Completa email y codigo valido de 6 digitos.");
+      }
+
+      const record = await getRegistrationCode(db, email);
+      if (!record) {
+        throw httpError(400, "No hay un codigo pendiente para este correo.");
+      }
+
+      if (new Date(record.expires_at).getTime() < Date.now()) {
+        await deleteRegistrationCode(db, email);
+        throw httpError(400, "El codigo expiro. Solicita uno nuevo.");
+      }
+
+      if (Number(record.attempts || 0) >= 6) {
+        await deleteRegistrationCode(db, email);
+        throw httpError(400, "Superaste el limite de intentos. Solicita un nuevo codigo.");
+      }
+
+      if (String(record.code) !== code) {
+        await bumpRegistrationCodeAttempt(db, email);
+        throw httpError(400, "El codigo ingresado no es correcto.");
+      }
+
+      const payload = JSON.parse(String(record.payload || "{}"));
+      await validateRegisterPayloadOrThrow(db, payload);
+
+      const existing = await getUserByEmail(db, email);
+      if (existing) {
+        await deleteRegistrationCode(db, email);
+        throw httpError(409, "Ese email ya esta registrado.");
+      }
+
+      const passwordHash = await hashPassword(String(payload.password || ""));
+      const user = await createUser(db, {
+        nombre: payload.nombre,
+        email: payload.email,
+        passwordHash,
+        telefono: payload.telefono,
+        nickname: payload.nickname,
+        avatarUrl: payload.avatarUrl,
+        direccion: payload.direccion,
+        geoMeta: payload.geoMeta
+      });
+
+      await deleteRegistrationCode(db, email);
       return json(await buildAuthPayload(user, env), 201);
     }
 

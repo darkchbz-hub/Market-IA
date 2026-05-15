@@ -151,6 +151,16 @@ const schemaStatements = [
     )
   `,
   `
+    CREATE TABLE IF NOT EXISTS registration_codes (
+      email TEXT PRIMARY KEY,
+      payload TEXT NOT NULL,
+      code TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `,
+  `
     CREATE TABLE IF NOT EXISTS site_content (
       clave TEXT PRIMARY KEY,
       valor TEXT NOT NULL,
@@ -392,6 +402,45 @@ export async function getUserByEmail(db, email) {
 
 export async function getUserById(db, userId) {
   return db.prepare("SELECT * FROM users WHERE id = ?").bind(userId).first();
+}
+
+export async function saveRegistrationCode(db, email, payload, code, expiresAtIso) {
+  await db
+    .prepare(
+      `
+      INSERT INTO registration_codes (email, payload, code, expires_at, attempts, created_at)
+      VALUES (?, ?, ?, ?, 0, CURRENT_TIMESTAMP)
+      ON CONFLICT(email) DO UPDATE SET
+        payload = excluded.payload,
+        code = excluded.code,
+        expires_at = excluded.expires_at,
+        attempts = 0,
+        created_at = CURRENT_TIMESTAMP
+    `
+    )
+    .bind(String(email || "").trim().toLowerCase(), JSON.stringify(payload || {}), String(code || ""), String(expiresAtIso || ""))
+    .run();
+}
+
+export async function getRegistrationCode(db, email) {
+  return db
+    .prepare("SELECT * FROM registration_codes WHERE email = ?")
+    .bind(String(email || "").trim().toLowerCase())
+    .first();
+}
+
+export async function bumpRegistrationCodeAttempt(db, email) {
+  await db
+    .prepare("UPDATE registration_codes SET attempts = attempts + 1 WHERE email = ?")
+    .bind(String(email || "").trim().toLowerCase())
+    .run();
+}
+
+export async function deleteRegistrationCode(db, email) {
+  await db
+    .prepare("DELETE FROM registration_codes WHERE email = ?")
+    .bind(String(email || "").trim().toLowerCase())
+    .run();
 }
 
 async function findUserByNickname(db, nickname) {
