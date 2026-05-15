@@ -133,57 +133,71 @@ async function validateRegisterPayloadOrThrow(db, payload) {
 async function sendVerificationEmail(env, toEmail, code) {
   const apiKey = String(env.RESEND_API_KEY || "").trim();
   const fromEmail = String(env.RESEND_FROM_EMAIL || "").trim();
+  const allowMailchannelsFallback = String(env.ENABLE_MAILCHANNELS_FALLBACK || "false").toLowerCase() === "true";
   const fallbackFrom = String(env.MAIL_FROM_EMAIL || fromEmail || "noreply@graycshop.trade").trim();
 
-  if (apiKey && fromEmail) {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        from: fromEmail,
-        to: [toEmail],
-        subject: "Codigo de verificacion Gray C Shop",
-        html: `<p>Tu codigo de verificacion es: <strong>${code}</strong></p><p>Este codigo expira en 10 minutos.</p>`
-      })
-    });
+  if (!apiKey || !fromEmail) {
+    if (!allowMailchannelsFallback) {
+      throw httpError(503, "No se pudo enviar el correo. Configura RESEND_API_KEY y RESEND_FROM_EMAIL.");
+    }
+  } else {
+    try {
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          from: fromEmail,
+          to: [toEmail],
+          subject: "Codigo de verificacion Gray C Shop",
+          html: `<p>Tu codigo de verificacion es: <strong>${code}</strong></p><p>Este codigo expira en 10 minutos.</p>`
+        })
+      });
 
-    if (response.ok) {
-      return;
+      if (response.ok) {
+        return;
+      }
+    } catch {
+      if (!allowMailchannelsFallback) {
+        throw httpError(502, "No se pudo enviar el correo de verificacion en este momento.");
+      }
     }
   }
 
   // Fallback for Cloudflare Workers without Resend: MailChannels.
-  const fallbackResponse = await fetch("https://api.mailchannels.net/tx/v1/send", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      personalizations: [
-        {
-          to: [{ email: toEmail }]
-        }
-      ],
-      from: {
-        email: fallbackFrom,
-        name: "Gray C Shop"
+  try {
+    const fallbackResponse = await fetch("https://api.mailchannels.net/tx/v1/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
       },
-      subject: "Codigo de verificacion Gray C Shop",
-      content: [
-        {
-          type: "text/html",
-          value: `<p>Tu codigo de verificacion es: <strong>${code}</strong></p><p>Este codigo expira en 10 minutos.</p>`
-        }
-      ]
-    })
-  });
+      body: JSON.stringify({
+        personalizations: [
+          {
+            to: [{ email: toEmail }]
+          }
+        ],
+        from: {
+          email: fallbackFrom,
+          name: "Gray C Shop"
+        },
+        subject: "Codigo de verificacion Gray C Shop",
+        content: [
+          {
+            type: "text/html",
+            value: `<p>Tu codigo de verificacion es: <strong>${code}</strong></p><p>Este codigo expira en 10 minutos.</p>`
+          }
+        ]
+      })
+    });
 
-  if (!fallbackResponse.ok) {
-    const message = await fallbackResponse.text();
-    throw httpError(502, `No se pudo enviar el correo de verificacion. ${message || ""}`.trim());
+    if (!fallbackResponse.ok) {
+      throw new Error("fallback_not_ok");
+    }
+  } catch {
+    throw httpError(503, "No se pudo enviar el correo de verificacion. Contacta a soporte.");
   }
 }
 
