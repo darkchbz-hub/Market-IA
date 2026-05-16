@@ -1274,9 +1274,17 @@ textarea {
   align-items: start;
 }
 
+.chat-layout--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .chat-layout--support .chat-sidebar,
 .chat-layout--support .chat-main {
   border-radius: 20px;
+}
+
+.chat-layout--single .chat-main {
+  width: 100%;
 }
 
 .messages-box {
@@ -1411,8 +1419,8 @@ textarea {
 }
 
 .messages-box--compact {
-  min-height: 220px;
-  max-height: 360px;
+  min-height: 360px;
+  max-height: 560px;
   margin-bottom: 10px;
   padding-right: 4px;
 }

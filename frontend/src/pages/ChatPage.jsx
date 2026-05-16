@@ -2,14 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { apiFetch } from "../lib/api.js";
 
-const quickSupportTopics = [
-  "Metodos de pago",
-  "Estado de pedido",
-  "Tiempo de entrega",
-  "Problemas con cuenta",
-  "Reembolso o cancelacion",
-  "Hablar con asesor"
-];
+const quickSupportTopics = ["Metodos de pago", "Estado de pedido", "Tiempo de entrega", "Problemas con cuenta", "Reembolso o cancelacion", "Hablar con asesor"];
 
 const supportBots = [
   {
@@ -34,80 +27,6 @@ const supportBots = [
 
 function getSelectedBot(botId) {
   return supportBots.find((bot) => bot.id === botId) || supportBots[0];
-}
-
-function getSupportIntent(rawText) {
-  const text = String(rawText || "").toLowerCase();
-
-  if (/pago|tarjeta|paypal|mercado\s*pago|transferencia|visa|mastercard/.test(text)) {
-    return {
-      key: "payment",
-      handoff: false,
-      reply: "Aceptamos Mercado Pago, PayPal y tarjeta. Si tu compra sigue pendiente, entra a tu pedido y vuelve a elegir la forma de pago."
-    };
-  }
-
-  if (/pedido|orden|id|seguimiento|estatus|estado/.test(text)) {
-    return {
-      key: "order",
-      handoff: false,
-      reply: "Puedes revisar el estado en Perfil > Tus compras. Ahi veras ID de orden, fecha, estado y seguimiento."
-    };
-  }
-
-  if (/envio|entrega|llega|tiempo|dias/.test(text)) {
-    return {
-      key: "shipping",
-      handoff: false,
-      reply: "El tiempo de entrega depende del producto y destino. En cada pedido te mostramos fecha estimada y avance."
-    };
-  }
-
-  if (/cuenta|login|acceso|correo|codigo|verificacion|nickname/.test(text)) {
-    return {
-      key: "account",
-      handoff: false,
-      reply: "Para acceso, usa tu correo Gmail y el codigo de verificacion. Si falla, solicita un nuevo codigo desde registro."
-    };
-  }
-
-  if (/cancelar|cancelacion|devolucion|reembolso/.test(text)) {
-    return {
-      key: "refund",
-      handoff: false,
-      reply: "Puedes cancelar solo si el pedido aun no fue enviado. Si ya esta en proceso, soporte te ayuda con la mejor opcion."
-    };
-  }
-
-  if (/asesor|humano|agente|persona/.test(text)) {
-    return {
-      key: "handoff",
-      handoff: true,
-      reply: "Te conecto con un asesor humano. A partir de este punto, soporte continuara contigo."
-    };
-  }
-
-  return {
-    key: "generic",
-    handoff: false,
-    reply: "Te puedo ayudar con pagos, pedidos, envios, cuenta o cancelaciones. Escribe tu duda con mas detalle y te respondo al momento."
-  };
-}
-
-function applyBotTone(bot, intent) {
-  if (bot.id === "taz") {
-    return `Taz: ${intent.reply}`;
-  }
-
-  if (bot.id === "grayce") {
-    return `Grayce: Con gusto te ayudo. ${intent.reply}`;
-  }
-
-  if (bot.id === "black-beard") {
-    return `Black Beard: Entendido. ${intent.reply}`;
-  }
-
-  return intent.reply;
 }
 
 export function ChatPage() {
@@ -215,38 +134,35 @@ export function ChatPage() {
       setStatus(`${selectedBot.name} esta respondiendo...`);
 
       try {
-        await apiFetch("/messages", {
+        const persistedUserMessage = await apiFetch("/messages", {
           method: "POST",
           token,
           body: {
             mensaje: userText
           }
         });
-      } catch (error) {
-        setStatus(error.message || "No se pudo guardar el mensaje.");
-      }
+        setMessages((current) => [...current.filter((message) => message.id !== userMessage.id), persistedUserMessage.message]);
 
-      window.setTimeout(() => {
-        const intent = getSupportIntent(userText);
-        const botReply = applyBotTone(selectedBot, intent);
-        const botMessage = {
-          id: `local-bot-${Date.now()}`,
-          fecha: new Date().toISOString(),
-          rolRemitente: "bot",
-          mensaje: botReply,
-          usuarioId: user?.id
-        };
-
-        setMessages((current) => [...current, botMessage]);
-        if (intent.handoff) {
+        const assistantPayload = await apiFetch("/messages/assistant", {
+          method: "POST",
+          token,
+          body: {
+            botId: selectedBot.id,
+            mensaje: userText
+          }
+        });
+        setMessages((current) => [...current, assistantPayload.message]);
+        if (/asesor|humano|agente|persona/i.test(userText)) {
           setBotEnabled(false);
           setStatus("Conectado con soporte humano");
         } else {
           setStatus(`${selectedBot.name} activo`);
         }
-      }, 500);
-
-      setSending(false);
+      } catch (error) {
+        setStatus(error.message || "No se pudo guardar el mensaje.");
+      } finally {
+        setSending(false);
+      }
       return;
     }
 
@@ -273,7 +189,7 @@ export function ChatPage() {
   };
 
   return (
-    <div className="chat-layout chat-layout--support">
+    <div className={`chat-layout chat-layout--support ${!isAdmin ? "chat-layout--single" : ""}`}>
       {isAdmin && (
         <aside className="chat-sidebar">
           <div className="section-heading section-heading--compact">

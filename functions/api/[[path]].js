@@ -240,6 +240,54 @@ function requireAdmin(user) {
   }
 }
 
+function formatCurrency(value) {
+  const amount = Number(value || 0);
+  return Number.isFinite(amount) ? `$${amount.toFixed(2)}` : "$0.00";
+}
+
+function buildAssistantReply({ botId, user, dashboard, cart, userText }) {
+  const text = String(userText || "").toLowerCase();
+  const orders = Array.isArray(dashboard?.historial?.ordenes) ? dashboard.historial.ordenes : [];
+  const pendingOrders = orders.filter((order) => ["pending_payment", "paid"].includes(String(order.estado || "")));
+  const latestOrder = orders[0];
+  const cartItems = Array.isArray(cart?.items) ? cart.items : [];
+  const cartItemsCount = cartItems.reduce((sum, item) => sum + Number(item.cantidad || 0), 0);
+
+  let core = "";
+
+  if (/carrito|cart|agregad/.test(text)) {
+    core = `Tienes ${cartItemsCount} articulo(s) en carrito con total aproximado de ${formatCurrency(cart?.total)}.`;
+  } else if (/pedido|orden|id|seguimiento|estatus|estado/.test(text)) {
+    if (latestOrder) {
+      core = `Tu orden mas reciente es ${latestOrder.id} y su estado actual es ${latestOrder.estado}. Tambien tienes ${pendingOrders.length} pedido(s) activo(s).`;
+    } else {
+      core = "Aun no tienes pedidos registrados en tu cuenta.";
+    }
+  } else if (/pago|tarjeta|paypal|mercado\s*pago|transferencia|visa|mastercard/.test(text)) {
+    core = "Puedes pagar por Mercado Pago, PayPal o tarjeta. Si un pago queda pendiente, vuelve a seleccionar forma de pago desde tu pedido.";
+  } else if (/envio|entrega|llega|tiempo|dias/.test(text)) {
+    core = latestOrder
+      ? `Tu pedido ${latestOrder.id} muestra estado ${latestOrder.estado}. Revisa tracking en Tu cuenta > Tus compras para ver el avance.`
+      : "Cuando tengas un pedido activo, aqui te mostraremos seguimiento y fecha estimada.";
+  } else if (/cuenta|login|acceso|correo|codigo|verificacion|nickname/.test(text)) {
+    core = `Tu cuenta esta vinculada a ${user.email}. Si el codigo de acceso falla, solicita uno nuevo desde registro.`;
+  } else if (/cancelar|cancelacion|devolucion|reembolso/.test(text)) {
+    core = "Puedes cancelar si el pedido no ha sido enviado. Si ya esta en proceso, soporte humano te ayuda a resolverlo.";
+  } else if (/asesor|humano|agente|persona/.test(text)) {
+    core = "Te conecto con un asesor humano para continuar personalmente con tu caso.";
+  } else {
+    core = `Puedo ayudarte con pedidos, carrito, pagos y cuenta. Hoy tienes ${orders.length} pedido(s) registrado(s) y ${cartItemsCount} articulo(s) en carrito.`;
+  }
+
+  if (botId === "grayce") {
+    return `Grayce: Hola ${user.nombre}. ${core}`;
+  }
+  if (botId === "black-beard") {
+    return `Black Beard: Entendido. ${core}`;
+  }
+  return `Taz: ${core}`;
+}
+
 async function authenticate(request, env, db, required = true) {
   const token = getBearerToken(request);
 
@@ -686,6 +734,28 @@ export async function onRequest(context) {
         userId: targetUserId,
         senderRole,
         mensaje: String(body.mensaje || body.message || "")
+      });
+
+      return json({ message }, 201);
+    }
+
+    if (first === "messages" && second === "assistant" && request.method === "POST") {
+      const user = await authenticate(request, env, db);
+      const body = await readJson(request);
+      const botId = String(body.botId || "taz").trim().toLowerCase();
+      const userText = String(body.mensaje || body.message || "").trim();
+
+      if (!userText) {
+        throw httpError(400, "Escribe un mensaje para el asistente.");
+      }
+
+      const [dashboard, cart] = await Promise.all([getUserDashboard(db, user.id), getCartState(db, user.id)]);
+      const reply = buildAssistantReply({ botId, user: serializeUser(user), dashboard, cart, userText });
+
+      const message = await createChatMessage(db, {
+        userId: Number(user.id),
+        senderRole: "bot",
+        mensaje: reply
       });
 
       return json({ message }, 201);
