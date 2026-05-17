@@ -48,6 +48,13 @@ function statusLabel(status) {
   return "Pendiente por pagar";
 }
 
+function statusClass(status) {
+  const value = String(status || "").trim().toLowerCase();
+  if (["paid", "pagado"].includes(value)) return "status-pill status-pill--paid";
+  if (["cancelled", "canceled", "cancelado"].includes(value)) return "status-pill status-pill--cancelled";
+  return "status-pill status-pill--pending";
+}
+
 function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -912,7 +919,7 @@ export function AdminPage() {
                       <article key={order.id} className="order-card">
                         <div className="order-card__head">
                           <strong>{order.id}</strong>
-                          <span>{statusLabel(order.estado)}</span>
+                          <span className={statusClass(order.estado)}>{statusLabel(order.estado)}</span>
                         </div>
                         <small>{new Date(order.fecha).toLocaleString()}</small>
                         <p>Total: ${order.total.toFixed(2)}</p>
@@ -948,14 +955,14 @@ export function AdminPage() {
               <article key={order.id} className="order-card">
                 <div className="order-card__head">
                   <strong>{order.usuarioNombre}</strong>
-                  <span>{statusLabel(order.estado)}</span>
+                  <span className={statusClass(order.estado)}>{statusLabel(order.estado)}</span>
                 </div>
                 <small>{order.usuarioEmail} · {order.usuarioTelefono || "Sin telefono"}</small>
                 <p>{order.proveedorPago || "Sin proveedor"} · ${order.total.toFixed(2)}</p>
                 <div className="action-row">
                   {["pending_payment", "paid", "cancelled"].map((status) => (
                     <button key={status} type="button" className="button button--ghost" onClick={() => updateOrderStatus(order.id, status)}>
-                              {statusLabel(status)}
+                      {statusLabel(status)}
                     </button>
                   ))}
                   <button

@@ -21,6 +21,13 @@ function statusLabel(status) {
   return "Pendiente por pagar";
 }
 
+function statusClass(status) {
+  const value = String(status || "").trim().toLowerCase();
+  if (["paid", "pagado"].includes(value)) return "status-pill status-pill--paid";
+  if (["cancelled", "canceled", "cancelado"].includes(value)) return "status-pill status-pill--cancelled";
+  return "status-pill status-pill--pending";
+}
+
 export function ProfilePage() {
   const navigate = useNavigate();
   const { token, refreshUser, isAdmin } = useAuth();
@@ -288,7 +295,7 @@ export function ProfilePage() {
                 <article key={order.id} className="order-card">
                   <div className="order-card__head">
                     <strong>{order.id.slice(0, 8)}</strong>
-                    <span>{statusLabel(order.estado)}</span>
+                    <span className={statusClass(order.estado)}>{statusLabel(order.estado)}</span>
                   </div>
                   <small>{new Date(order.fecha).toLocaleString()}</small>
                   <p>Metodo: {order.metodoPago || "Por definir"} · Total: ${order.total.toFixed(2)}</p>

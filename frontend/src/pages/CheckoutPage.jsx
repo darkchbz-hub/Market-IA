@@ -4,6 +4,23 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { useCart } from "../context/CartContext.jsx";
 import { apiFetch } from "../lib/api.js";
 
+function statusLabel(status) {
+  const value = String(status || "").trim().toLowerCase();
+  if (["paid", "pagado"].includes(value)) return "Pagado";
+  if (["cancelled", "canceled", "cancelado"].includes(value)) return "Cancelado";
+  if (["pending_payment", "pending", "pendiente", "pago_pendiente", "created", "processing"].includes(value)) {
+    return "Pendiente por pagar";
+  }
+  return "Pendiente por pagar";
+}
+
+function statusClass(status) {
+  const value = String(status || "").trim().toLowerCase();
+  if (["paid", "pagado"].includes(value)) return "status-pill status-pill--paid";
+  if (["cancelled", "canceled", "cancelado"].includes(value)) return "status-pill status-pill--cancelled";
+  return "status-pill status-pill--pending";
+}
+
 const initialAddress = {
   calle: "",
   ciudad: "",
@@ -240,7 +257,7 @@ export function CheckoutPage() {
           <div className="status-box">
             <strong>Pedido creado</strong>
             <span>{order.id}</span>
-            <span>{order.estado}</span>
+            <span className={statusClass(order.estado)}>{statusLabel(order.estado)}</span>
           </div>
         )}
       </aside>
