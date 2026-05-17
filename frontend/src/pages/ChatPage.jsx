@@ -188,6 +188,86 @@ export function ChatPage() {
     }
   };
 
+  const supportControls = (
+    <section className="support-bot-card">
+      <div className="support-bot-card__head">
+        <strong>{isAdmin ? "Respuestas rapidas" : "Elige tu asistente IA"}</strong>
+        {!isAdmin && (
+          <button
+            type="button"
+            className="button button--ghost"
+            onClick={() => setBotEnabled((current) => !current)}
+          >
+            {botEnabled ? "Bot activo" : "Bot inactivo"}
+          </button>
+        )}
+      </div>
+
+      {!isAdmin && (
+        <div className="support-bot-grid">
+          {supportBots.map((bot) => (
+            <button
+              key={bot.id}
+              type="button"
+              className={`support-bot-option ${bot.toneClass} ${selectedBotId === bot.id ? "is-selected" : ""}`}
+              onClick={() => setSelectedBotId(bot.id)}
+            >
+              <span className="cat-avatar">
+                <span className="cat-avatar__ear cat-avatar__ear--left" />
+                <span className="cat-avatar__ear cat-avatar__ear--right" />
+                <span className="cat-avatar__face">{bot.name.slice(0, 1)}</span>
+              </span>
+              <span className="support-bot-option__meta">
+                <strong>{bot.name}</strong>
+                <small>{bot.subtitle}</small>
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="pill-row">
+        {quickSupportTopics.map((topic) => (
+          <button key={topic} type="button" className="pill pill--small" onClick={() => setDraft(topic)}>
+            {topic}
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+
+  const conversationPanel = (
+    <section className="support-conversation-card">
+      <div className="messages-box messages-box--compact">
+        {messages.length ? (
+          messages.map((message) => (
+            <article
+              key={`${message.id}-${message.fecha}`}
+              className={`message ${
+                message.rolRemitente === "admin" ? "message--admin" : message.rolRemitente === "bot" ? "message--bot" : "message--customer"
+              }`}
+            >
+              <strong>{message.rolRemitente === "admin" ? "Soporte" : message.rolRemitente === "bot" ? selectedBot.name : "Cliente"}</strong>
+              <p>{message.mensaje}</p>
+            </article>
+          ))
+        ) : (
+          <article className="support-empty-state">
+            <strong>{isAdmin ? "Esperando mensajes de clientes" : `${selectedBot.name} esta listo para ayudarte`}</strong>
+            <p>{isAdmin ? "Cuando un cliente escriba en soporte, la conversacion aparecera aqui." : "Escribe tu duda sobre pedidos, carrito, pagos o cuenta para empezar."}</p>
+          </article>
+        )}
+      </div>
+
+      <form className="chat-form chat-form--support" onSubmit={handleSend}>
+        <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Escribe tu mensaje" />
+        <button type="submit" className="button button--primary" disabled={(!selectedUserId && isAdmin) || sending}>
+          {sending ? "Enviando..." : "Enviar"}
+        </button>
+      </form>
+    </section>
+  );
+
   return (
     <div className={`chat-layout chat-layout--support ${!isAdmin ? "chat-layout--single" : ""}`}>
       {isAdmin && (
@@ -227,72 +307,17 @@ export function ChatPage() {
           <span className="status-pill">{status}</span>
         </div>
 
-        <section className="support-bot-card">
-          <div className="support-bot-card__head">
-            <strong>{isAdmin ? "Respuestas rapidas" : "Elige tu asistente IA"}</strong>
-            {!isAdmin && (
-              <button
-                type="button"
-                className="button button--ghost"
-                onClick={() => setBotEnabled((current) => !current)}
-              >
-                {botEnabled ? "Bot activo" : "Bot inactivo"}
-              </button>
-            )}
+        {!isAdmin ? (
+          <div className="support-shell support-shell--customer">
+            {supportControls}
+            {conversationPanel}
           </div>
-
-          {!isAdmin && (
-            <div className="support-bot-grid">
-              {supportBots.map((bot) => (
-                <button
-                  key={bot.id}
-                  type="button"
-                  className={`support-bot-option ${bot.toneClass} ${selectedBotId === bot.id ? "is-selected" : ""}`}
-                  onClick={() => setSelectedBotId(bot.id)}
-                >
-                  <span className="cat-avatar">
-                    <span className="cat-avatar__ear cat-avatar__ear--left" />
-                    <span className="cat-avatar__ear cat-avatar__ear--right" />
-                    <span className="cat-avatar__face">{bot.name.slice(0, 1)}</span>
-                  </span>
-                  <span className="support-bot-option__meta">
-                    <strong>{bot.name}</strong>
-                    <small>{bot.subtitle}</small>
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          <div className="pill-row">
-            {quickSupportTopics.map((topic) => (
-              <button key={topic} type="button" className="pill pill--small" onClick={() => setDraft(topic)}>
-                {topic}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <div className="messages-box messages-box--compact">
-          {messages.map((message) => (
-            <article
-              key={`${message.id}-${message.fecha}`}
-              className={`message ${
-                message.rolRemitente === "admin" ? "message--admin" : message.rolRemitente === "bot" ? "message--bot" : "message--customer"
-              }`}
-            >
-              <strong>{message.rolRemitente === "admin" ? "Soporte" : message.rolRemitente === "bot" ? selectedBot.name : "Cliente"}</strong>
-              <p>{message.mensaje}</p>
-            </article>
-          ))}
-        </div>
-
-        <form className="chat-form chat-form--support" onSubmit={handleSend}>
-          <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Escribe tu mensaje" />
-          <button type="submit" className="button button--primary" disabled={!selectedUserId && isAdmin}>
-            {sending ? "Enviando..." : "Enviar"}
-          </button>
-        </form>
+        ) : (
+          <>
+            {supportControls}
+            {conversationPanel}
+          </>
+        )}
       </section>
     </div>
   );
