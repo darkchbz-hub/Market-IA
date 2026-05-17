@@ -11,6 +11,16 @@ const initialAddress = {
   pais: "Mexico"
 };
 
+function statusLabel(status) {
+  const value = String(status || "").trim().toLowerCase();
+  if (["paid", "pagado"].includes(value)) return "Pagado";
+  if (["cancelled", "canceled", "cancelado"].includes(value)) return "Cancelado";
+  if (["pending_payment", "pending", "pendiente", "pago_pendiente", "created", "processing"].includes(value)) {
+    return "Pendiente por pagar";
+  }
+  return "Pendiente por pagar";
+}
+
 export function ProfilePage() {
   const navigate = useNavigate();
   const { token, refreshUser, isAdmin } = useAuth();
@@ -278,7 +288,7 @@ export function ProfilePage() {
                 <article key={order.id} className="order-card">
                   <div className="order-card__head">
                     <strong>{order.id.slice(0, 8)}</strong>
-                    <span>{order.estado}</span>
+                    <span>{statusLabel(order.estado)}</span>
                   </div>
                   <small>{new Date(order.fecha).toLocaleString()}</small>
                   <p>Metodo: {order.metodoPago || "Por definir"} · Total: ${order.total.toFixed(2)}</p>
@@ -291,7 +301,7 @@ export function ProfilePage() {
                     </p>
                   )}
                   <p>Entrega estimada: {order.fechaEstimada ? new Date(order.fechaEstimada).toLocaleDateString() : "Por definir"}</p>
-                  {isOrderPendingPayment(order) && String(order.estado || "").toLowerCase() !== "cancelado" && (
+                  {isOrderPendingPayment(order) && !["cancelado", "cancelled", "canceled"].includes(String(order.estado || "").toLowerCase()) && (
                     <div className="form-inline">
                       <label>
                         Forma de pago

@@ -38,6 +38,16 @@ const initialCatalogGenerator = {
   includeImages: true
 };
 
+function statusLabel(status) {
+  const value = String(status || "").trim().toLowerCase();
+  if (["paid", "pagado"].includes(value)) return "Pagado";
+  if (["cancelled", "canceled", "cancelado"].includes(value)) return "Cancelado";
+  if (["pending_payment", "pending", "pendiente", "pago_pendiente", "created", "processing"].includes(value)) {
+    return "Pendiente por pagar";
+  }
+  return "Pendiente por pagar";
+}
+
 function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -902,14 +912,14 @@ export function AdminPage() {
                       <article key={order.id} className="order-card">
                         <div className="order-card__head">
                           <strong>{order.id}</strong>
-                          <span>{order.estado}</span>
+                          <span>{statusLabel(order.estado)}</span>
                         </div>
                         <small>{new Date(order.fecha).toLocaleString()}</small>
                         <p>Total: ${order.total.toFixed(2)}</p>
                         <div className="action-row">
                           {["pending_payment", "paid", "cancelled"].map((status) => (
                             <button key={status} type="button" className="button button--ghost" onClick={() => updateOrderStatus(order.id, status)}>
-                              {status}
+                              {statusLabel(status)}
                             </button>
                           ))}
                         </div>
@@ -938,14 +948,14 @@ export function AdminPage() {
               <article key={order.id} className="order-card">
                 <div className="order-card__head">
                   <strong>{order.usuarioNombre}</strong>
-                  <span>{order.estado}</span>
+                  <span>{statusLabel(order.estado)}</span>
                 </div>
                 <small>{order.usuarioEmail} · {order.usuarioTelefono || "Sin telefono"}</small>
                 <p>{order.proveedorPago || "Sin proveedor"} · ${order.total.toFixed(2)}</p>
                 <div className="action-row">
                   {["pending_payment", "paid", "cancelled"].map((status) => (
                     <button key={status} type="button" className="button button--ghost" onClick={() => updateOrderStatus(order.id, status)}>
-                      {status}
+                              {statusLabel(status)}
                     </button>
                   ))}
                   <button
