@@ -10,6 +10,7 @@ import { empty, error, json, readJson } from "./_lib/response.js";
 import { getBearerToken, hashPassword, signToken, verifyPassword, verifyToken } from "./_lib/security.js";
 import {
   buildCheckoutSummary,
+  bulkCreateProducts,
   canUserCommentOnProduct,
   clearCart,
   clearAllProducts,
@@ -1225,6 +1226,45 @@ export async function onRequest(context) {
       );
     }
 
+    if (first === "admin" && second === "products" && third === "import" && request.method === "POST") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      const body = await readJson(request);
+      const rows = Array.isArray(body.items) ? body.items : [];
+
+      if (!rows.length) {
+        throw httpError(400, "Comparte al menos un producto para importar.");
+      }
+
+      const importResult = await bulkCreateProducts(db, rows);
+      return json(
+        {
+          ok: true,
+          ...importResult
+        },
+        201
+      );
+    }
+
+    if (first === "admin" && second === "products" && third === "generate" && request.method === "POST") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      const body = await readJson(request);
+      const generated = await generateCatalogProducts(db, {
+        count: body.count,
+        offset: body.offset,
+        includeImages: body.includeImages,
+        category: body.category
+      });
+      return json(
+        {
+          ok: true,
+          ...generated
+        },
+        201
+      );
+    }
+
     if (first === "admin" && second === "products" && !third && request.method === "DELETE") {
       const user = await authenticate(request, env, db);
       requireAdmin(user);
@@ -1450,3 +1490,4 @@ export async function onRequest(context) {
     return error(requestError.message || "No se pudo completar la solicitud.", requestError.status || 500);
   }
 }
+  generateCatalogProducts,

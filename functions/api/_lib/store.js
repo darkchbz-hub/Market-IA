@@ -211,6 +211,337 @@ const seedProducts = [
     envioGratis: false,
     mostrarEnvioGratis: false,
     precioDescuento: 0
+  },
+  {
+    nombre: "Apple iPhone 16 128GB Negro",
+    slug: "apple-iphone-16-128gb-negro",
+    descripcion:
+      "Smartphone Apple para quienes buscan una experiencia premium, manejo fluido de apps y un formato comodo para productividad, fotografia y uso diario.",
+    descripcionCorta: "iPhone 16 de 128GB en color negro con pantalla de 6.1 pulgadas.",
+    marca: "Apple",
+    precio: 17729,
+    stock: 26,
+    vendidos: 11,
+    categoria: "tecnologia",
+    tags: ["iphone 16", "apple", "128gb", "negro", "ios", "super retina xdr"],
+    imagenes: [],
+    caracteristicas: [
+      "Pantalla de 6.1 pulgadas",
+      "Tecnologia Super Retina XDR",
+      "Almacenamiento interno de 128GB",
+      "Color negro",
+      "Bluetooth y GPS integrados"
+    ],
+    disponibilidad: "Disponible",
+    infoEnvio: "Envio nacional con rastreo y proteccion en empaque.",
+    fechaEstimada: "Entrega estimada de 3 a 6 dias habiles.",
+    garantia: "Garantia de 1 ano por defectos de fabrica.",
+    devolucion: "Aplica devolucion conforme a las politicas vigentes.",
+    envioGratis: false,
+    mostrarEnvioGratis: false,
+    precioDescuento: 0
+  },
+  {
+    nombre: "Apple iPhone 16 128GB Blanco",
+    slug: "apple-iphone-16-128gb-blanco",
+    descripcion:
+      "Celular Apple enfocado en usuarios que valoran diseno limpio, fluidez diaria y un equipo confiable para apps, fotos, video y trabajo movil.",
+    descripcionCorta: "iPhone 16 blanco con 128GB y panel Super Retina XDR de 6.1 pulgadas.",
+    marca: "Apple",
+    precio: 17809,
+    stock: 27,
+    vendidos: 8,
+    categoria: "tecnologia",
+    tags: ["iphone 16", "apple", "128gb", "blanco", "ios", "smartphone premium"],
+    imagenes: [],
+    caracteristicas: [
+      "Pantalla de 6.1 pulgadas",
+      "Tecnologia Super Retina XDR",
+      "Capacidad interna de 128GB",
+      "Color blanco",
+      "Equipo comodo para productividad y multimedia"
+    ],
+    disponibilidad: "Disponible",
+    infoEnvio: "Envio monitoreado con preparacion segura del pedido.",
+    fechaEstimada: "Entrega estimada de 3 a 6 dias habiles.",
+    garantia: "Garantia de 1 ano por defectos de fabrica.",
+    devolucion: "Sujeto a revision y politicas de devolucion.",
+    envioGratis: false,
+    mostrarEnvioGratis: false,
+    precioDescuento: 0
+  },
+  {
+    nombre: "Apple iPhone 16 128GB Verde",
+    slug: "apple-iphone-16-128gb-verde",
+    descripcion:
+      "iPhone orientado a quienes desean una combinacion de autonomia, buen rendimiento y diseno actual para estudiar, trabajar o disfrutar contenido.",
+    descripcionCorta: "iPhone 16 verde de 128GB con pantalla de 6.1 pulgadas.",
+    marca: "Apple",
+    precio: 19119,
+    stock: 2,
+    vendidos: 5,
+    categoria: "tecnologia",
+    tags: ["iphone 16", "apple", "128gb", "verde", "ios", "smartphone"],
+    imagenes: [],
+    caracteristicas: [
+      "Pantalla de 6.1 pulgadas",
+      "Almacenamiento interno de 128GB",
+      "Color verde",
+      "Bluetooth integrado",
+      "Formato premium para uso diario"
+    ],
+    disponibilidad: "Disponible",
+    infoEnvio: "Envio protegido con seguimiento y entrega nacional.",
+    fechaEstimada: "Entrega estimada de 3 a 6 dias habiles.",
+    garantia: "Garantia de 1 ano por defectos de fabrica.",
+    devolucion: "Aplica segun terminos y condiciones de la tienda.",
+    envioGratis: false,
+    mostrarEnvioGratis: false,
+    precioDescuento: 0
+  },
+  {
+    nombre: "Apple iPhone 16 128GB Rosa",
+    slug: "apple-iphone-16-128gb-rosa",
+    descripcion:
+      "Telefono Apple con enfoque en experiencia premium, almacenamiento equilibrado y un formato practico para fotos, redes y productividad diaria.",
+    descripcionCorta: "iPhone 16 rosa con 128GB y pantalla Super Retina XDR de 6.1 pulgadas.",
+    marca: "Apple",
+    precio: 16429,
+    stock: 2,
+    vendidos: 4,
+    categoria: "tecnologia",
+    tags: ["iphone 16", "apple", "128gb", "rosa", "ios", "retina xdr"],
+    imagenes: [],
+    caracteristicas: [
+      "Pantalla de 6.1 pulgadas",
+      "Tecnologia Super Retina XDR",
+      "Capacidad de 128GB",
+      "Color rosa",
+      "Dispositivo ideal para foto, video y apps"
+    ],
+    disponibilidad: "Disponible",
+    infoEnvio: "Envio monitoreado con embalaje seguro.",
+    fechaEstimada: "Entrega estimada de 3 a 6 dias habiles.",
+    garantia: "Garantia de 1 ano por defectos de fabrica.",
+    devolucion: "Disponible conforme a politicas vigentes.",
+    envioGratis: false,
+    mostrarEnvioGratis: false,
+    precioDescuento: 0
+  },
+  {
+    nombre: "Apple iPhone 17 Pro Max 256GB Plata",
+    slug: "apple-iphone-17-pro-max-256gb-plata",
+    descripcion:
+      "Equipo de gama alta pensado para quienes quieren pantalla amplia, gran capacidad interna y una experiencia premium para trabajo, creacion de contenido y entretenimiento.",
+    descripcionCorta: "iPhone 17 Pro Max plata con 256GB y pantalla Super Retina XDR.",
+    marca: "Apple",
+    precio: 36259,
+    stock: 2,
+    vendidos: 1,
+    categoria: "tecnologia",
+    tags: ["iphone 17 pro max", "apple", "256gb", "plata", "premium", "smartphone"],
+    imagenes: [],
+    caracteristicas: [
+      "Pantalla Super Retina XDR",
+      "Capacidad interna de 256GB",
+      "Color plata",
+      "Formato premium de gran tamano",
+      "Ideal para productividad y contenido multimedia"
+    ],
+    disponibilidad: "Disponible",
+    infoEnvio: "Envio protegido con rastreo y seguimiento nacional.",
+    fechaEstimada: "Entrega estimada de 3 a 6 dias habiles.",
+    garantia: "Garantia de 1 ano por defectos de fabrica.",
+    devolucion: "Sujeta a revision de acuerdo con politicas vigentes.",
+    envioGratis: false,
+    mostrarEnvioGratis: false,
+    precioDescuento: 0
+  },
+  {
+    nombre: "Samsung Galaxy A56 5G 256GB 8GB RAM Verde",
+    slug: "samsung-galaxy-a56-5g-256gb-8gb-verde",
+    descripcion:
+      "Celular Samsung con conectividad 5G, pantalla AMOLED amplia y espacio suficiente para apps, fotos, videos y trabajo diario.",
+    descripcionCorta: "Galaxy A56 5G verde con 256GB, 8GB RAM y pantalla de 6.7 pulgadas.",
+    marca: "Samsung",
+    precio: 8789,
+    stock: 0,
+    vendidos: 14,
+    categoria: "tecnologia",
+    tags: ["samsung", "galaxy a56", "5g", "256gb", "8gb ram", "amoled"],
+    imagenes: [],
+    caracteristicas: [
+      "Pantalla de 6.7 pulgadas",
+      "Tecnologia AMOLED",
+      "Almacenamiento de 256GB",
+      "Memoria RAM de 8GB",
+      "Bateria de 5000mAh",
+      "Conectividad 5G",
+      "Single SIM"
+    ],
+    disponibilidad: "Agotado",
+    infoEnvio: "Producto sujeto a reabastecimiento y confirmacion de disponibilidad.",
+    fechaEstimada: "Entrega estimada al reingresar inventario.",
+    garantia: "Garantia de 1 ano por defectos de fabrica.",
+    devolucion: "Aplica conforme a politicas de devolucion vigentes.",
+    envioGratis: false,
+    mostrarEnvioGratis: false,
+    precioDescuento: 0
+  },
+  {
+    nombre: "Samsung Galaxy A56 5G 256GB 12GB RAM Gris",
+    slug: "samsung-galaxy-a56-5g-256gb-12gb-gris",
+    descripcion:
+      "Smartphone Samsung para quienes necesitan mas memoria RAM, conectividad 5G y una pantalla amplia para multitarea, productividad y entretenimiento.",
+    descripcionCorta: "Galaxy A56 5G gris con 256GB, 12GB RAM y panel Super AMOLED.",
+    marca: "Samsung",
+    precio: 9309,
+    stock: 10,
+    vendidos: 6,
+    categoria: "tecnologia",
+    tags: ["samsung", "galaxy a56", "5g", "256gb", "12gb ram", "super amoled"],
+    imagenes: [],
+    caracteristicas: [
+      "Pantalla de 6.7 pulgadas",
+      "Tecnologia Super AMOLED",
+      "Almacenamiento interno de 256GB",
+      "Memoria RAM de 12GB",
+      "Bateria de 5000mAh",
+      "Conectividad 5G",
+      "SIM dual"
+    ],
+    disponibilidad: "Disponible",
+    infoEnvio: "Envio seguro con seguimiento y preparacion prioritaria.",
+    fechaEstimada: "Entrega estimada de 3 a 5 dias habiles.",
+    garantia: "Garantia de 1 ano por defectos de fabrica.",
+    devolucion: "Sujeta a validacion conforme a politicas vigentes.",
+    envioGratis: false,
+    mostrarEnvioGratis: false,
+    precioDescuento: 0
+  },
+  {
+    nombre: "Xiaomi Redmi Note 14 128GB 6GB RAM Negro",
+    slug: "xiaomi-redmi-note-14-128gb-6gb-negro",
+    descripcion:
+      "Celular Xiaomi enfocado en rendimiento solido, almacenamiento equilibrado y buena bateria para mensajeria, video, redes y apps cotidianas.",
+    descripcionCorta: "Redmi Note 14 negro con 128GB, 6GB RAM y pantalla AMOLED de 6.67 pulgadas.",
+    marca: "Xiaomi",
+    precio: 3789,
+    stock: 10,
+    vendidos: 13,
+    categoria: "tecnologia",
+    tags: ["xiaomi", "redmi note 14", "128gb", "6gb ram", "amoled", "dual sim"],
+    imagenes: [],
+    caracteristicas: [
+      "Pantalla de 6.67 pulgadas",
+      "Tecnologia AMOLED",
+      "Almacenamiento interno de 128GB",
+      "Memoria RAM de 6GB",
+      "Bateria de 5110mAh",
+      "Conectividad 4G",
+      "Dual SIM"
+    ],
+    disponibilidad: "Disponible",
+    infoEnvio: "Envio monitoreado con entrega estimada nacional.",
+    fechaEstimada: "Entrega estimada de 3 a 5 dias habiles.",
+    garantia: "Garantia de 1 ano por defectos de fabrica.",
+    devolucion: "Aplica bajo condiciones vigentes de devolucion.",
+    envioGratis: false,
+    mostrarEnvioGratis: false,
+    precioDescuento: 0
+  },
+  {
+    nombre: "Xiaomi Redmi Note 14 128GB 6GB RAM Azul",
+    slug: "xiaomi-redmi-note-14-128gb-6gb-azul",
+    descripcion:
+      "Telefono Xiaomi de uso diario con pantalla amplia, buena autonomia y espacio suficiente para aplicaciones, fotos y consumo multimedia.",
+    descripcionCorta: "Redmi Note 14 azul con 128GB, 6GB RAM y pantalla de 6.67 pulgadas.",
+    marca: "Xiaomi",
+    precio: 2979,
+    stock: 8,
+    vendidos: 9,
+    categoria: "tecnologia",
+    tags: ["xiaomi", "redmi note 14", "128gb", "6gb ram", "azul", "dual sim"],
+    imagenes: [],
+    caracteristicas: [
+      "Pantalla de 6.67 pulgadas",
+      "Panel AMOLED",
+      "Almacenamiento interno de 128GB",
+      "Memoria RAM de 6GB",
+      "Bateria de 5160mAh",
+      "Conectividad 4G",
+      "Dual SIM"
+    ],
+    disponibilidad: "Disponible",
+    infoEnvio: "Envio con rastreo y empaque protegido.",
+    fechaEstimada: "Entrega estimada de 3 a 5 dias habiles.",
+    garantia: "Garantia de 1 ano por defectos de fabrica.",
+    devolucion: "Devolucion sujeta a politicas de la tienda.",
+    envioGratis: false,
+    mostrarEnvioGratis: false,
+    precioDescuento: 0
+  },
+  {
+    nombre: "Motorola Moto G85 5G 256GB 8GB RAM Verde",
+    slug: "motorola-moto-g85-5g-256gb-8gb-verde",
+    descripcion:
+      "Equipo Motorola con conectividad 5G, panel P-OLED y equilibrio entre capacidad, autonomia y rendimiento para trabajo y entretenimiento.",
+    descripcionCorta: "Moto G85 5G verde con 256GB, 8GB RAM y pantalla P-OLED de 6.67 pulgadas.",
+    marca: "Motorola",
+    precio: 4459,
+    stock: 1,
+    vendidos: 10,
+    categoria: "tecnologia",
+    tags: ["motorola", "moto g85", "5g", "256gb", "8gb ram", "p-oled"],
+    imagenes: [],
+    caracteristicas: [
+      "Pantalla de 6.67 pulgadas",
+      "Tecnologia P-OLED",
+      "Almacenamiento interno de 256GB",
+      "Memoria RAM de 8GB",
+      "Bateria de 5000mAh",
+      "Conectividad 5G",
+      "Dual SIM"
+    ],
+    disponibilidad: "Disponible",
+    infoEnvio: "Envio seguro con seguimiento actualizado.",
+    fechaEstimada: "Entrega estimada de 3 a 5 dias habiles.",
+    garantia: "Garantia de 1 ano por defectos de fabrica.",
+    devolucion: "Aplica conforme a politicas vigentes.",
+    envioGratis: false,
+    mostrarEnvioGratis: false,
+    precioDescuento: 0
+  },
+  {
+    nombre: "Infinix Note 50 Pro 256GB 8GB RAM Gris",
+    slug: "infinix-note-50-pro-256gb-8gb-gris",
+    descripcion:
+      "Celular Infinix con pantalla AMOLED, almacenamiento amplio y autonomia generosa para estudio, trabajo, streaming y apps cotidianas.",
+    descripcionCorta: "Infinix Note 50 Pro gris con 256GB, 8GB RAM y pantalla AMOLED de 6.7 pulgadas.",
+    marca: "Infinix",
+    precio: 4609,
+    stock: 0,
+    vendidos: 7,
+    categoria: "tecnologia",
+    tags: ["infinix", "note 50 pro", "256gb", "8gb ram", "amoled", "dual sim"],
+    imagenes: [],
+    caracteristicas: [
+      "Pantalla de 6.7 pulgadas",
+      "Tecnologia AMOLED",
+      "Almacenamiento interno de 256GB",
+      "Memoria RAM de 8GB",
+      "Bateria de 5200mAh",
+      "Conectividad 4G",
+      "Dual SIM"
+    ],
+    disponibilidad: "Agotado",
+    infoEnvio: "Disponible para reabastecimiento y alerta de inventario.",
+    fechaEstimada: "Entrega estimada al reingresar existencias.",
+    garantia: "Garantia de 1 ano por defectos de fabrica.",
+    devolucion: "Aplica conforme a politicas vigentes.",
+    envioGratis: false,
+    mostrarEnvioGratis: false,
+    precioDescuento: 0
   }
 ];
 export const marketplaceCategories = [
@@ -419,6 +750,115 @@ function normalizeSlug(value) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 80);
+}
+
+function clampInteger(value, min, max, fallback) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+  return Math.max(min, Math.min(max, parsed));
+}
+
+function pickFrom(list, seed) {
+  if (!Array.isArray(list) || list.length === 0) {
+    return "";
+  }
+  const index = Math.abs(seed) % list.length;
+  return list[index];
+}
+
+function deterministic(seed, salt = 0) {
+  const base = Math.abs(Number(seed) || 0) + Math.abs(Number(salt) || 0) * 101;
+  return (base * 9301 + 49297) % 233280;
+}
+
+function buildGeneratedProduct(index, options = {}) {
+  const categoriesPool = ["tecnologia", "electronica", "hogar", "casa", "automovil", "importados", "mascotas", "ropa", "juguetes", "productos"];
+  const brandCatalog = [
+    { marca: "Apple", modelos: ["iPhone 16", "iPhone 15", "iPhone 14", "iPhone 13"] },
+    { marca: "Samsung", modelos: ["Galaxy S25", "Galaxy S24", "Galaxy A56", "Galaxy A36"] },
+    { marca: "Xiaomi", modelos: ["Redmi Note 14", "Redmi Note 13", "Poco X7", "Poco M7"] },
+    { marca: "Motorola", modelos: ["Moto G85", "Moto G75", "Edge 60", "Edge 50 Neo"] },
+    { marca: "Infinix", modelos: ["Note 50 Pro", "Hot 70", "GT 20", "Smart 9"] },
+    { marca: "Honor", modelos: ["Honor 200", "Honor X8b", "Honor Magic 7 Lite", "Honor 90"] },
+    { marca: "Huawei", modelos: ["Nova 13", "Pura 70", "Mate 60", "Nova 12i"] },
+    { marca: "Realme", modelos: ["Realme 12", "Realme C67", "Realme GT Neo", "Narzo 70"] },
+    { marca: "Nokia", modelos: ["Nokia G42", "Nokia X30", "Nokia C32", "Nokia G22"] },
+    { marca: "ZTE", modelos: ["Blade V60", "Nubia Neo", "Axon 50", "Blade A75"] }
+  ];
+  const storagePool = [64, 128, 256, 512];
+  const ramPool = [4, 6, 8, 12, 16];
+  const colorPool = ["Negro", "Azul", "Gris", "Verde", "Blanco", "Plata", "Rosa"];
+  const screenPool = ["6.1", "6.5", "6.67", "6.7", "6.78"];
+  const categoryOverride = String(options.category || "").trim().toLowerCase();
+  const category = allowedCategories.includes(categoryOverride) ? categoryOverride : pickFrom(categoriesPool, index);
+
+  const brandSeed = deterministic(index, 11);
+  const brandEntry = pickFrom(brandCatalog, brandSeed);
+  const model = pickFrom(brandEntry.modelos, deterministic(index, 17));
+  const storage = Number(pickFrom(storagePool, deterministic(index, 23)));
+  const ram = Number(pickFrom(ramPool, deterministic(index, 29)));
+  const color = pickFrom(colorPool, deterministic(index, 31));
+  const screen = pickFrom(screenPool, deterministic(index, 37));
+  const skuCode = 100000 + index;
+
+  const basePriceByBrand = {
+    Apple: 14500,
+    Samsung: 7800,
+    Xiaomi: 4300,
+    Motorola: 4700,
+    Infinix: 3600,
+    Honor: 6200,
+    Huawei: 7400,
+    Realme: 4100,
+    Nokia: 3500,
+    ZTE: 3300
+  };
+  const basePrice = basePriceByBrand[brandEntry.marca] || 4200;
+  const ramFactor = ram * 180;
+  const storageFactor = storage * 9;
+  const dynamicFactor = deterministic(index, 41) % 1100;
+  const price = Math.max(2299, Math.round(basePrice + ramFactor + storageFactor + dynamicFactor));
+  const stock = clampInteger((deterministic(index, 43) % 120) + 1, 0, 9999, 30);
+  const sold = clampInteger(deterministic(index, 47) % 300, 0, 999999, 0);
+  const maybeDiscount = deterministic(index, 53) % 100;
+  const discountPercent = maybeDiscount >= 62 ? 8 + (deterministic(index, 59) % 18) : 0;
+  const discountedPrice = discountPercent > 0 ? Math.max(1, Math.round(price * (1 - discountPercent / 100))) : 0;
+  const includeImages = options.includeImages !== false;
+  const encodedLabel = encodeURIComponent(`${model} ${storage}GB ${color}`);
+  const imageUrl = includeImages ? `https://placehold.co/1200x1200/0b1220/e2e8f0?text=${encodedLabel}` : "";
+  const shippingWindow = 2 + (deterministic(index, 61) % 4);
+
+  return {
+    nombre: `${model} ${storage}GB ${ram}GB RAM ${color}`,
+    slug: `${normalizeSlug(`${brandEntry.marca}-${model}-${storage}gb-${ram}gb-${color}`)}-${skuCode}`,
+    descripcion: `${brandEntry.marca} ${model} con almacenamiento de ${storage}GB y memoria RAM de ${ram}GB. Equipo equilibrado para productividad, contenido multimedia, compras y uso diario con un rendimiento estable.`,
+    descripcionCorta: `${model} con ${storage}GB, ${ram}GB RAM y pantalla de ${screen} pulgadas.`,
+    marca: brandEntry.marca,
+    precio: price,
+    precioDescuento: discountedPrice,
+    stock,
+    vendidos: sold,
+    categoria: category,
+    tags: [brandEntry.marca.toLowerCase(), model.toLowerCase(), `${storage}gb`, `${ram}gb ram`, "smartphone", category],
+    imagenes: imageUrl ? [imageUrl] : [],
+    caracteristicas: [
+      `Pantalla de ${screen} pulgadas`,
+      `Almacenamiento interno de ${storage}GB`,
+      `Memoria RAM de ${ram}GB`,
+      "Bluetooth y GPS integrados",
+      "Bateria de larga duracion",
+      "Equipo compatible con uso diario y entretenimiento"
+    ],
+    disponibilidad: stock > 0 ? "Disponible" : "Agotado",
+    infoEnvio: "Envio seguro con rastreo en cada etapa del pedido.",
+    fechaEstimada: `Entrega estimada de ${shippingWindow} a ${shippingWindow + 2} dias habiles.`,
+    garantia: "Garantia por defectos de fabrica.",
+    devolucion: "Aplica conforme a politicas vigentes de la tienda.",
+    envioGratis: false,
+    mostrarEnvioGratis: false
+  };
 }
 
 function generateOrderId() {
@@ -1029,6 +1469,60 @@ export async function createProduct(db, input) {
     .run();
 
   return getProductById(db, response.meta.last_row_id);
+}
+
+export async function bulkCreateProducts(db, items = []) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return {
+      created: 0,
+      failed: 0,
+      errors: []
+    };
+  }
+
+  let created = 0;
+  const errors = [];
+
+  for (let index = 0; index < items.length; index += 1) {
+    try {
+      await createProduct(db, items[index]);
+      created += 1;
+    } catch (err) {
+      errors.push({
+        index,
+        message: err instanceof Error ? err.message : "No se pudo crear el producto."
+      });
+    }
+  }
+
+  return {
+    created,
+    failed: items.length - created,
+    errors
+  };
+}
+
+export async function generateCatalogProducts(db, options = {}) {
+  const count = clampInteger(options.count, 1, 500, 100);
+  const offset = clampInteger(options.offset, 0, 99999999, 0);
+  const includeImages = options.includeImages !== false;
+  const category = String(options.category || "").trim().toLowerCase();
+  const rows = [];
+
+  for (let step = 0; step < count; step += 1) {
+    rows.push(
+      buildGeneratedProduct(offset + step, {
+        category,
+        includeImages
+      })
+    );
+  }
+
+  const result = await bulkCreateProducts(db, rows);
+  return {
+    ...result,
+    nextOffset: offset + count
+  };
 }
 
 export async function updateProduct(db, productId, input) {

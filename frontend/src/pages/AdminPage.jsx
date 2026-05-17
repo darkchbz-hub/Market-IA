@@ -30,6 +30,13 @@ const initialBanner = { titulo: "", subtitulo: "", mediaUrl: "", linkUrl: "/cata
 const initialVideo = { titulo: "", descripcion: "", videoUrl: "", posterUrl: "", activa: true, orden: 1 };
 const initialMusic = { titulo: "", artista: "", audioUrl: "", portadaUrl: "", activa: true, orden: 1 };
 const initialPartner = { name: "", logoUrl: "" };
+const initialCatalogGenerator = {
+  total: "10000",
+  batchSize: "250",
+  offset: "0",
+  category: "tecnologia",
+  includeImages: true
+};
 
 function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
@@ -96,6 +103,9 @@ export function AdminPage() {
   const [videoForm, setVideoForm] = useState(initialVideo);
   const [musicForm, setMusicForm] = useState(initialMusic);
   const [partnerForm, setPartnerForm] = useState(initialPartner);
+  const [generatorForm, setGeneratorForm] = useState(initialCatalogGenerator);
+  const [importJson, setImportJson] = useState("");
+  const [runningBulkTask, setRunningBulkTask] = useState(false);
   const [message, setMessage] = useState("");
   const [userSearch, setUserSearch] = useState("");
 
@@ -197,6 +207,100 @@ export function AdminPage() {
       await loadAdmin();
     } catch (error) {
       setMessage(error.message);
+    }
+  };
+
+  const runMassCatalogGeneration = async () => {
+    const total = Math.max(1, Number(generatorForm.total || 0));
+    const batchSize = Math.max(1, Math.min(500, Number(generatorForm.batchSize || 0)));
+    let offset = Math.max(0, Number(generatorForm.offset || 0));
+
+    if (!Number.isFinite(total) || !Number.isFinite(batchSize) || !Number.isFinite(offset)) {
+      setMessage("Revisa total, tamano de lote y offset para generar el catalogo.");
+      return;
+    }
+
+    setRunningBulkTask(true);
+    try {
+      let remaining = total;
+      let createdTotal = 0;
+      let failedTotal = 0;
+
+      while (remaining > 0) {
+        const chunk = Math.min(batchSize, remaining);
+        const response = await apiFetch("/admin/products/generate", {
+          method: "POST",
+          token,
+          body: {
+            count: chunk,
+            offset,
+            includeImages: generatorForm.includeImages,
+            category: generatorForm.category
+          }
+        });
+
+        createdTotal += Number(response.created || 0);
+        failedTotal += Number(response.failed || 0);
+        offset = Number(response.nextOffset || offset + chunk);
+        remaining -= chunk;
+        setMessage(`Generando catalogo... ${total - remaining}/${total} productos procesados.`);
+      }
+
+      setGeneratorForm((current) => ({ ...current, offset: String(offset) }));
+      await loadAdmin();
+      setMessage(`Catalogo masivo listo. Creados: ${createdTotal}. Fallidos: ${failedTotal}.`);
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setRunningBulkTask(false);
+    }
+  };
+
+  const importProductsFromJson = async () => {
+    if (!importJson.trim()) {
+      setMessage("Pega un JSON valido con un arreglo de productos para importar.");
+      return;
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(importJson);
+    } catch {
+      setMessage("El JSON no tiene un formato valido.");
+      return;
+    }
+
+    const items = Array.isArray(parsed) ? parsed : Array.isArray(parsed.items) ? parsed.items : [];
+    if (!items.length) {
+      setMessage("No se encontraron productos en el JSON.");
+      return;
+    }
+
+    setRunningBulkTask(true);
+    try {
+      let createdTotal = 0;
+      let failedTotal = 0;
+      const chunkSize = 200;
+
+      for (let start = 0; start < items.length; start += chunkSize) {
+        const chunk = items.slice(start, start + chunkSize);
+        const response = await apiFetch("/admin/products/import", {
+          method: "POST",
+          token,
+          body: { items: chunk }
+        });
+        createdTotal += Number(response.created || 0);
+        failedTotal += Number(response.failed || 0);
+        setMessage(`Importando productos... ${Math.min(start + chunk.length, items.length)}/${items.length}.`);
+      }
+
+      await loadAdmin();
+      setImportJson("");
+      setMessage(`Importacion completada. Creados: ${createdTotal}. Fallidos: ${failedTotal}.`);
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setRunningBulkTask(false);
     }
   };
 
@@ -617,6 +721,83 @@ export function AdminPage() {
               {productForm.id ? "Guardar cambios" : "Crear producto"}
             </button>
           </form>
+
+          <section className="section-card">
+            <div className="section-heading section-heading--compact">
+              <div>
+                <p className="section-label">Carga masiva</p>
+                <h2>Generar o importar miles de productos</h2>
+              </div>
+            </div>
+            <div className="form-grid form-grid--wide">
+              <label>
+                Total a generar
+                <input
+                  value={generatorForm.total}
+                  onChange={(event) => setGeneratorForm((current) => ({ ...current, total: event.target.value }))}
+                  disabled={runningBulkTask}
+                />
+              </label>
+              <label>
+                Tamano por lote (max 500)
+                <input
+                  value={generatorForm.batchSize}
+                  onChange={(event) => setGeneratorForm((current) => ({ ...current, batchSize: event.target.value }))}
+                  disabled={runningBulkTask}
+                />
+              </label>
+              <label>
+                Offset inicial
+                <input
+                  value={generatorForm.offset}
+                  onChange={(event) => setGeneratorForm((current) => ({ ...current, offset: event.target.value }))}
+                  disabled={runningBulkTask}
+                />
+              </label>
+              <label>
+                Categoria fija
+                <select
+                  value={generatorForm.category}
+                  onChange={(event) => setGeneratorForm((current) => ({ ...current, category: event.target.value }))}
+                  disabled={runningBulkTask}
+                >
+                  {categories.map((category) => (
+                    <option key={`generator-${category.id}`} value={category.slug}>
+                      {category.nombre}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="checkbox-row">
+              <label className="checkbox-chip">
+                <input
+                  type="checkbox"
+                  checked={generatorForm.includeImages}
+                  onChange={(event) => setGeneratorForm((current) => ({ ...current, includeImages: event.target.checked }))}
+                  disabled={runningBulkTask}
+                />
+                Incluir imagen por URL (placeholder de modelo)
+              </label>
+            </div>
+            <button type="button" className="button button--primary" onClick={runMassCatalogGeneration} disabled={runningBulkTask}>
+              {runningBulkTask ? "Procesando catalogo..." : "Generar catalogo masivo"}
+            </button>
+
+            <label>
+              Importar productos por JSON
+              <textarea
+                rows="8"
+                value={importJson}
+                onChange={(event) => setImportJson(event.target.value)}
+                placeholder='Pega [{"nombre":"...","descripcion":"...","categoria":"tecnologia","precio":999,"stock":5}]'
+                disabled={runningBulkTask}
+              />
+            </label>
+            <button type="button" className="button button--ghost" onClick={importProductsFromJson} disabled={runningBulkTask}>
+              {runningBulkTask ? "Importando..." : "Importar JSON"}
+            </button>
+          </section>
 
           <section className="section-card">
             <div className="section-heading section-heading--compact">
