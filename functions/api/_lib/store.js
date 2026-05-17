@@ -1,6 +1,218 @@
 import { hashPassword } from "./security.js";
 
-const seedProducts = [];
+const seedProducts = [
+  {
+    nombre: "Apple iPhone 16 128GB Azul",
+    slug: "apple-iphone-16-128gb-azul",
+    descripcion:
+      "Smartphone premium pensado para quienes buscan fluidez diaria, buena autonomia y una experiencia equilibrada entre fotografia, rendimiento y ecosistema Apple.",
+    descripcionCorta: "iPhone 16 de 128GB con pantalla de 6.1 pulgadas y acabado azul.",
+    marca: "Apple",
+    precio: 18759,
+    stock: 394,
+    vendidos: 18,
+    categoria: "tecnologia",
+    tags: ["iphone 16", "apple", "128gb", "smartphone", "celular premium", "ios"],
+    imagenes: [],
+    caracteristicas: [
+      "Pantalla de 6.1 pulgadas",
+      "Almacenamiento interno de 128GB",
+      "Color azul",
+      "Experiencia fluida para apps, fotos y multimedia",
+      "Equipo orientado a uso premium diario"
+    ],
+    disponibilidad: "Disponible",
+    infoEnvio: "Envio nacional con seguimiento y embalaje protegido.",
+    fechaEstimada: "Entrega estimada de 3 a 6 dias habiles.",
+    garantia: "Garantia directa por defectos de fabrica.",
+    devolucion: "Devolucion sujeta a politicas de la tienda.",
+    envioGratis: false,
+    mostrarEnvioGratis: false,
+    precioDescuento: 0
+  },
+  {
+    nombre: "Motorola Edge 60 5G 256GB 8GB RAM Verde",
+    slug: "motorola-edge-60-5g-256gb-8gb-verde",
+    descripcion:
+      "Celular 5G con enfoque en velocidad, buena pantalla y almacenamiento generoso para productividad, redes sociales, juegos y contenido multimedia.",
+    descripcionCorta: "Motorola Edge 60 5G con 256GB, 8GB RAM y pantalla de 6.67 pulgadas.",
+    marca: "Motorola",
+    precio: 5069,
+    stock: 6,
+    vendidos: 4,
+    categoria: "tecnologia",
+    tags: ["motorola", "edge 60", "5g", "256gb", "8gb ram", "p-oled"],
+    imagenes: [],
+    caracteristicas: [
+      "Pantalla de 6.67 pulgadas",
+      "Tecnologia de visualizacion P-OLED",
+      "Almacenamiento interno de 256GB",
+      "Memoria RAM de 8GB",
+      "Bateria de 5200mAh",
+      "Conectividad 5G",
+      "Dual SIM"
+    ],
+    disponibilidad: "Disponible",
+    infoEnvio: "Envio con rastreo y preparacion prioritaria.",
+    fechaEstimada: "Entrega estimada de 3 a 5 dias habiles.",
+    garantia: "Garantia por defectos de fabrica.",
+    devolucion: "Aplica devolucion de acuerdo con condiciones vigentes.",
+    envioGratis: false,
+    mostrarEnvioGratis: false,
+    precioDescuento: 0
+  },
+  {
+    nombre: "Apple iPhone 15 128GB Verde",
+    slug: "apple-iphone-15-128gb-verde",
+    descripcion:
+      "Equipo orientado a quienes quieren un smartphone Apple moderno, comodo para uso diario, fotografia y rendimiento estable para trabajo y entretenimiento.",
+    descripcionCorta: "iPhone 15 de 128GB en color verde con pantalla de 6.1 pulgadas.",
+    marca: "Apple",
+    precio: 15009,
+    stock: 1,
+    vendidos: 7,
+    categoria: "tecnologia",
+    tags: ["iphone 15", "apple", "128gb", "verde", "smartphone", "ios"],
+    imagenes: [],
+    caracteristicas: [
+      "Pantalla de 6.1 pulgadas",
+      "Tecnologia Super Retina XDR",
+      "Almacenamiento interno de 128GB",
+      "Color verde",
+      "Diseno premium para uso diario"
+    ],
+    disponibilidad: "Disponible",
+    infoEnvio: "Envio asegurado con monitoreo del pedido.",
+    fechaEstimada: "Entrega estimada de 3 a 6 dias habiles.",
+    garantia: "Garantia por fallas de fabrica.",
+    devolucion: "Sujeta a revision y politicas de devolucion.",
+    envioGratis: false,
+    mostrarEnvioGratis: false,
+    precioDescuento: 0
+  },
+  {
+    nombre: "Apple iPhone 17 Pro Max 256GB Azul",
+    slug: "apple-iphone-17-pro-max-256gb-azul",
+    descripcion:
+      "Celular de gama alta pensado para usuarios que buscan un dispositivo amplio, con gran capacidad interna y experiencia premium para productividad y contenido.",
+    descripcionCorta: "iPhone 17 Pro Max con 256GB y color azul.",
+    marca: "Apple",
+    precio: 29479,
+    stock: 4,
+    vendidos: 2,
+    categoria: "tecnologia",
+    tags: ["iphone 17 pro max", "apple", "256gb", "azul", "smartphone premium"],
+    imagenes: [],
+    caracteristicas: [
+      "Pantalla de 6.9 pulgadas",
+      "Tecnologia Super Retina XDR",
+      "Almacenamiento interno de 256GB",
+      "Color azul",
+      "Formato ideal para consumo multimedia y trabajo movil"
+    ],
+    disponibilidad: "Disponible",
+    infoEnvio: "Envio con rastreo nacional y empaquetado seguro.",
+    fechaEstimada: "Entrega estimada de 3 a 6 dias habiles.",
+    garantia: "Garantia limitada por defectos de fabrica.",
+    devolucion: "Revision previa conforme a politicas de devolucion.",
+    envioGratis: false,
+    mostrarEnvioGratis: false,
+    precioDescuento: 0
+  },
+  {
+    nombre: "Infinix Hot 70 256GB 8GB RAM Azul",
+    slug: "infinix-hot-70-256gb-8gb-azul",
+    descripcion:
+      "Telefono orientado a quienes buscan espacio interno, autonomia amplia y buen formato de pantalla para apps, video y navegacion diaria.",
+    descripcionCorta: "Infinix Hot 70 con 256GB, 8GB RAM y pantalla de 6.78 pulgadas.",
+    marca: "Infinix",
+    precio: 4749,
+    stock: 72,
+    vendidos: 5,
+    categoria: "tecnologia",
+    tags: ["infinix", "hot 70", "256gb", "8gb ram", "4g", "smartphone"],
+    imagenes: [],
+    caracteristicas: [
+      "Pantalla de 6.78 pulgadas",
+      "Panel LCD",
+      "Almacenamiento interno de 256GB",
+      "Memoria RAM de 8GB",
+      "Bateria de 5600mAh",
+      "Conectividad 4G",
+      "Dual SIM"
+    ],
+    disponibilidad: "Disponible",
+    infoEnvio: "Envio con seguimiento para todo Mexico.",
+    fechaEstimada: "Entrega estimada de 3 a 5 dias habiles.",
+    garantia: "Cobertura por defectos de fabrica.",
+    devolucion: "Aplican terminos de devolucion de la tienda.",
+    envioGratis: false,
+    mostrarEnvioGratis: false,
+    precioDescuento: 0
+  },
+  {
+    nombre: "Motorola Edge 60 Neo 5G 256GB 12GB RAM Gris",
+    slug: "motorola-edge-60-neo-5g-256gb-12gb-gris",
+    descripcion:
+      "Smartphone 5G de perfil moderno con RAM amplia, buena capacidad interna y formato equilibrado para trabajo, entretenimiento y multitarea intensa.",
+    descripcionCorta: "Motorola Edge 60 Neo 5G con 256GB, 12GB RAM y acabado gris.",
+    marca: "Motorola",
+    precio: 6299,
+    stock: 300,
+    vendidos: 9,
+    categoria: "tecnologia",
+    tags: ["motorola", "edge 60 neo", "5g", "256gb", "12gb ram", "p-oled"],
+    imagenes: [],
+    caracteristicas: [
+      "Pantalla de 6.3 pulgadas",
+      "Tecnologia P-OLED",
+      "Almacenamiento interno de 256GB",
+      "Memoria RAM de 12GB",
+      "Bateria de 5000mAh",
+      "Conectividad 5G",
+      "SIM dual"
+    ],
+    disponibilidad: "Disponible",
+    infoEnvio: "Envio protegido con rastreo actualizado.",
+    fechaEstimada: "Entrega estimada de 3 a 5 dias habiles.",
+    garantia: "Garantia por defectos de fabrica.",
+    devolucion: "Devolucion segun condiciones vigentes.",
+    envioGratis: false,
+    mostrarEnvioGratis: false,
+    precioDescuento: 0
+  },
+  {
+    nombre: "Samsung Galaxy A17 5G 128GB 4GB RAM Gris",
+    slug: "samsung-galaxy-a17-5g-128gb-4gb-gris",
+    descripcion:
+      "Celular Samsung de entrada a gama media con conectividad 5G, buena bateria y formato practico para mensajeria, contenido y uso diario.",
+    descripcionCorta: "Galaxy A17 5G con 128GB, 4GB RAM y pantalla de 6.7 pulgadas.",
+    marca: "Samsung",
+    precio: 3949,
+    stock: 20,
+    vendidos: 6,
+    categoria: "tecnologia",
+    tags: ["samsung", "galaxy a17", "5g", "128gb", "4gb ram", "super amoled"],
+    imagenes: [],
+    caracteristicas: [
+      "Pantalla de 6.7 pulgadas",
+      "Tecnologia Super AMOLED",
+      "Almacenamiento interno de 128GB",
+      "Memoria RAM de 4GB",
+      "Bateria de 5000mAh",
+      "Conectividad 5G",
+      "Single SIM"
+    ],
+    disponibilidad: "Disponible",
+    infoEnvio: "Envio monitoreado y embalaje seguro.",
+    fechaEstimada: "Entrega estimada de 3 a 5 dias habiles.",
+    garantia: "Garantia por defectos de fabrica.",
+    devolucion: "Aplica conforme a politicas vigentes.",
+    envioGratis: false,
+    mostrarEnvioGratis: false,
+    precioDescuento: 0
+  }
+];
 export const marketplaceCategories = [
   { slug: "tecnologia", nombre: "Tecnologia", descripcion: "Laptops, celulares, accesorios y equipos premium.", icono: "⌘", color: "#2563eb" },
   { slug: "hogar", nombre: "Hogar", descripcion: "Cocina, decoracion, orden y estilo para tus espacios.", icono: "⌂", color: "#0f766e" },
@@ -376,29 +588,14 @@ async function ensureColumn(db, tableName, columnName, definition) {
 
 async function seedDatabase(db, env) {
   if (seedProducts.length) {
-    const productCountRow = await db.prepare("SELECT COUNT(*) AS total FROM products").first();
+    for (const product of seedProducts) {
+      const existing = await db.prepare("SELECT id FROM products WHERE slug = ?").bind(product.slug).first();
 
-    if (!Number(productCountRow?.total || 0)) {
-      for (const product of seedProducts) {
-        await db
-          .prepare(
-            `
-            INSERT INTO products (slug, nombre, descripcion, precio, stock, categoria, tags, imagenes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-          `
-          )
-          .bind(
-            product.slug,
-            product.nombre,
-            product.descripcion,
-            product.precio,
-            product.stock,
-            product.categoria,
-            JSON.stringify(product.tags),
-            JSON.stringify(product.imagenes)
-          )
-          .run();
+      if (existing) {
+        continue;
       }
+
+      await createProduct(db, product);
     }
   }
 
