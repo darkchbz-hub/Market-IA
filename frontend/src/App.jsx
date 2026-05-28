@@ -6,6 +6,7 @@ import { CartPage } from "./pages/CartPage.jsx";
 import { CatalogPage } from "./pages/CatalogPage.jsx";
 import { ChatPage } from "./pages/ChatPage.jsx";
 import { CheckoutPage } from "./pages/CheckoutPage.jsx";
+import { ControlCenterPage } from "./pages/ControlCenterPage.jsx";
 import { HomePage } from "./pages/HomePage.jsx";
 import { LoginPage } from "./pages/LoginPage.jsx";
 import { PaymentStatusPage } from "./pages/PaymentStatusPage.jsx";
@@ -74,6 +75,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <ChatPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/centro-control"
+          element={
+            <ProtectedRoute>
+              <ControlCenterPage />
             </ProtectedRoute>
           }
         />

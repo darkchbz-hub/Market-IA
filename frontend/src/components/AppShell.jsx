@@ -1,55 +1,48 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCart } from "../context/CartContext.jsx";
 
-const categoryIconMap = {
-  tecnologia: "⌘",
-  hogar: "⌂",
-  jardin: "❋",
-  automovil: "◈",
-  empresas: "▣",
-  mayoreo: "◫",
-  importados: "◎",
-  mascotas: "✦",
-  ropa: "◍",
-  juguetes: "★"
-};
+const themeCycle = ["aurora", "neo", "luxe"];
 
 function navLinkClass({ isActive }) {
   return `market-nav__link${isActive ? " is-active" : ""}`;
 }
 
-function isVideoAudioSource(url = "") {
-  return /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(url);
-}
+function pathLabel(pathname) {
+  const map = {
+    "/": "Inicio",
+    "/catalogo": "Catalogo",
+    "/perfil": "Perfil",
+    "/carrito": "Carrito",
+    "/checkout": "Checkout",
+    "/chat": "Soporte",
+    "/admin": "Admin",
+    "/dashboard": "Dashboard",
+    "/terminos": "Terminos",
+    "/sobre-nosotros": "Nosotros",
+    "/centro-control": "Centro de Control"
+  };
 
-function extractYouTubeId(url = "") {
-  try {
-    const parsed = new URL(url);
-    const host = parsed.hostname.replace("www.", "");
-
-    if (host === "youtube.com" || host === "m.youtube.com") {
-      if (parsed.pathname === "/watch") {
-        return parsed.searchParams.get("v") || "";
-      }
-      if (parsed.pathname.startsWith("/shorts/")) {
-        return parsed.pathname.split("/shorts/")[1]?.split("/")[0] || "";
-      }
-      if (parsed.pathname.startsWith("/embed/")) {
-        return parsed.pathname.split("/embed/")[1]?.split("/")[0] || "";
-      }
-    }
-
-    if (host === "youtu.be") {
-      return parsed.pathname.replace("/", "").split("/")[0] || "";
-    }
-  } catch {
-    return "";
+  if (pathname.startsWith("/producto")) {
+    return "Producto";
   }
 
-  return "";
+  return map[pathname] || "Vista";
+}
+
+function loadJson(key, fallback) {
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) {
+      return fallback;
+    }
+    const parsed = JSON.parse(raw);
+    return parsed ?? fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 export function AppShell() {
@@ -58,11 +51,13 @@ export function AppShell() {
   const { user, loading, isAuthenticated, isAdmin, logout } = useAuth();
   const { itemCount } = useCart();
   const [search, setSearch] = useState("");
-  const [siteData, setSiteData] = useState({ settings: {}, general: {}, categories: [], music: [] });
-  const [musicEnabled] = useState(true);
   const [headerHidden, setHeaderHidden] = useState(false);
-  const audioRef = useRef(null);
-  const videoRef = useRef(null);
+  const [siteData, setSiteData] = useState({ settings: {}, general: {}, categories: [] });
+  const [theme, setTheme] = useState("aurora");
+  const [commandOpen, setCommandOpen] = useState(false);
+  const [commandQuery, setCommandQuery] = useState("");
+  const [noticeOpen, setNoticeOpen] = useState(false);
+  const [routeLog, setRouteLog] = useState([]);
   const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
 
   useEffect(() => {
@@ -71,98 +66,70 @@ export function AppShell() {
         setSiteData({
           settings: payload.settings || {},
           general: payload.general || {},
-          categories: payload.categories || [],
-          music: payload.music || []
+          categories: payload.categories || []
         });
       })
       .catch(() => {
-        setSiteData({ settings: {}, general: {}, categories: [], music: [] });
+        setSiteData({ settings: {}, general: {}, categories: [] });
       });
   }, []);
 
-  const currentTrack = useMemo(() => siteData.music?.[0] || null, [siteData.music]);
-  const youtubeId = useMemo(() => extractYouTubeId(currentTrack?.audioUrl || ""), [currentTrack]);
-  const useYoutubeSource = Boolean(youtubeId);
-  const useVideoSource = useMemo(() => isVideoAudioSource(currentTrack?.audioUrl || ""), [currentTrack]);
-  const backgroundMusicVolume = useMemo(() => {
-    const raw = Number(siteData.general?.backgroundMusicVolume ?? 35);
-    if (!Number.isFinite(raw)) {
-      return 0.35;
-    }
-    return Math.min(1, Math.max(0, raw / 100));
-  }, [siteData.general]);
-
-  const playActiveMedia = () => {
-    if (useYoutubeSource) {
-      return;
-    }
-
-    const mediaRef = useVideoSource ? videoRef.current : audioRef.current;
-    const otherRef = useVideoSource ? audioRef.current : videoRef.current;
-    if (!mediaRef) {
-      return;
-    }
-    if (otherRef) {
-      otherRef.pause();
-      otherRef.currentTime = 0;
-    }
-
-    if (!musicEnabled) {
-      mediaRef.pause();
-      return;
-    }
-
-    mediaRef.volume = backgroundMusicVolume;
-    mediaRef.play().catch(() => {});
-  };
-
   useEffect(() => {
-    playActiveMedia();
-  }, [musicEnabled, currentTrack, useVideoSource, useYoutubeSource, backgroundMusicVolume]);
-
-  useEffect(() => {
-    if (!currentTrack?.audioUrl) {
-      return;
+    const savedTheme = window.localStorage.getItem("gc_theme") || "aurora";
+    if (themeCycle.includes(savedTheme)) {
+      setTheme(savedTheme);
     }
 
-    const resumeMusic = () => {
-      playActiveMedia();
-    };
-
-    const onVisible = () => {
-      if (!document.hidden) {
-        playActiveMedia();
-      }
-    };
-
-    window.addEventListener("pointerdown", resumeMusic);
-    window.addEventListener("touchstart", resumeMusic);
-    window.addEventListener("keydown", resumeMusic);
-    window.addEventListener("focus", resumeMusic);
-    window.addEventListener("pageshow", resumeMusic);
-    document.addEventListener("visibilitychange", onVisible);
-
-    return () => {
-      window.removeEventListener("pointerdown", resumeMusic);
-      window.removeEventListener("touchstart", resumeMusic);
-      window.removeEventListener("keydown", resumeMusic);
-      window.removeEventListener("focus", resumeMusic);
-      window.removeEventListener("pageshow", resumeMusic);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
-  }, [currentTrack, useVideoSource, useYoutubeSource, backgroundMusicVolume]);
-
-  const youtubeEmbedUrl = useMemo(() => {
-    if (!youtubeId || !musicEnabled) {
-      return "";
+    const savedRoutes = loadJson("gc_route_log", []);
+    if (Array.isArray(savedRoutes)) {
+      setRouteLog(savedRoutes.slice(0, 20));
     }
-    return `https://www.youtube.com/embed/${youtubeId}?autoplay=1&loop=1&playlist=${youtubeId}&controls=0&modestbranding=1&playsinline=1`;
-  }, [youtubeId, musicEnabled]);
+  }, []);
 
   useEffect(() => {
     const searchParam = new URLSearchParams(location.search).get("search") || "";
     setSearch(searchParam);
   }, [location.search]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    window.localStorage.setItem("gc_theme", theme);
+  }, [theme]);
+
+  useEffect(() => {
+    if (isAuthPage) {
+      return;
+    }
+
+    const entry = {
+      path: location.pathname,
+      label: pathLabel(location.pathname),
+      when: new Date().toISOString()
+    };
+
+    setRouteLog((current) => {
+      const next = [entry, ...current.filter((item) => item.path !== entry.path)].slice(0, 20);
+      window.localStorage.setItem("gc_route_log", JSON.stringify(next));
+      return next;
+    });
+  }, [location.pathname, isAuthPage]);
+
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      const isCommandKey = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k";
+      if (isCommandKey) {
+        event.preventDefault();
+        setCommandOpen(true);
+      }
+
+      if (event.key === "Escape") {
+        setCommandOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   useEffect(() => {
     let lastY = window.scrollY;
@@ -207,13 +174,84 @@ export function AppShell() {
     navigate(`/catalogo${params.toString() ? `?${params.toString()}` : ""}`);
   };
 
-  const openCategory = (slug) => {
-    const params = new URLSearchParams();
-    if (slug) {
-      params.set("category", slug);
+  const quickCategories = useMemo(() => siteData.categories.slice(0, 4), [siteData.categories]);
+
+  const navItems = useMemo(() => {
+    const core = [
+      { label: "Inicio", path: "/", hint: "Portada" },
+      { label: "Catalogo", path: "/catalogo", hint: "Vistas comerciales" },
+      { label: "Centro de Control", path: "/centro-control", hint: "Productividad" },
+      { label: "Perfil", path: "/perfil", hint: "Tu cuenta" },
+      { label: "Carrito", path: "/carrito", hint: "Tu pedido" },
+      { label: "Soporte", path: "/chat", hint: "Atencion" },
+      { label: "Nosotros", path: "/sobre-nosotros", hint: "Informacion" }
+    ];
+
+    if (isAdmin) {
+      core.push({ label: "Panel Admin", path: "/admin", hint: "Gestion" });
     }
-    navigate(`/catalogo${params.toString() ? `?${params.toString()}` : ""}`);
-  };
+
+    return core;
+  }, [isAdmin]);
+
+  const commandItems = useMemo(() => {
+    const actionItems = [
+      {
+        id: "theme",
+        label: "Cambiar tema visual",
+        hint: "Aurora / Neo / Luxe",
+        action: () => {
+          const currentIndex = themeCycle.indexOf(theme);
+          const nextTheme = themeCycle[(currentIndex + 1) % themeCycle.length];
+          setTheme(nextTheme);
+        }
+      },
+      {
+        id: "top",
+        label: "Ir arriba",
+        hint: "Scroll suave",
+        action: () => window.scrollTo({ top: 0, behavior: "smooth" })
+      }
+    ];
+
+    const pathItems = navItems.map((item) => ({
+      id: item.path,
+      label: item.label,
+      hint: item.hint,
+      action: () => navigate(item.path)
+    }));
+
+    const all = [...pathItems, ...actionItems];
+    if (!commandQuery.trim()) {
+      return all;
+    }
+
+    const query = commandQuery.trim().toLowerCase();
+    return all.filter((item) => `${item.label} ${item.hint}`.toLowerCase().includes(query));
+  }, [commandQuery, navItems, navigate, theme]);
+
+  const breadcrumbs = useMemo(() => {
+    const parts = location.pathname.split("/").filter(Boolean);
+    if (!parts.length) {
+      return ["Inicio"];
+    }
+
+    const map = {
+      catalogo: "Catalogo",
+      producto: "Producto",
+      perfil: "Perfil",
+      carrito: "Carrito",
+      checkout: "Checkout",
+      chat: "Soporte",
+      admin: "Administrador",
+      dashboard: "Dashboard",
+      terminos: "Terminos",
+      "sobre-nosotros": "Sobre nosotros",
+      "centro-control": "Centro de control"
+    };
+
+    return ["Inicio", ...parts.map((part) => map[part] || part)];
+  }, [location.pathname]);
 
   if (isAuthPage) {
     return (
@@ -247,15 +285,15 @@ export function AppShell() {
             </span>
             <span>
               <strong>{siteData.general.siteName || "Gray C Shop"}</strong>
-              <small>{siteData.general.tagline || siteData.settings.heroEyebrow || "Marketplace elegante"}</small>
+              <small>{siteData.general.tagline || "Nueva experiencia premium de compra"}</small>
             </span>
           </Link>
 
           <form className="searchbar" onSubmit={handleSearchSubmit}>
-            <span className="searchbar__icon">⌕</span>
+            <span className="searchbar__icon">Q</span>
             <input
               type="search"
-              placeholder="Buscar tecnologia, hogar, mascotas, mayoreo o importados"
+              placeholder="Buscar secciones, novedades y soporte"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
@@ -263,40 +301,23 @@ export function AppShell() {
           </form>
 
           <div className="header-actions">
-            {isAuthenticated ? (
-              <>
-                <Link to="/perfil" className="account-chip">
-                  <span>{user?.nombre}</span>
-                  <small>{isAdmin ? "Cuenta administradora" : "Tu cuenta"}</small>
-                </Link>
-                {isAdmin && (
-                  <Link to="/admin" className="button button--primary">
-                    Administrar tienda
-                  </Link>
-                )}
-                {isAdmin && (
-                  <Link to="/dashboard" className="button button--ghost">
-                    Dashboard
-                  </Link>
-                )}
-                <Link to="/carrito" className="cart-button">
-                  Carrito
-                  <span>{itemCount}</span>
-                </Link>
-                <button type="button" className="button button--ghost" onClick={logout}>
-                  Cerrar sesion
-                </button>
-              </>
-            ) : (
-              <>
-                <Link to="/login" className="button button--ghost">
-                  Iniciar sesion
-                </Link>
-                <Link to="/register" className="button button--primary">
-                  Crear cuenta
-                </Link>
-              </>
-            )}
+            <button type="button" className="button button--ghost" onClick={() => setCommandOpen(true)}>
+              Atajos
+            </button>
+            <button type="button" className="button button--ghost" onClick={() => setNoticeOpen((current) => !current)}>
+              Actividad
+            </button>
+            <Link to="/perfil" className="account-chip">
+              <span>{user?.nombre}</span>
+              <small>{isAdmin ? "Panel administrador" : "Cuenta activa"}</small>
+            </Link>
+            <Link to="/carrito" className="cart-button">
+              Carrito
+              <span>{itemCount}</span>
+            </Link>
+            <button type="button" className="button button--ghost" onClick={logout}>
+              Salir
+            </button>
           </div>
         </div>
 
@@ -307,139 +328,147 @@ export function AppShell() {
           <NavLink to="/catalogo" className={navLinkClass}>
             Catalogo
           </NavLink>
-          <NavLink to="/sobre-nosotros" className={navLinkClass}>
-            Sobre nosotros
+          <NavLink to="/centro-control" className={navLinkClass}>
+            Centro de control
           </NavLink>
-          {siteData.categories.slice(0, 8).map((category) => (
-            <button
-              key={category.id}
-              type="button"
-              className={`market-nav__link market-nav__link--button${
-                new URLSearchParams(location.search).get("category") === category.slug ? " is-active" : ""
-              }`}
-              onClick={() => openCategory(category.slug)}
-            >
-              <span className="market-nav__icon">{categoryIconMap[category.slug] || "•"}</span>
-              {category.nombre}
-            </button>
-          ))}
           <NavLink to="/chat" className={navLinkClass}>
             Soporte
           </NavLink>
-          <NavLink to="/terminos" className={navLinkClass}>
-            Terminos
-          </NavLink>
-          {isAdmin && (
-            <NavLink to="/admin" className={navLinkClass}>
-              Administrador
-            </NavLink>
-          )}
-          {isAdmin && (
-            <NavLink to="/dashboard" className={navLinkClass}>
-              Dashboard
-            </NavLink>
-          )}
+          {quickCategories.map((category) => (
+            <button
+              key={category.id}
+              type="button"
+              className="market-nav__link market-nav__link--button"
+              onClick={() => navigate(`/catalogo?category=${category.slug}`)}
+            >
+              {category.nombre}
+            </button>
+          ))}
         </nav>
 
-        <div className="mobile-nav-shell">
-          <div className="mobile-top-actions">
-            <Link to="/catalogo" className="mobile-action-pill">
-              Explorar
-            </Link>
-            <Link to="/carrito" className="mobile-action-pill">
-              Carrito ({itemCount})
-            </Link>
-            <Link to={isAuthenticated ? "/perfil" : "/login"} className="mobile-action-pill">
-              {isAuthenticated ? "Mi cuenta" : "Entrar"}
-            </Link>
+        {!!noticeOpen && (
+          <div className="notice-panel">
+            <div className="section-heading section-heading--compact">
+              <div>
+                <p className="section-label">Actividad reciente</p>
+                <h2>Historial de navegacion</h2>
+              </div>
+            </div>
+            <div className="list-stack">
+              {routeLog.slice(0, 6).map((item, index) => (
+                <button key={`${item.path}-${index}`} type="button" className="thread-card" onClick={() => navigate(item.path)}>
+                  <strong>{item.label}</strong>
+                  <small>{new Date(item.when).toLocaleString()}</small>
+                </button>
+              ))}
+            </div>
           </div>
-          <nav className="mobile-categories">
-            <NavLink to="/" end className={navLinkClass}>
-              Inicio
-            </NavLink>
-            <NavLink to="/catalogo" className={navLinkClass}>
-              Todo
-            </NavLink>
-            <NavLink to="/terminos" className={navLinkClass}>
-              Terminos
-            </NavLink>
-            <NavLink to="/sobre-nosotros" className={navLinkClass}>
-              Sobre nosotros
-            </NavLink>
-            {siteData.categories.slice(0, 6).map((category) => (
-              <button
-                key={`mobile-${category.id}`}
-                type="button"
-                className={`market-nav__link market-nav__link--button${
-                  new URLSearchParams(location.search).get("category") === category.slug ? " is-active" : ""
-                }`}
-                onClick={() => openCategory(category.slug)}
-              >
-                {category.nombre}
-              </button>
-            ))}
-          </nav>
-        </div>
+        )}
       </header>
 
-      <main className="market-content">
-        <Outlet />
-      </main>
+      <section className="breadcrumbs">
+        {breadcrumbs.map((crumb, index) => (
+          <span key={`${crumb}-${index}`} className="breadcrumbs__item">
+            {crumb}
+          </span>
+        ))}
+      </section>
 
-      {!useYoutubeSource && (
-        <>
-          <audio
-            ref={audioRef}
-            src={useVideoSource ? "" : currentTrack?.audioUrl || ""}
-            loop
-            preload="auto"
-            onPause={playActiveMedia}
-            onEnded={playActiveMedia}
-            style={{ display: "none" }}
-          />
-          <video
-            ref={videoRef}
-            src={useVideoSource ? currentTrack?.audioUrl || "" : ""}
-            loop
-            preload="auto"
-            playsInline
-            onPause={playActiveMedia}
-            onEnded={playActiveMedia}
-            style={{ display: "none" }}
-          />
-        </>
-      )}
+      <div className="market-main-shell">
+        <aside className="market-rail">
+          <p className="section-label">Navegacion Pro</p>
+          <div className="list-stack">
+            {navItems.map((item) => (
+              <button key={item.path} type="button" className="market-rail__link" onClick={() => navigate(item.path)}>
+                <strong>{item.label}</strong>
+                <small>{item.hint}</small>
+              </button>
+            ))}
+          </div>
+        </aside>
 
-      {useYoutubeSource && youtubeEmbedUrl && (
-        <iframe
-          key={youtubeEmbedUrl}
-          title="bg-music-youtube"
-          src={youtubeEmbedUrl}
-          allow="autoplay; encrypted-media"
-          referrerPolicy="strict-origin-when-cross-origin"
-          style={{
-            position: "fixed",
-            width: "1px",
-            height: "1px",
-            left: "-9999px",
-            top: "0",
-            border: "0",
-            opacity: 0,
-            pointerEvents: "none"
+        <main className="market-content">
+          <Outlet />
+        </main>
+      </div>
+
+      <nav className="mobile-dock">
+        <button type="button" onClick={() => navigate("/")}>Inicio</button>
+        <button type="button" onClick={() => navigate("/catalogo")}>Catalogo</button>
+        <button type="button" onClick={() => setCommandOpen(true)}>Atajos</button>
+        <button type="button" onClick={() => navigate("/centro-control")}>Centro</button>
+      </nav>
+
+      <div className="magic-dock" aria-label="Acciones rapidas">
+        <button type="button" className="magic-dock__button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
+          Arriba
+        </button>
+        <button type="button" className="magic-dock__button" onClick={() => navigate("/chat") }>
+          Soporte
+        </button>
+        <button type="button" className="magic-dock__button" onClick={() => navigate("/catalogo") }>
+          Vistas
+        </button>
+        <button
+          type="button"
+          className="magic-dock__button magic-dock__button--accent"
+          onClick={() => {
+            const currentIndex = themeCycle.indexOf(theme);
+            const nextTheme = themeCycle[(currentIndex + 1) % themeCycle.length];
+            setTheme(nextTheme);
           }}
-        />
+        >
+          Tema
+        </button>
+      </div>
+
+      {commandOpen && (
+        <div className="command-overlay" role="dialog" aria-modal="true">
+          <div className="command-modal">
+            <div className="command-modal__top">
+              <strong>Comandos rapidos</strong>
+              <button type="button" className="button button--ghost" onClick={() => setCommandOpen(false)}>
+                Cerrar
+              </button>
+            </div>
+            <input
+              type="search"
+              placeholder="Escribe para navegar o ejecutar acciones"
+              value={commandQuery}
+              onChange={(event) => setCommandQuery(event.target.value)}
+              autoFocus
+            />
+            <div className="command-list">
+              {commandItems.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="command-item"
+                  onClick={() => {
+                    item.action();
+                    setCommandOpen(false);
+                    setCommandQuery("");
+                  }}
+                >
+                  <strong>{item.label}</strong>
+                  <small>{item.hint}</small>
+                </button>
+              ))}
+              {!commandItems.length && <p className="muted-text">Sin coincidencias para tu busqueda.</p>}
+            </div>
+          </div>
+        </div>
       )}
 
       <footer className="market-footer">
         <div>
           <strong>{siteData.general.siteName || "Gray C Shop"}</strong>
-          <p>Marketplace formal, moderno y listo para crecer con categorias, pedidos y panel administrador.</p>
+          <p>Nueva experiencia visual, navegacion avanzada y herramientas de productividad integradas.</p>
         </div>
         <div className="market-footer__links">
-          <Link to="/catalogo">Catalogo</Link>
           <Link to="/perfil">Mi cuenta</Link>
-          <Link to="/chat">Soporte</Link>
-          <Link to="/terminos">Terminos y condiciones</Link>
+          <Link to="/chat">Centro de soporte</Link>
+          <Link to="/centro-control">Centro de control</Link>
           <Link to="/sobre-nosotros">Sobre nosotros</Link>
         </div>
       </footer>

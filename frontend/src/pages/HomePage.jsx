@@ -1,8 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ProductCard } from "../components/ProductCard.jsx";
-import { useAuth } from "../context/AuthContext.jsx";
-import { useCart } from "../context/CartContext.jsx";
 import { apiFetch } from "../lib/api.js";
 
 const fallbackHome = {
@@ -11,20 +8,13 @@ const fallbackHome = {
   categories: [],
   banners: [],
   videos: [],
-  music: [],
-  partnerLogos: [],
-  featuredProducts: [],
-  offerProducts: [],
-  bestsellerProducts: []
+  partnerLogos: []
 };
 
 export function HomePage() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
-  const { addToCart } = useCart();
   const [home, setHome] = useState(fallbackHome);
   const [loading, setLoading] = useState(true);
-  const [busyId, setBusyId] = useState("");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -52,115 +42,81 @@ export function HomePage() {
     };
   }, []);
 
-  const handleAddToCart = async (product) => {
-    if (!isAuthenticated) {
-      navigate("/login");
-      return false;
-    }
-
-    setBusyId(product.id);
-    setMessage("");
-
-    try {
-      await addToCart(product.id, 1);
-      setMessage(`${product.nombre} se agrego al carrito.`);
-      return true;
-    } catch (error) {
-      setMessage(error.message);
-      return false;
-    } finally {
-      setBusyId("");
-    }
-  };
-
-  const handleBuyNow = async (product) => {
-    const added = await handleAddToCart(product);
-    if (added) {
-      navigate("/checkout");
-    }
-  };
+  const heroStats = useMemo(
+    () => [
+      { label: "Ventas", value: "Reiniciadas" },
+      { label: "Catalogo", value: "En renovacion" },
+      { label: "Experiencia", value: "Premium" }
+    ],
+    []
+  );
 
   return (
     <div className="page-stack">
-      <section className="hero-shell">
+      <section className="hero-shell hero-shell--revamp">
         <article className="hero-panel hero-panel--primary">
-          <p className="eyebrow">{home.settings.heroEyebrow || "Marketplace premium"}</p>
-          <h1>
-            {home.settings.heroTitle ||
-              "Compra tecnologia, hogar, mayoreo y categorias modernas desde una sola plataforma profesional."}
-          </h1>
+          <p className="eyebrow">Nueva etapa</p>
+          <h1>{home.settings.heroTitle || "Gray C Shop ahora con una identidad visual de alto nivel."}</h1>
           <p>
             {home.settings.heroDescription ||
-              "Una tienda elegante, confiable y responsive para vender productos fisicos, importados y categorias premium."}
+              "Redisenamos la web completa: nuevas vistas, tema premium, interfaz mas clara y una experiencia profesional para escalar."}
           </p>
           <div className="hero-actions">
             <Link to="/catalogo" className="button button--primary">
-              {home.settings.heroPrimary || "Explorar catalogo"}
+              Ver nuevas vistas
             </Link>
-            <Link to="/catalogo?sort=discount" className="button button--ghost">
-              {home.settings.heroSecondary || "Ver ofertas"}
+            <Link to="/chat" className="button button--ghost">
+              Hablar con soporte
             </Link>
           </div>
         </article>
 
         <aside className="hero-panel hero-panel--secondary">
-          {(home.banners[0] && (
-            <div className="media-banner">
-              <img src={home.banners[0].mediaUrl} alt={home.banners[0].titulo} />
-              <div className="media-banner__copy">
-                <strong>{home.banners[0].titulo}</strong>
-                <span>{home.banners[0].subtitulo}</span>
-              </div>
-            </div>
-          )) || (
-            <div className="hero-stat-grid">
-              <article>
-                <strong>+10</strong>
-                <span>Categorias activas</span>
-              </article>
-              <article>
-                <strong>Premium</strong>
-                <span>Diseño formal y moderno</span>
-              </article>
-              <article>
-                <strong>Seguro</strong>
-                <span>Listo para pagos reales</span>
-              </article>
-            </div>
-          )}
-        </aside>
-      </section>
-
-      {!!home.partnerLogos.length && (
-        <section className="section-card">
-          <div className="section-heading">
-            <div>
-              <p className="section-label">{home.general.partnerTitle || "Confianza"}</p>
-              <h2>{home.general.partnerTitle || "Empresas asociadas"}</h2>
-            </div>
-          </div>
-          <div className="partner-grid">
-            {home.partnerLogos.map((partner) => (
-              <article key={partner.id || partner.name} className="partner-card">
-                {partner.logoUrl && <img src={partner.logoUrl} alt={partner.name} />}
-                <strong>{partner.name}</strong>
+          <div className="hero-stat-grid">
+            {heroStats.map((item) => (
+              <article key={item.label}>
+                <strong>{item.value}</strong>
+                <span>{item.label}</span>
               </article>
             ))}
           </div>
-        </section>
-      )}
+        </aside>
+      </section>
+
+      {message && <p className="inline-message">{message}</p>}
 
       <section className="section-card">
         <div className="section-heading">
           <div>
-            <p className="section-label">Categorias destacadas</p>
-            <h2>Explora por tipo de compra</h2>
+            <p className="section-label">Panorama comercial</p>
+            <h2>Estado actual de la tienda</h2>
           </div>
-          <Link to="/catalogo" className="section-link">
-            Ver todo
-          </Link>
         </div>
-        <div className="category-grid">
+        <div className="detail-columns detail-columns--status">
+          <article className="detail-card">
+            <h3>Productos eliminados</h3>
+            <p>El inventario visible fue retirado para crear una nueva coleccion con estandar mas alto.</p>
+          </article>
+          <article className="detail-card">
+            <h3>Ventas restauradas</h3>
+            <p>La seccion comercial se mantiene limpia para iniciar un nuevo ciclo de ventas desde base renovada.</p>
+          </article>
+          <article className="detail-card">
+            <h3>Experiencia mejorada</h3>
+            <p>Navegacion renovada, botones de accion rapida y un look mucho mas profesional.</p>
+          </article>
+        </div>
+      </section>
+
+      <section className="section-card">
+        <div className="section-heading">
+          <div>
+            <p className="section-label">Vistas nuevas</p>
+            <h2>Explora la nueva estructura</h2>
+          </div>
+        </div>
+
+        <div className="category-grid category-grid--showcase">
           {home.categories.map((category) => (
             <button
               key={category.id}
@@ -170,98 +126,33 @@ export function HomePage() {
               onClick={() => navigate(`/catalogo?category=${category.slug}`)}
             >
               <strong>{category.nombre}</strong>
-              <span>{category.descripcion}</span>
+              <span>{category.descripcion || "Seccion renovada y lista para relanzamiento."}</span>
             </button>
           ))}
         </div>
       </section>
 
-      {message && <p className="inline-message">{message}</p>}
-
-      <section className="section-card">
-        <div className="section-heading">
-          <div>
-            <p className="section-label">Comerciales y contenido</p>
-            <h2>{home.settings.videoTitle || "Video banners para portada"}</h2>
+      {!!home.banners?.length && (
+        <section className="section-card">
+          <div className="section-heading">
+            <div>
+              <p className="section-label">Identidad visual</p>
+              <h2>Nueva direccion grafica</h2>
+            </div>
           </div>
-        </div>
-        <div className="video-grid">
-          {home.videos.map((video) => (
-            <article key={video.id} className="video-card">
-              <video controls poster={video.posterUrl}>
-                <source src={video.videoUrl} />
-              </video>
-              <strong>{video.titulo}</strong>
-              <p>{video.descripcion}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="section-card">
-        <div className="section-heading">
-          <div>
-            <p className="section-label">Recomendados</p>
-            <h2>{home.settings.featuredTitle || "Curados para una vitrina premium"}</h2>
+          <div className="video-grid">
+            {home.banners.slice(0, 2).map((banner) => (
+              <article key={banner.id} className="video-card">
+                <img src={banner.mediaUrl} alt={banner.titulo} className="media-thumb media-thumb--wide" />
+                <strong>{banner.titulo}</strong>
+                <p>{banner.subtitulo}</p>
+              </article>
+            ))}
           </div>
-        </div>
-        <div className="product-grid">
-          {loading
-            ? Array.from({ length: 4 }).map((_, index) => <div key={index} className="skeleton-card" />)
-            : home.featuredProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  busy={busyId === product.id}
-                  onAddToCart={handleAddToCart}
-                  onBuyNow={handleBuyNow}
-                />
-              ))}
-        </div>
-      </section>
+        </section>
+      )}
 
-      <section className="section-card">
-        <div className="section-heading">
-          <div>
-            <p className="section-label">Ofertas especiales</p>
-            <h2>{home.settings.offersTitle || "Aprovecha precios con descuento"}</h2>
-          </div>
-          <Link to="/catalogo?sort=discount" className="section-link">
-            Ver ofertas
-          </Link>
-        </div>
-        <div className="product-grid">
-          {home.offerProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              busy={busyId === product.id}
-              onAddToCart={handleAddToCart}
-              onBuyNow={handleBuyNow}
-            />
-          ))}
-        </div>
-      </section>
-
-      <section className="section-card">
-        <div className="section-heading">
-          <div>
-            <p className="section-label">Mas vendidos</p>
-            <h2>{home.settings.bestsellersTitle || "Productos con mayor confianza del publico"}</h2>
-          </div>
-        </div>
-        <div className="product-grid">
-          {home.bestsellerProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              busy={busyId === product.id}
-              onAddToCart={handleAddToCart}
-              onBuyNow={handleBuyNow}
-            />
-          ))}
-        </div>
-      </section>
+      {loading && <p className="muted-text">Cargando contenido visual...</p>}
     </div>
   );
 }
