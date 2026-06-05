@@ -60,6 +60,7 @@ export function AppShell() {
   const [sectionsOpen, setSectionsOpen] = useState(false);
   const [routeLog, setRouteLog] = useState([]);
   const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
+  const isLightTheme = theme === "day";
 
   useEffect(() => {
     apiFetch("/products/home")
@@ -201,7 +202,7 @@ export function AppShell() {
       {
         id: "theme",
         label: "Cambiar tema visual",
-        hint: "Aurora / Neo / Luxe",
+        hint: "Claro / Oscuro / Luxe",
         action: () => {
           const currentIndex = themeCycle.indexOf(theme);
           const nextTheme = themeCycle[(currentIndex + 1) % themeCycle.length];
@@ -311,6 +312,9 @@ export function AppShell() {
             </button>
             <button type="button" className="button button--ghost" onClick={() => setNoticeOpen((current) => !current)}>
               Actividad
+            </button>
+            <button type="button" className="button button--ghost" onClick={() => setTheme(isLightTheme ? "neo" : "day")}>
+              {isLightTheme ? "Modo oscuro" : "Modo claro"}
             </button>
             <Link to="/perfil" className="account-chip">
               <span>{user?.nombre}</span>
@@ -444,13 +448,9 @@ export function AppShell() {
         <button
           type="button"
           className="magic-dock__button magic-dock__button--accent"
-          onClick={() => {
-            const currentIndex = themeCycle.indexOf(theme);
-            const nextTheme = themeCycle[(currentIndex + 1) % themeCycle.length];
-            setTheme(nextTheme);
-          }}
+          onClick={() => setTheme(isLightTheme ? "neo" : "day")}
         >
-          Tema
+          {isLightTheme ? "Oscuro" : "Claro"}
         </button>
       </div>
 
