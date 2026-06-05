@@ -4,7 +4,7 @@ import { apiFetch } from "../lib/api.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCart } from "../context/CartContext.jsx";
 
-const themeCycle = ["aurora", "neo", "luxe"];
+const themeCycle = ["day", "neo", "luxe"];
 
 function navLinkClass({ isActive }) {
   return `market-nav__link${isActive ? " is-active" : ""}`;
@@ -57,6 +57,7 @@ export function AppShell() {
   const [commandOpen, setCommandOpen] = useState(false);
   const [commandQuery, setCommandQuery] = useState("");
   const [noticeOpen, setNoticeOpen] = useState(false);
+  const [sectionsOpen, setSectionsOpen] = useState(false);
   const [routeLog, setRouteLog] = useState([]);
   const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
 
@@ -75,9 +76,10 @@ export function AppShell() {
   }, []);
 
   useEffect(() => {
-    const savedTheme = window.localStorage.getItem("gc_theme") || "aurora";
-    if (themeCycle.includes(savedTheme)) {
-      setTheme(savedTheme);
+    const savedTheme = window.localStorage.getItem("gc_theme") || "day";
+    const normalizedTheme = savedTheme === "aurora" ? "day" : savedTheme;
+    if (themeCycle.includes(normalizedTheme)) {
+      setTheme(normalizedTheme);
     }
 
     const savedRoutes = loadJson("gc_route_log", []);
@@ -174,8 +176,6 @@ export function AppShell() {
     navigate(`/catalogo${params.toString() ? `?${params.toString()}` : ""}`);
   };
 
-  const quickCategories = useMemo(() => siteData.categories.slice(0, 4), [siteData.categories]);
-
   const navItems = useMemo(() => {
     const core = [
       { label: "Inicio", path: "/", hint: "Portada" },
@@ -193,6 +193,8 @@ export function AppShell() {
 
     return core;
   }, [isAdmin]);
+
+  const quickCategories = useMemo(() => siteData.categories.slice(0, 8), [siteData.categories]);
 
   const commandItems = useMemo(() => {
     const actionItems = [
@@ -304,6 +306,9 @@ export function AppShell() {
             <button type="button" className="button button--ghost" onClick={() => setCommandOpen(true)}>
               Atajos
             </button>
+            <button type="button" className="button button--ghost" onClick={() => setSectionsOpen((current) => !current)}>
+              Secciones
+            </button>
             <button type="button" className="button button--ghost" onClick={() => setNoticeOpen((current) => !current)}>
               Actividad
             </button>
@@ -334,17 +339,40 @@ export function AppShell() {
           <NavLink to="/chat" className={navLinkClass}>
             Soporte
           </NavLink>
-          {quickCategories.map((category) => (
-            <button
-              key={category.id}
-              type="button"
-              className="market-nav__link market-nav__link--button"
-              onClick={() => navigate(`/catalogo?category=${category.slug}`)}
-            >
-              {category.nombre}
-            </button>
-          ))}
         </nav>
+
+        {sectionsOpen && (
+          <div className="sections-panel">
+            <div className="sections-panel__header">
+              <div>
+                <p className="section-label">Secciones rapidas</p>
+                <h2>Explora solo lo importante</h2>
+              </div>
+              <button type="button" className="button button--ghost" onClick={() => setSectionsOpen(false)}>
+                Cerrar
+              </button>
+            </div>
+            <div className="sections-panel__grid">
+              {navItems.map((item) => (
+                <button key={item.path} type="button" className="market-rail__link" onClick={() => navigate(item.path)}>
+                  <strong>{item.label}</strong>
+                  <small>{item.hint}</small>
+                </button>
+              ))}
+              {quickCategories.map((category) => (
+                <button
+                  key={category.id}
+                  type="button"
+                  className="market-rail__link"
+                  onClick={() => navigate(`/catalogo?category=${category.slug}`)}
+                >
+                  <strong>{category.nombre}</strong>
+                  <small>{category.descripcion || "Categoria destacada"}</small>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {!!noticeOpen && (
           <div className="notice-panel">
@@ -384,6 +412,10 @@ export function AppShell() {
                 <small>{item.hint}</small>
               </button>
             ))}
+            <button type="button" className="market-rail__link" onClick={() => setSectionsOpen((current) => !current)}>
+              <strong>Secciones</strong>
+              <small>Categorias y accesos rapidos</small>
+            </button>
           </div>
         </aside>
 
