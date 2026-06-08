@@ -52,6 +52,24 @@ export function HomePage() {
     []
   );
 
+  const promoItems = useMemo(() => {
+    const banners = (home.banners || []).slice(0, 5).map((banner) => banner.titulo).filter(Boolean);
+    const categories = (home.categories || []).slice(0, 6).map((category) => category.nombre).filter(Boolean);
+    const base = [...banners, ...categories];
+    return base.length
+      ? [...base, ...base]
+      : [
+          "Ofertas destacadas",
+          "Tecnologia premium",
+          "Hogar y jardin",
+          "Compras mas claras",
+          "Soporte directo",
+          "Novedades de la tienda",
+          "Ofertas destacadas",
+          "Tecnologia premium"
+        ];
+  }, [home.banners, home.categories]);
+
   const spotlightSlides = useMemo(() => {
     const bannerSlides =
       (home.banners || []).slice(0, 3).map((banner, index) => ({
@@ -165,6 +183,24 @@ export function HomePage() {
             ))}
           </div>
         </aside>
+      </section>
+
+      <section className="section-card section-card--ticker">
+        <div className="section-heading section-heading--compact">
+          <div>
+            <p className="section-label">Inicio dinamico</p>
+            <h2>Lo importante pasa primero</h2>
+          </div>
+        </div>
+        <div className="promo-ticker" aria-label="Destacados de la tienda">
+          <div className="promo-ticker__track">
+            {promoItems.map((item, index) => (
+              <span key={`${item}-${index}`} className="promo-ticker__item">
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
       </section>
 
       {message && <p className="inline-message">{message}</p>}

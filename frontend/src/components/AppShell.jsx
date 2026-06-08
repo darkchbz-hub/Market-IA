@@ -53,7 +53,7 @@ export function AppShell() {
   const [search, setSearch] = useState("");
   const [headerHidden, setHeaderHidden] = useState(false);
   const [siteData, setSiteData] = useState({ settings: {}, general: {}, categories: [] });
-  const [theme, setTheme] = useState("aurora");
+  const [theme, setTheme] = useState("day");
   const [commandOpen, setCommandOpen] = useState(false);
   const [commandQuery, setCommandQuery] = useState("");
   const [noticeOpen, setNoticeOpen] = useState(false);
@@ -78,7 +78,7 @@ export function AppShell() {
 
   useEffect(() => {
     const savedTheme = window.localStorage.getItem("gc_theme") || "day";
-    const normalizedTheme = savedTheme === "aurora" ? "day" : savedTheme;
+    const normalizedTheme = savedTheme === "aurora" || savedTheme === "neo" ? "day" : savedTheme;
     if (themeCycle.includes(normalizedTheme)) {
       setTheme(normalizedTheme);
     }
@@ -304,14 +304,8 @@ export function AppShell() {
           </form>
 
           <div className="header-actions">
-            <button type="button" className="button button--ghost" onClick={() => setCommandOpen(true)}>
-              Atajos
-            </button>
             <button type="button" className="button button--ghost" onClick={() => setSectionsOpen((current) => !current)}>
-              Secciones
-            </button>
-            <button type="button" className="button button--ghost" onClick={() => setNoticeOpen((current) => !current)}>
-              Actividad
+              {sectionsOpen ? "Cerrar menu" : "Menu"}
             </button>
             <button type="button" className="button button--ghost" onClick={() => setTheme(isLightTheme ? "neo" : "day")}>
               {isLightTheme ? "Modo oscuro" : "Modo claro"}
@@ -331,14 +325,14 @@ export function AppShell() {
         </div>
 
         <nav className="market-nav">
+          <button type="button" className="market-nav__link market-nav__link--button" onClick={() => setSectionsOpen((current) => !current)}>
+            {sectionsOpen ? "Cerrar secciones" : "☰ Secciones"}
+          </button>
           <NavLink to="/" end className={navLinkClass}>
             Inicio
           </NavLink>
           <NavLink to="/catalogo" className={navLinkClass}>
             Catalogo
-          </NavLink>
-          <NavLink to="/centro-control" className={navLinkClass}>
-            Centro de control
           </NavLink>
           <NavLink to="/chat" className={navLinkClass}>
             Soporte
@@ -350,11 +344,19 @@ export function AppShell() {
             <div className="sections-panel__header">
               <div>
                 <p className="section-label">Secciones rapidas</p>
-                <h2>Explora solo lo importante</h2>
+                <h2>Explora sin saturar la portada</h2>
               </div>
-              <button type="button" className="button button--ghost" onClick={() => setSectionsOpen(false)}>
-                Cerrar
-              </button>
+              <div className="header-actions">
+                <button type="button" className="button button--ghost" onClick={() => setCommandOpen(true)}>
+                  Atajos
+                </button>
+                <button type="button" className="button button--ghost" onClick={() => setNoticeOpen((current) => !current)}>
+                  Actividad
+                </button>
+                <button type="button" className="button button--ghost" onClick={() => setSectionsOpen(false)}>
+                  Cerrar
+                </button>
+              </div>
             </div>
             <div className="sections-panel__grid">
               {navItems.map((item) => (
@@ -407,22 +409,6 @@ export function AppShell() {
       </section>
 
       <div className="market-main-shell">
-        <aside className="market-rail">
-          <p className="section-label">Navegacion Pro</p>
-          <div className="list-stack">
-            {navItems.map((item) => (
-              <button key={item.path} type="button" className="market-rail__link" onClick={() => navigate(item.path)}>
-                <strong>{item.label}</strong>
-                <small>{item.hint}</small>
-              </button>
-            ))}
-            <button type="button" className="market-rail__link" onClick={() => setSectionsOpen((current) => !current)}>
-              <strong>Secciones</strong>
-              <small>Categorias y accesos rapidos</small>
-            </button>
-          </div>
-        </aside>
-
         <main className="market-content">
           <Outlet />
         </main>

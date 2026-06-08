@@ -148,7 +148,7 @@ textarea {
 
 .market-header__top {
   display: grid;
-  grid-template-columns: 290px minmax(0, 1fr) auto;
+  grid-template-columns: 260px minmax(0, 1fr) auto;
   gap: 16px;
   align-items: center;
   padding: 12px 0;
@@ -222,6 +222,7 @@ textarea {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  align-items: center;
   padding: 0 0 12px;
 }
 
@@ -247,12 +248,19 @@ textarea {
 
 .sections-panel {
   width: min(1220px, calc(100% - 32px));
-  margin: 0 auto 12px;
+  margin: 0;
   padding: 16px;
   border-radius: 22px;
   border: 1px solid var(--line);
   background: var(--panel);
   box-shadow: var(--shadow);
+  position: fixed;
+  top: 126px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 42;
+  max-height: calc(100vh - 150px);
+  overflow: auto;
 }
 
 .sections-panel__header {
@@ -334,10 +342,7 @@ textarea {
 .market-main-shell {
   width: min(1220px, calc(100% - 32px));
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
-  gap: 16px;
-  align-items: start;
+  display: block;
 }
 
 .breadcrumbs {
@@ -496,6 +501,47 @@ textarea {
 .hero-slider__dots button.is-active {
   width: 30px;
   background: linear-gradient(135deg, var(--primary), var(--accent));
+}
+
+.section-card--ticker {
+  overflow: hidden;
+}
+
+.promo-ticker {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel-strong);
+  padding: 12px 0;
+}
+
+.promo-ticker__track {
+  display: flex;
+  gap: 12px;
+  width: max-content;
+  padding: 0 12px;
+  animation: promoTicker 28s linear infinite;
+}
+
+.promo-ticker__item {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 10px 16px;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  color: var(--text);
+  font-weight: 600;
+}
+
+@keyframes promoTicker {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
 }
 
 .hero-panel,
@@ -1129,10 +1175,6 @@ textarea {
     grid-template-columns: 1fr;
   }
 
-  .market-main-shell {
-    grid-template-columns: 1fr;
-  }
-
   .market-rail {
     position: static;
   }
@@ -1198,10 +1240,18 @@ textarea {
   .market-main-shell,
   .breadcrumbs,
   .notice-panel,
+  .sections-panel,
   .market-header__top,
   .market-nav,
   .market-footer {
     width: min(100%, calc(100% - 18px));
+  }
+
+  .sections-panel {
+    top: 156px;
+    left: 50%;
+    transform: translateX(-50%);
+    max-height: calc(100vh - 190px);
   }
 
   .market-footer {
