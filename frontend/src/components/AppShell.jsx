@@ -4,8 +4,6 @@ import { apiFetch } from "../lib/api.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCart } from "../context/CartContext.jsx";
 
-const themeCycle = ["day", "neo", "luxe"];
-
 function navLinkClass({ isActive }) {
   return `market-nav__link${isActive ? " is-active" : ""}`;
 }
@@ -53,14 +51,16 @@ export function AppShell() {
   const [search, setSearch] = useState("");
   const [headerHidden, setHeaderHidden] = useState(false);
   const [siteData, setSiteData] = useState({ settings: {}, general: {}, categories: [] });
-  const [theme, setTheme] = useState("day");
   const [commandOpen, setCommandOpen] = useState(false);
   const [commandQuery, setCommandQuery] = useState("");
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [sectionsOpen, setSectionsOpen] = useState(false);
   const [routeLog, setRouteLog] = useState([]);
   const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
-  const isLightTheme = theme === "day";
+  const enforceLightTheme = () => {
+    document.documentElement.setAttribute("data-theme", "day");
+    window.localStorage.setItem("gc_theme", "day");
+  };
 
   useEffect(() => {
     apiFetch("/products/home")
@@ -77,11 +77,7 @@ export function AppShell() {
   }, []);
 
   useEffect(() => {
-    const savedTheme = window.localStorage.getItem("gc_theme") || "day";
-    const normalizedTheme = savedTheme === "aurora" || savedTheme === "neo" ? "day" : savedTheme;
-    if (themeCycle.includes(normalizedTheme)) {
-      setTheme(normalizedTheme);
-    }
+    enforceLightTheme();
 
     const savedRoutes = loadJson("gc_route_log", []);
     if (Array.isArray(savedRoutes)) {
@@ -93,11 +89,6 @@ export function AppShell() {
     const searchParam = new URLSearchParams(location.search).get("search") || "";
     setSearch(searchParam);
   }, [location.search]);
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    window.localStorage.setItem("gc_theme", theme);
-  }, [theme]);
 
   useEffect(() => {
     if (isAuthPage) {
@@ -201,13 +192,9 @@ export function AppShell() {
     const actionItems = [
       {
         id: "theme",
-        label: "Cambiar tema visual",
-        hint: "Claro / Oscuro / Luxe",
-        action: () => {
-          const currentIndex = themeCycle.indexOf(theme);
-          const nextTheme = themeCycle[(currentIndex + 1) % themeCycle.length];
-          setTheme(nextTheme);
-        }
+        label: "Mantener modo claro",
+        hint: "Tema luminoso activo",
+        action: enforceLightTheme
       },
       {
         id: "top",
@@ -307,8 +294,8 @@ export function AppShell() {
             <button type="button" className="button button--ghost" onClick={() => setSectionsOpen((current) => !current)}>
               {sectionsOpen ? "Cerrar menu" : "Menu"}
             </button>
-            <button type="button" className="button button--ghost" onClick={() => setTheme(isLightTheme ? "neo" : "day")}>
-              {isLightTheme ? "Modo oscuro" : "Modo claro"}
+            <button type="button" className="button button--ghost" onClick={enforceLightTheme}>
+              Modo claro activo
             </button>
             <Link to="/perfil" className="account-chip">
               <span>{user?.nombre}</span>
@@ -434,9 +421,9 @@ export function AppShell() {
         <button
           type="button"
           className="magic-dock__button magic-dock__button--accent"
-          onClick={() => setTheme(isLightTheme ? "neo" : "day")}
+          onClick={enforceLightTheme}
         >
-          {isLightTheme ? "Oscuro" : "Claro"}
+          Claro
         </button>
       </div>
 

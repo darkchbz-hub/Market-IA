@@ -3,18 +3,18 @@
 :root {
   --font-title: "Sora", "Segoe UI", sans-serif;
   --font-body: "Manrope", "Segoe UI", sans-serif;
-  --bg: #f6f4ef;
-  --bg-soft: #efe8dc;
-  --panel: rgba(255, 255, 255, 0.9);
+  --bg: #fcfdff;
+  --bg-soft: #f4f7fb;
+  --panel: rgba(255, 255, 255, 0.96);
   --panel-strong: #ffffff;
-  --text: #1c2027;
-  --muted: #5e6775;
-  --line: rgba(18, 28, 44, 0.1);
-  --primary: #0f6d6a;
-  --primary-strong: #0a5452;
-  --accent: #dc5e17;
-  --accent-soft: #ffefe2;
-  --shadow: 0 18px 45px rgba(27, 34, 45, 0.11);
+  --text: #17202b;
+  --muted: #5f6b79;
+  --line: rgba(16, 24, 40, 0.09);
+  --primary: #0e6a74;
+  --primary-strong: #0a4d54;
+  --accent: #d96a1f;
+  --accent-soft: #fff0e4;
+  --shadow: 0 16px 40px rgba(27, 34, 45, 0.08);
 }
 
 :root[data-theme="day"] {
@@ -77,8 +77,8 @@ body {
   font-family: var(--font-body);
   color: var(--text);
   background:
-    radial-gradient(circle at 12% 10%, rgba(13, 109, 106, 0.17), transparent 30%),
-    radial-gradient(circle at 85% 2%, rgba(220, 94, 23, 0.17), transparent 25%),
+    radial-gradient(circle at 12% 10%, rgba(14, 106, 116, 0.1), transparent 32%),
+    radial-gradient(circle at 85% 2%, rgba(217, 106, 31, 0.1), transparent 28%),
     linear-gradient(180deg, var(--bg) 0%, var(--bg-soft) 100%);
 }
 
