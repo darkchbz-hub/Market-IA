@@ -1,2 +1,7 @@
-name = "market-ia-8wq"
+name = "market-ia"
 pages_build_output_dir = "./html-upload"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "market-ia-db"
+database_id = "46c55f3a-31ba-432b-bf9e-88aec2845295"
