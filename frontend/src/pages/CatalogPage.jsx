@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+ï»¿import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { apiFetch } from "../lib/api.js";
 
@@ -33,14 +33,14 @@ export function CatalogPage() {
       <section className="section-card section-card--spotlight">
         <div className="section-heading">
           <div>
-            <p className="section-label">Catalogo renovado</p>
-            <h1>0 productos activos en esta etapa</h1>
+            <p className="section-label">Proximamente</p>
+            <h1>Muy pronto tendremos nuevos productos</h1>
           </div>
         </div>
 
         <p className="muted-text">
-          El inventario fue retirado por completo para preparar una nueva temporada visual y comercial.
-          La estructura esta lista para recibir productos con una presentacion mucho mas profesional.
+          Estamos preparando una nueva seleccion visual y comercial. Cuando una categoria aun no tenga productos,
+          aparecera como proximamente.
         </p>
 
         <div className="pill-row">
@@ -60,11 +60,11 @@ export function CatalogPage() {
         </div>
 
         <div className="empty-state empty-state--premium">
-          <strong>Catálogo en reconstruccion</strong>
+          <strong>Proximamente</strong>
           <span>
             {activeCategory
-              ? `La categoria ${activeCategory} tambien quedo limpia para relanzamiento.`
-              : "Todas las categorias estan limpias y listas para una nueva coleccion."}
+              ? `La categoria ${activeCategory} todavia no tiene productos disponibles.`
+              : "Aun no hay productos publicados. Vuelve pronto para ver la nueva coleccion."}
           </span>
         </div>
 

@@ -46,7 +46,7 @@ export function HomePage() {
   const heroStats = useMemo(
     () => [
       { label: "Ventas", value: "Reiniciadas" },
-      { label: "Catalogo", value: "En renovacion" },
+      { label: "Catalogo", value: "Proximamente" },
       { label: "Experiencia", value: "Premium" }
     ],
     []
