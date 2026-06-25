@@ -927,6 +927,41 @@ textarea {
   background: var(--panel-strong);
 }
 
+.partner-strip {
+  overflow: hidden;
+}
+
+.partner-logo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+}
+
+.partner-logo-card {
+  min-height: 120px;
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px;
+  background: var(--panel-strong);
+  text-align: center;
+}
+
+.partner-logo-card img {
+  max-width: 132px;
+  max-height: 58px;
+  width: 100%;
+  object-fit: contain;
+}
+
+.partner-logo-card strong,
+.partner-logo-card span {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
 .media-thumb {
   width: 100px;
   height: 100px;

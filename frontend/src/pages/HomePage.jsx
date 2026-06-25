@@ -248,29 +248,25 @@ export function HomePage() {
         </section>
       )}
 
-      <section className="section-card">
-        <div className="section-heading">
-          <div>
-            <p className="section-label">Explora por tipo de compra</p>
-            <h2>Secciones al final para una portada mas limpia</h2>
+      {!!home.partnerLogos?.length && (
+        <section className="section-card partner-strip">
+          <div className="section-heading">
+            <div>
+              <p className="section-label">Confianza comercial</p>
+              <h2>{home.general?.partnerTitle || "Empresas asociadas"}</h2>
+            </div>
           </div>
-        </div>
 
-        <div className="category-grid category-grid--showcase">
-          {home.categories.map((category) => (
-            <button
-              key={category.id}
-              type="button"
-              className="category-tile"
-              style={{ "--accent": category.color }}
-              onClick={() => navigate(`/catalogo?category=${category.slug}`)}
-            >
-              <strong>{category.nombre}</strong>
-              <span>{category.descripcion || "Seccion renovada y lista para relanzamiento."}</span>
-            </button>
-          ))}
-        </div>
-      </section>
+          <div className="partner-logo-grid">
+            {home.partnerLogos.map((partner) => (
+              <article key={partner.id || partner.name} className="partner-logo-card">
+                {partner.logoUrl ? <img src={partner.logoUrl} alt={partner.name || "Empresa asociada"} /> : <span>{partner.name}</span>}
+                {partner.name && <strong>{partner.name}</strong>}
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       {loading && <p className="muted-text">Cargando contenido visual...</p>}
     </div>
