@@ -16,10 +16,24 @@ const currentFile = fileURLToPath(import.meta.url);
 const currentDir = path.dirname(currentFile);
 const htmlUploadDir = path.resolve(currentDir, "../../html-upload");
 
+function isAllowedCorsOrigin(origin) {
+  if (!origin || origin === "null" || allowedOrigins.has(origin)) {
+    return true;
+  }
+
+  try {
+    const { hostname, port } = new URL(origin);
+    const localHosts = new Set(["localhost", "127.0.0.1", "::1"]);
+    return localHosts.has(hostname) && ["4000", "4173", "5173"].includes(port);
+  } catch {
+    return false;
+  }
+}
+
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || origin === "null" || allowedOrigins.has(origin)) {
+      if (isAllowedCorsOrigin(origin)) {
         callback(null, true);
         return;
       }

@@ -96,7 +96,13 @@ export async function apiFetch(path, options = {}) {
       throw new Error("Servidor saturado temporalmente (Cloudflare 1102). Intenta de nuevo en 30-60 segundos.");
     }
     if (typeof payload === "string" && /<!doctype html/i.test(payload)) {
-      throw new Error("El servidor devolvio una pagina de error inesperada. Intenta recargar.");
+      throw new Error("La API no esta conectada correctamente. Revisa que el backend o Cloudflare Functions esten activos.");
+    }
+    if (response.status === 404 && (!payload || typeof payload === "string")) {
+      throw new Error("No se encontro la ruta de API. Si estas en local, inicia el backend en el puerto 4000.");
+    }
+    if (response.status >= 500 && (!payload || typeof payload === "string")) {
+      throw new Error("La API no pudo responder. Si estas en local, inicia el backend en el puerto 4000 y revisa DATABASE_URL.");
     }
     const message = payload?.message || payload || "Ocurrio un error en la solicitud.";
     throw new Error(message);

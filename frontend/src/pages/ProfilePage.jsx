@@ -28,6 +28,15 @@ function statusClass(status) {
   return "status-pill status-pill--pending";
 }
 
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 export function ProfilePage() {
   const navigate = useNavigate();
   const { token, refreshUser, isAdmin } = useAuth();
@@ -243,9 +252,34 @@ export function ProfilePage() {
           </div>
 
           <label>
-            Foto de perfil (URL o data URL)
+            Foto de perfil
+            <input
+              type="file"
+              accept="image/*"
+              onChange={async (event) => {
+                const [file] = Array.from(event.target.files || []);
+                if (!file) {
+                  return;
+                }
+                const avatarUrl = await fileToDataUrl(file);
+                setForm((current) => ({ ...current, avatarUrl }));
+              }}
+            />
+          </label>
+
+          <label>
+            O pega URL/base64 de foto
             <input value={form.avatarUrl} onChange={(event) => setForm((current) => ({ ...current, avatarUrl: event.target.value }))} />
           </label>
+
+          {form.avatarUrl && (
+            <div className="profile-avatar-preview">
+              <img src={form.avatarUrl} alt="Vista previa de perfil" />
+              <button type="button" className="button button--ghost" onClick={() => setForm((current) => ({ ...current, avatarUrl: "" }))}>
+                Quitar foto
+              </button>
+            </div>
+          )}
 
           <div className="form-grid form-grid--wide">
             <label>

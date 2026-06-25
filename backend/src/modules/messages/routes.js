@@ -2,7 +2,7 @@ import { Router } from "express";
 import { authenticate } from "../../middlewares/authenticate.js";
 import { requireRole } from "../../middlewares/require-role.js";
 import { asyncHandler } from "../../shared/async-handler.js";
-import { createMessage, listConversation, listThreads } from "./service.js";
+import { createAssistantMessage, createMessage, listConversation, listThreads } from "./service.js";
 
 export const messagesRouter = Router();
 
@@ -37,6 +37,24 @@ messagesRouter.post(
       userId: req.auth.role === "admin" ? req.body?.userId : req.auth.sub,
       senderRole: req.auth.role === "admin" ? "admin" : "customer",
       mensaje: req.body?.mensaje || req.body?.message
+    });
+
+    res.status(201).json({ message });
+  })
+);
+
+messagesRouter.post(
+  "/assistant",
+  asyncHandler(async (req, res) => {
+    if (req.auth.role === "admin") {
+      res.status(403).json({ message: "Los asistentes responden a clientes. Usa el panel para contestar como soporte." });
+      return;
+    }
+
+    const message = await createAssistantMessage({
+      userId: req.auth.sub,
+      botId: req.body?.botId || "taz",
+      userText: req.body?.mensaje || req.body?.message
     });
 
     res.status(201).json({ message });

@@ -8,11 +8,7 @@ VALUES (
   'graycadmin',
   '{"calle":"Av. Reforma 100","ciudad":"Ciudad de Mexico","estado":"CDMX","cp":"06600","pais":"Mexico"}'::jsonb
 )
-ON CONFLICT (email) DO UPDATE
-SET role = 'admin',
-    nombre = EXCLUDED.nombre,
-    telefono = EXCLUDED.telefono,
-    nickname = EXCLUDED.nickname;
+ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO categories (nombre, slug, descripcion, icono, color, featured, sort_order)
 VALUES

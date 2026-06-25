@@ -29,5 +29,9 @@ export const env = {
   paypalClientSecret: process.env.PAYPAL_CLIENT_SECRET || "",
   paypalEnv: process.env.PAYPAL_ENV || "sandbox",
   mercadopagoAccessToken: process.env.MERCADOPAGO_ACCESS_TOKEN || "",
-  adminEmail: process.env.ADMIN_EMAIL || "admin@marketzone.mx"
+  adminEmail: process.env.ADMIN_EMAIL || "admin@marketzone.mx",
+  adminPassword: process.env.ADMIN_PASSWORD || "Admin123!",
+  adminRecoveryKey: process.env.ADMIN_RECOVERY_KEY || "",
+  openaiApiKey: process.env.OPENAI_API_KEY || "",
+  openaiModel: process.env.OPENAI_MODEL || "gpt-4.1-mini"
 };

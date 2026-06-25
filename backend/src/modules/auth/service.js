@@ -55,7 +55,7 @@ export async function registerUser({ nombre, email, password, telefono = "", nic
       `
         INSERT INTO users (role, nombre, email, password_hash, telefono, nickname, direccion)
         VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
-        RETURNING id, role, nombre, email, telefono, nickname, avatar_url, direccion, created_at, updated_at
+        RETURNING id, role, nombre, email, telefono, nickname, avatar_url, is_active, direccion, created_at, updated_at
       `,
       [role, nombre.trim(), normalizedEmail, passwordHash, telefono.trim(), String(nickname || "").trim(), JSON.stringify(direccion || {})]
     );
@@ -86,6 +86,10 @@ export async function loginUser({ email, password }) {
     throw new HttpError(401, "Credenciales invalidas.");
   }
 
+  if (user.is_active === false) {
+    throw new HttpError(403, "Tu cuenta esta desactivada. Contacta a soporte para revisar el acceso.");
+  }
+
   const validPassword = await comparePassword(password, user.password_hash);
 
   if (!validPassword) {
@@ -95,6 +99,62 @@ export async function loginUser({ email, password }) {
   return {
     user: mapUserRow(user),
     token: createAccessToken(buildTokenPayload(user))
+  };
+}
+
+export async function recoverAdminAccount({ recoveryKey, email, password, nombre }) {
+  if (!env.adminRecoveryKey) {
+    throw new HttpError(503, "Configura ADMIN_RECOVERY_KEY antes de recuperar el administrador.");
+  }
+
+  if (String(recoveryKey || "").trim() !== env.adminRecoveryKey) {
+    throw new HttpError(403, "La clave de recuperacion no es valida.");
+  }
+
+  const normalizedEmail = String(email || env.adminEmail).trim().toLowerCase();
+  const nextPassword = String(password || env.adminPassword || "");
+  const nextName = String(nombre || "Administrador Gray C Shop").trim();
+
+  if (!normalizedEmail.includes("@") || nextPassword.length < 8) {
+    throw new HttpError(400, "Envia email valido y contrasena de al menos 8 caracteres.");
+  }
+
+  const passwordHash = await hashPassword(nextPassword);
+  const existingUser = await getUserByEmail(normalizedEmail);
+
+  if (existingUser) {
+    const { rows } = await query(
+      `
+        UPDATE users
+        SET role = 'admin',
+            nombre = $1,
+            password_hash = $2,
+            is_active = TRUE,
+            updated_at = NOW()
+        WHERE email = $3
+        RETURNING id, role, nombre, email, telefono, nickname, avatar_url, is_active, direccion, created_at, updated_at
+      `,
+      [nextName, passwordHash, normalizedEmail]
+    );
+
+    return {
+      user: mapUserRow(rows[0]),
+      token: createAccessToken(buildTokenPayload(rows[0]))
+    };
+  }
+
+  const { rows } = await query(
+    `
+      INSERT INTO users (role, nombre, email, password_hash, telefono, nickname, direccion)
+      VALUES ('admin', $1, $2, $3, '', '', '{}'::jsonb)
+      RETURNING id, role, nombre, email, telefono, nickname, avatar_url, is_active, direccion, created_at, updated_at
+    `,
+    [nextName, normalizedEmail, passwordHash]
+  );
+
+  return {
+    user: mapUserRow(rows[0]),
+    token: createAccessToken(buildTokenPayload(rows[0]))
   };
 }
 

@@ -35,6 +35,7 @@ import {
   getUserByEmail,
   getUserById,
   getUserDashboard,
+  generateCatalogProducts,
   isNicknameAvailable,
   listAdminUsers,
   listAdminProducts,
@@ -48,6 +49,7 @@ import {
   markOrderStatus,
   recordProductView,
   recordSearch,
+  restoreAdminUser,
   savePaymentRecord,
   saveRegistrationCode,
   serializeUser,
@@ -235,6 +237,10 @@ function getJwtSecret(env) {
   return String(env.JWT_SECRET || "marketzone-cloudflare-secret");
 }
 
+function getAdminRecoveryKey(env) {
+  return String(env.ADMIN_RECOVERY_KEY || "").trim();
+}
+
 function requireAdmin(user) {
   if (!user || user.role !== "admin") {
     throw httpError(403, "Solo el administrador puede hacer esto.");
@@ -246,15 +252,139 @@ function formatCurrency(value) {
   return Number.isFinite(amount) ? `$${amount.toFixed(2)}` : "$0.00";
 }
 
-function buildAssistantReply({ botId, user, dashboard, cart, userText }) {
+function extractOpenAiText(payload) {
+  if (typeof payload?.output_text === "string" && payload.output_text.trim()) {
+    return payload.output_text.trim();
+  }
+
+  const parts = [];
+  for (const item of payload?.output || []) {
+    for (const content of item?.content || []) {
+      if (typeof content?.text === "string") {
+        parts.push(content.text);
+      }
+    }
+  }
+
+  return parts.join("\n").trim();
+}
+
+function botInstructions(botId) {
+  const shared =
+    "Eres un asistente de una tienda online. Responde en espanol, rapido, claro y amable. Usa solo el contexto enviado: catalogo, categorias, portada, perfil, carrito, compras y pagos del usuario. No inventes stock, precios, pedidos ni politicas. Si falta un dato, dilo y ofrece el siguiente paso. No reveles datos privados de otros usuarios ni secretos del sistema.";
+
+  if (botId === "grayce") {
+    return `${shared} Tu nombre es Grayce. Tu especialidad es recomendar productos, ofertas, categorias y opciones segun presupuesto, carrito e intereses del cliente.`;
+  }
+
+  if (botId === "barban") {
+    return `${shared} Tu nombre es BarbaN. Tu especialidad es soporte: pedidos, envios, entregas, cancelaciones, devoluciones y cuando escalar a un asesor humano.`;
+  }
+
+  return `${shared} Tu nombre es Taz. Tu especialidad es dar informes de cuenta del propio usuario: carrito, compras, pagos, totales, estado de pedidos y resumen de actividad.`;
+}
+
+async function buildOpenAiAssistantReply({ env, botId, user, dashboard, cart, userText, siteContext }) {
+  if (!env.OPENAI_API_KEY) {
+    return null;
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 6500);
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: env.OPENAI_MODEL || "gpt-4.1-mini",
+        store: false,
+        max_output_tokens: 260,
+        instructions: botInstructions(botId),
+        input: JSON.stringify({
+          preguntaCliente: userText,
+          bot: botId,
+          usuario: {
+            nombre: user.nombre,
+            email: user.email,
+            nickname: user.nickname || ""
+          },
+          sitio: siteContext,
+          carrito: cart?.items || [],
+          pedidos: dashboard?.historial?.ordenes || []
+        })
+      })
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = await response.json();
+    const text = extractOpenAiText(payload);
+    if (!text) {
+      return null;
+    }
+
+    const botName = botId === "grayce" ? "Grayce" : botId === "barban" ? "BarbaN" : "Taz";
+    return text.startsWith(`${botName}:`) ? text : `${botName}: ${text}`;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function buildAssistantReply({ env, db, botId, user, dashboard, cart, userText }) {
   const text = String(userText || "").toLowerCase();
   const orders = Array.isArray(dashboard?.historial?.ordenes) ? dashboard.historial.ordenes : [];
   const pendingOrders = orders.filter((order) => ["pending_payment", "paid"].includes(String(order.estado || "")));
   const latestOrder = orders[0];
   const cartItems = Array.isArray(cart?.items) ? cart.items : [];
   const cartItemsCount = cartItems.reduce((sum, item) => sum + Number(item.cantidad || 0), 0);
+  const viewedProducts = Array.isArray(dashboard?.historial?.productosVistos) ? dashboard.historial.productosVistos : [];
+  const recommendationNames = [
+    ...cartItems.map((item) => item.nombre),
+    ...viewedProducts.map((item) => item.producto?.nombre)
+  ].filter(Boolean).slice(0, 3);
+  const recommendationText = recommendationNames.length ? recommendationNames.join(", ") : "los productos destacados de la tienda";
+  const [siteContent, catalog] = await Promise.all([
+    getSiteContent(db),
+    listProducts(db, { limit: 16 })
+  ]);
+  const siteContext = {
+    general: sanitizePublicGeneral(siteContent.general),
+    homepage: siteContent.home || {},
+    categorias: buildCategoryItems(),
+    productos: catalog.items || []
+  };
+
+  const aiReply = await buildOpenAiAssistantReply({
+    env,
+    botId,
+    user,
+    dashboard,
+    cart,
+    userText,
+    siteContext
+  });
+
+  if (aiReply) {
+    return aiReply;
+  }
 
   let core = "";
+  const categoryText = siteContext.categorias.map((item) => item.nombre).filter(Boolean).slice(0, 5).join(", ") || "categorias principales";
+  const productText = siteContext.productos.map((item) => item.nombre).filter(Boolean).slice(0, 3).join(", ") || recommendationText;
+
+  if (/pagina|tienda|catalogo|categorias|secciones|que sabes|sabes de/.test(text)) {
+    const botName = botId === "grayce" ? "Grayce" : botId === "barban" ? "BarbaN" : "Taz";
+    return `${botName}: Conozco el catalogo disponible, categorias como ${categoryText}, productos destacados como ${productText}, tu carrito, tus compras y tus pagos registrados. Preguntame por recomendaciones, pedidos, carrito o pagos y te contesto con lo que exista en tu cuenta.`;
+  }
 
   if (/carrito|cart|agregad/.test(text)) {
     core = `Tienes ${cartItemsCount} articulo(s) en carrito con total aproximado de ${formatCurrency(cart?.total)}.`;
@@ -281,12 +411,15 @@ function buildAssistantReply({ botId, user, dashboard, cart, userText }) {
   }
 
   if (botId === "grayce") {
-    return `Grayce: Hola ${user.nombre}. ${core}`;
+    return `Grayce: Hola ${user.nombre}. ${core} Por tus intereses, revisaria ${recommendationText}. Si me dices presupuesto o categoria, te recomiendo algo mas exacto.`;
   }
-  if (botId === "black-beard") {
-    return `Black Beard: Entendido. ${core}`;
+  if (botId === "barban") {
+    if (/asesor|humano|agente|persona/.test(text)) {
+      return "BarbaN: Te dejo en espera para soporte humano. Si el administrador no esta conectado, tu mensaje queda guardado para seguimiento.";
+    }
+    return `BarbaN: Entendido. ${core} Si necesitas revisar un pedido especifico, enviame el folio o escribe que quieres hablar con asesor.`;
   }
-  return `Taz: ${core}`;
+  return `Taz: Informe rapido: ${orders.length} compra(s), ${pendingOrders.length} pedido(s) activo(s), ${cartItemsCount} articulo(s) en carrito y total aproximado ${formatCurrency(cart?.total)}. ${core}`;
 }
 
 async function authenticate(request, env, db, required = true) {
@@ -676,6 +809,35 @@ export async function onRequest(context) {
       return json(await buildAuthPayload(user, env));
     }
 
+    if (first === "auth" && second === "admin" && third === "recover" && request.method === "POST") {
+      const body = await readJson(request);
+      const recoveryKey = String(body.recoveryKey || "").trim();
+      const expectedKey = getAdminRecoveryKey(env);
+      const email = String(body.email || env.ADMIN_EMAIL || "admin@marketzone.mx").trim().toLowerCase();
+      const password = String(body.password || env.ADMIN_PASSWORD || "");
+      const nombre = String(body.nombre || "Administrador Gray C Shop").trim();
+
+      if (!expectedKey) {
+        throw httpError(503, "Configura ADMIN_RECOVERY_KEY antes de recuperar el administrador.");
+      }
+      if (recoveryKey !== expectedKey) {
+        throw httpError(403, "La clave de recuperacion no es valida.");
+      }
+      if (!validateEmail(email) || password.length < 8) {
+        throw httpError(400, "Envia email valido y contrasena de al menos 8 caracteres.");
+      }
+
+      const passwordHash = await hashPassword(password);
+      const admin = await restoreAdminUser(db, {
+        email,
+        nombre,
+        passwordHash,
+        resetPassword: true
+      });
+
+      return json(await buildAuthPayload(admin, env));
+    }
+
     if (first === "auth" && second === "me" && request.method === "GET") {
       const user = await authenticate(request, env, db);
       return json({ user: serializeUser(user) });
@@ -751,7 +913,7 @@ export async function onRequest(context) {
       }
 
       const [dashboard, cart] = await Promise.all([getUserDashboard(db, user.id), getCartState(db, user.id)]);
-      const reply = buildAssistantReply({ botId, user: serializeUser(user), dashboard, cart, userText });
+      const reply = await buildAssistantReply({ env, db, botId, user: serializeUser(user), dashboard, cart, userText });
 
       const message = await createChatMessage(db, {
         userId: Number(user.id),
@@ -1042,7 +1204,9 @@ export async function onRequest(context) {
       return json({
         items: search
           ? users.filter((item) =>
-              [item.nombre, item.email, item.telefono].some((field) => String(field || "").toLowerCase().includes(search))
+              [item.nombre, item.email, item.telefono, item.nickname, JSON.stringify(item.direccion || {})].some((field) =>
+                String(field || "").toLowerCase().includes(search)
+              )
             )
           : users
       });
@@ -1059,8 +1223,8 @@ export async function onRequest(context) {
 
       return json({
         user: detail.user,
-        cart: detail.cart?.items || [],
-        orders: detail.historial?.ordenes || []
+        cart: Array.isArray(detail.cart) ? detail.cart : detail.cart?.items || [],
+        orders: detail.orders || detail.historial?.ordenes || []
       });
     }
 
@@ -1490,4 +1654,3 @@ export async function onRequest(context) {
     return error(requestError.message || "No se pudo completar la solicitud.", requestError.status || 500);
   }
 }
-  generateCatalogProducts,

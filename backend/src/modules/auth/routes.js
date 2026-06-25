@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { authenticate } from "../../middlewares/authenticate.js";
 import { asyncHandler } from "../../shared/async-handler.js";
-import { getCurrentUserProfile, loginUser, registerUser, requestPasswordReset, resetPassword } from "./service.js";
+import { getCurrentUserProfile, loginUser, recoverAdminAccount, registerUser, requestPasswordReset, resetPassword } from "./service.js";
 
 export const authRouter = Router();
 
@@ -17,6 +17,14 @@ authRouter.post(
   "/login",
   asyncHandler(async (req, res) => {
     const result = await loginUser(req.body || {});
+    res.json(result);
+  })
+);
+
+authRouter.post(
+  "/admin/recover",
+  asyncHandler(async (req, res) => {
+    const result = await recoverAdminAccount(req.body || {});
     res.json(result);
   })
 );

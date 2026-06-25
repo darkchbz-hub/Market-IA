@@ -34,6 +34,7 @@ export function mapUserRow(row) {
     telefono: row.telefono || "",
     nickname: row.nickname || "",
     avatarUrl: row.avatar_url || "",
+    isActive: row.is_active !== false,
     direccion: parseJson(row.direccion, {}),
     fechaRegistro: row.created_at,
     actualizadoEn: row.updated_at
@@ -44,7 +45,7 @@ export async function getUserById(userId, db) {
   const executor = getExecutor(db);
   const { rows } = await executor.query(
     `
-      SELECT id, role, nombre, email, telefono, nickname, avatar_url, direccion, created_at, updated_at
+      SELECT id, role, nombre, email, telefono, nickname, avatar_url, is_active, direccion, created_at, updated_at
       FROM users
       WHERE id = $1
     `,
@@ -58,7 +59,7 @@ export async function getUserByEmail(email, db) {
   const executor = getExecutor(db);
   const { rows } = await executor.query(
     `
-      SELECT id, role, nombre, email, telefono, nickname, avatar_url, password_hash, direccion, created_at, updated_at
+      SELECT id, role, nombre, email, telefono, nickname, avatar_url, is_active, password_hash, direccion, created_at, updated_at
       FROM users
       WHERE email = $1
     `,
@@ -113,7 +114,7 @@ export async function updateCurrentUser(userId, payload) {
         UPDATE users
         SET ${updates.join(", ")}, updated_at = NOW()
         WHERE id = $${values.length}
-        RETURNING id, role, nombre, email, telefono, nickname, avatar_url, direccion, created_at, updated_at
+        RETURNING id, role, nombre, email, telefono, nickname, avatar_url, is_active, direccion, created_at, updated_at
       `,
       values
     );
@@ -174,7 +175,7 @@ export async function getUserDashboard(userId) {
   const [userResult, ordersResult, orderItemsResult, searchesResult, viewsResult, favoritesResult] = await Promise.all([
     query(
       `
-        SELECT id, role, nombre, email, telefono, nickname, avatar_url, direccion, created_at, updated_at
+        SELECT id, role, nombre, email, telefono, nickname, avatar_url, is_active, direccion, created_at, updated_at
         FROM users
         WHERE id = $1
       `,

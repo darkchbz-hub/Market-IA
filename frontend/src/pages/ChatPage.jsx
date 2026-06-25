@@ -2,31 +2,64 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { apiFetch } from "../lib/api.js";
 
-const quickSupportTopics = ["Metodos de pago", "Estado de pedido", "Tiempo de entrega", "Problemas con cuenta", "Reembolso o cancelacion", "Hablar con asesor"];
+const quickSupportTopics = [
+  { label: "Recomiendame productos", botId: "grayce", message: "Recomiendame productos que me puedan interesar" },
+  { label: "Estado de pedido", botId: "barban", message: "Quiero revisar el estado de mi pedido" },
+  { label: "Mi carrito", botId: "taz", message: "Dame un informe de mi carrito actual" },
+  { label: "Mis pagos", botId: "taz", message: "Dame un informe de mis pagos y compras" },
+  { label: "Tiempo de entrega", botId: "barban", message: "Necesito saber el tiempo de entrega de mi pedido" },
+  { label: "Hablar con asesor", botId: "barban", message: "Quiero hablar con un asesor humano" }
+];
 
 const supportBots = [
   {
-    id: "taz",
-    name: "Taz",
-    subtitle: "Rapido y directo",
-    toneClass: "is-blue"
-  },
-  {
     id: "grayce",
     name: "Grayce",
-    subtitle: "Calida y detallada",
+    subtitle: "Recomienda productos y ofertas",
     toneClass: "is-silver"
   },
   {
-    id: "black-beard",
-    name: "Black Beard",
-    subtitle: "Serio y preciso",
-    toneClass: "is-dark"
+    id: "barban",
+    name: "BarbaN",
+    subtitle: "Pedidos, entregas y soporte",
+    toneClass: "is-gold"
+  },
+  {
+    id: "taz",
+    name: "Taz",
+    subtitle: "Carrito, compras y pagos",
+    toneClass: "is-blue"
   }
 ];
 
 function getSelectedBot(botId) {
   return supportBots.find((bot) => bot.id === botId) || supportBots[0];
+}
+
+function getBotDisplayName(message, fallbackBot) {
+  const match = String(message?.mensaje || "").match(/^(Grayce|BarbaN|Taz):/i);
+  if (!match) {
+    return fallbackBot.name;
+  }
+  return match[1] === "Barban" ? "BarbaN" : match[1];
+}
+
+function chooseBotForText(text, fallbackBotId = "grayce") {
+  const value = String(text || "").toLowerCase();
+
+  if (/recom|producto|interesar|categoria|presupuesto|oferta|catalogo/.test(value)) {
+    return "grayce";
+  }
+
+  if (/pedido|orden|envio|entrega|llega|tracking|cancel|devolu|reembolso|asesor|humano|soporte|agente/.test(value)) {
+    return "barban";
+  }
+
+  if (/carrito|pago|pagos|compra|compras|tarjeta|paypal|mercado|informe|cuenta/.test(value)) {
+    return "taz";
+  }
+
+  return fallbackBotId;
 }
 
 export function ChatPage() {
@@ -36,7 +69,7 @@ export function ChatPage() {
   const [selectedUserId, setSelectedUserId] = useState("");
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState("");
-  const [selectedBotId, setSelectedBotId] = useState("taz");
+  const [selectedBotId, setSelectedBotId] = useState("grayce");
   const [botEnabled, setBotEnabled] = useState(true);
   const [status, setStatus] = useState("Soporte activo");
   const [sending, setSending] = useState(false);
@@ -111,60 +144,79 @@ export function ChatPage() {
     };
   }, [token, isAdmin, selectedUserId]);
 
+  const sendCustomerBotMessage = async (messageText, forcedBotId = "") => {
+    const userText = String(messageText || "").trim();
+
+    if (!userText || sending) {
+      return;
+    }
+
+    setSending(true);
+    const bot = getSelectedBot(forcedBotId || chooseBotForText(userText, selectedBot.id));
+    setSelectedBotId(bot.id);
+
+    const userMessage = {
+      id: `local-user-${Date.now()}`,
+      fecha: new Date().toISOString(),
+      rolRemitente: "customer",
+      mensaje: userText,
+      usuarioId: user?.id
+    };
+
+    setMessages((current) => [...current, userMessage]);
+    setDraft("");
+    setStatus(`${bot.name} esta respondiendo automaticamente...`);
+
+    try {
+      const [persistedUserMessage, assistantPayload] = await Promise.all([
+        apiFetch("/messages", {
+          method: "POST",
+          token,
+          body: {
+            mensaje: userText
+          }
+        }),
+        apiFetch("/messages/assistant", {
+          method: "POST",
+          token,
+          body: {
+            botId: bot.id,
+            mensaje: userText
+          }
+        })
+      ]);
+
+      setMessages((current) => [
+        ...current.filter((message) => message.id !== userMessage.id),
+        persistedUserMessage.message,
+        assistantPayload.message
+      ]);
+
+      if (/asesor|humano|agente|persona/i.test(userText)) {
+        setBotEnabled(false);
+        setStatus("Conectado con soporte humano");
+      } else {
+        setStatus(`${bot.name} respondio automaticamente`);
+      }
+    } catch (error) {
+      setStatus(error.message || "No se pudo guardar el mensaje.");
+    } finally {
+      setSending(false);
+    }
+  };
+
   const handleSend = async (event) => {
     event.preventDefault();
     if (!draft.trim()) {
       return;
     }
 
-    setSending(true);
-
     if (!isAdmin && botEnabled) {
-      const userMessage = {
-        id: `local-user-${Date.now()}`,
-        fecha: new Date().toISOString(),
-        rolRemitente: "customer",
-        mensaje: draft.trim(),
-        usuarioId: user?.id
-      };
-
-      const userText = draft.trim();
-      setMessages((current) => [...current, userMessage]);
-      setDraft("");
-      setStatus(`${selectedBot.name} esta respondiendo...`);
-
-      try {
-        const persistedUserMessage = await apiFetch("/messages", {
-          method: "POST",
-          token,
-          body: {
-            mensaje: userText
-          }
-        });
-        setMessages((current) => [...current.filter((message) => message.id !== userMessage.id), persistedUserMessage.message]);
-
-        const assistantPayload = await apiFetch("/messages/assistant", {
-          method: "POST",
-          token,
-          body: {
-            botId: selectedBot.id,
-            mensaje: userText
-          }
-        });
-        setMessages((current) => [...current, assistantPayload.message]);
-        if (/asesor|humano|agente|persona/i.test(userText)) {
-          setBotEnabled(false);
-          setStatus("Conectado con soporte humano");
-        } else {
-          setStatus(`${selectedBot.name} activo`);
-        }
-      } catch (error) {
-        setStatus(error.message || "No se pudo guardar el mensaje.");
-      } finally {
-        setSending(false);
-      }
+      await sendCustomerBotMessage(draft, chooseBotForText(draft, selectedBot.id));
       return;
     }
+
+    setSending(true);
 
     try {
       const payload = await apiFetch("/messages", {
@@ -228,8 +280,20 @@ export function ChatPage() {
 
       <div className="pill-row">
         {quickSupportTopics.map((topic) => (
-          <button key={topic} type="button" className="pill pill--small" onClick={() => setDraft(topic)}>
-            {topic}
+          <button
+            key={topic.label}
+            type="button"
+            className="pill pill--small"
+            disabled={sending}
+            onClick={() => {
+              if (!isAdmin && botEnabled) {
+                sendCustomerBotMessage(topic.message, topic.botId);
+                return;
+              }
+              setDraft(topic.message);
+            }}
+          >
+            {topic.label}
           </button>
         ))}
       </div>
@@ -247,7 +311,7 @@ export function ChatPage() {
                 message.rolRemitente === "admin" ? "message--admin" : message.rolRemitente === "bot" ? "message--bot" : "message--customer"
               }`}
             >
-              <strong>{message.rolRemitente === "admin" ? "Soporte" : message.rolRemitente === "bot" ? selectedBot.name : "Cliente"}</strong>
+              <strong>{message.rolRemitente === "admin" ? "Soporte" : message.rolRemitente === "bot" ? getBotDisplayName(message, selectedBot) : "Cliente"}</strong>
               <p>{message.mensaje}</p>
             </article>
           ))

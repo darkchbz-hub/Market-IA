@@ -98,7 +98,7 @@ export async function listAdminUsers(search = "") {
 
   if (search?.trim()) {
     values.push(`%${search.trim()}%`);
-    whereClause += ` AND (u.nombre ILIKE $1 OR u.email ILIKE $1 OR u.telefono ILIKE $1)`;
+    whereClause += ` AND (u.nombre ILIKE $1 OR u.email ILIKE $1 OR u.telefono ILIKE $1 OR u.nickname ILIKE $1 OR u.direccion::text ILIKE $1)`;
   }
 
   const { rows } = await query(
@@ -110,6 +110,7 @@ export async function listAdminUsers(search = "") {
         u.telefono,
         u.nickname,
         u.avatar_url,
+        u.is_active,
         u.direccion,
         u.created_at,
         COUNT(DISTINCT o.id)::int AS total_orders,
@@ -130,6 +131,7 @@ export async function listAdminUsers(search = "") {
     telefono: row.telefono || "",
     nickname: row.nickname || "",
     avatarUrl: row.avatar_url || "",
+    isActive: row.is_active !== false,
     direccion: parseJson(row.direccion, {}),
     fechaRegistro: row.created_at,
     totalOrdenes: Number(row.total_orders || 0),
@@ -141,7 +143,7 @@ export async function getAdminUserDetail(userId) {
   const [userResult, cartResult, ordersResult, orderItemsResult] = await Promise.all([
     query(
       `
-        SELECT id, nombre, email, telefono, nickname, avatar_url, direccion, created_at
+        SELECT id, nombre, email, telefono, nickname, avatar_url, is_active, direccion, created_at
         FROM users
         WHERE id = $1 AND role != 'admin'
       `,
@@ -208,6 +210,7 @@ export async function getAdminUserDetail(userId) {
       telefono: user.telefono || "",
       nickname: user.nickname || "",
       avatarUrl: user.avatar_url || "",
+      isActive: user.is_active !== false,
       direccion: parseJson(user.direccion, {}),
       fechaRegistro: user.created_at
     },
@@ -236,6 +239,48 @@ export async function getAdminUserDetail(userId) {
       fecha: row.created_at,
       items: itemsByOrder.get(row.id) || []
     }))
+  };
+}
+
+export async function setUserActiveStatus(adminId, userId, isActive) {
+  const userResult = await query(`SELECT id, role, nombre, email, is_active FROM users WHERE id = $1`, [userId]);
+  const user = userResult.rows[0];
+
+  if (!user) {
+    throw new HttpError(404, "Usuario no encontrado.");
+  }
+
+  if (user.role === "admin") {
+    throw new HttpError(403, "No puedes desactivar cuentas administrador desde aqui.");
+  }
+
+  const { rows } = await query(
+    `
+      UPDATE users
+      SET is_active = $1,
+          updated_at = NOW()
+      WHERE id = $2
+      RETURNING id, nombre, email, telefono, nickname, avatar_url, is_active, direccion, created_at
+    `,
+    [Boolean(isActive), userId]
+  );
+
+  await logAdminAction(adminId, Boolean(isActive) ? "activate_user" : "deactivate_user", "user", userId, {
+    nombre: user.nombre,
+    email: user.email
+  });
+
+  const updated = rows[0];
+  return {
+    id: updated.id,
+    nombre: updated.nombre,
+    email: updated.email,
+    telefono: updated.telefono || "",
+    nickname: updated.nickname || "",
+    avatarUrl: updated.avatar_url || "",
+    isActive: updated.is_active !== false,
+    direccion: parseJson(updated.direccion, {}),
+    fechaRegistro: updated.created_at
   };
 }
 

@@ -22,6 +22,7 @@ import {
   saveAdminMusic,
   saveAdminSetting,
   saveAdminVideo,
+  setUserActiveStatus,
   updateAdminCategory,
   updateAdminOrder
 } from "./service.js";
@@ -52,6 +53,14 @@ adminRouter.get(
   asyncHandler(async (req, res) => {
     const detail = await getAdminUserDetail(req.params.userId);
     res.json(detail);
+  })
+);
+
+adminRouter.patch(
+  "/users/:userId/status",
+  asyncHandler(async (req, res) => {
+    const user = await setUserActiveStatus(req.auth.sub, req.params.userId, Boolean(req.body?.isActive));
+    res.json({ user });
   })
 );
 

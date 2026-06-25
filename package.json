@@ -1,0 +1,11 @@
+{
+  "name": "marketzone-root-static",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-static-site.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

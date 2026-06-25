@@ -117,7 +117,11 @@ PAYPAL_ENV=sandbox
 MERCADOPAGO_ACCESS_TOKEN=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4.1-mini
 ```
+
+`OPENAI_API_KEY` activa respuestas generativas para los bots Grayce, BarbaN y Taz usando contexto de catalogo, categorias, portada, carrito, pedidos y pagos del propio usuario. Si no configuras la llave, los bots siguen funcionando con respuestas internas de respaldo.
 
 ### 3. Variables de entorno frontend
 

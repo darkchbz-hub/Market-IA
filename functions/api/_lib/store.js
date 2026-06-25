@@ -1041,35 +1041,15 @@ async function seedDatabase(db, env) {
 
   const adminEmail = getAdminEmail(env);
   const existingAdmin = await db.prepare("SELECT id FROM users WHERE email = ?").bind(adminEmail).first();
-  const passwordHash = await hashPassword(getAdminPassword(env));
 
   if (!existingAdmin) {
-    await db
-      .prepare(
-        `
-        INSERT INTO users (role, nombre, email, password_hash, direccion)
-        VALUES (?, ?, ?, ?, ?)
-      `
-      )
-      .bind(
-        "admin",
-        "Administrador Gray C Shop",
-        adminEmail,
-        passwordHash,
-        JSON.stringify({
-          calle: "Av. Reforma 100",
-          ciudad: "Ciudad de Mexico",
-          estado: "CDMX",
-          cp: "06600",
-          pais: "MX"
-        })
-      )
-      .run();
-  } else {
-    await db
-      .prepare("UPDATE users SET nombre = ?, role = 'admin', password_hash = ? WHERE email = ?")
-      .bind("Administrador Gray C Shop", passwordHash, adminEmail)
-      .run();
+    const passwordHash = await hashPassword(getAdminPassword(env));
+    await restoreAdminUser(db, {
+      email: adminEmail,
+      nombre: "Administrador Gray C Shop",
+      passwordHash,
+      resetPassword: true
+    });
   }
 
   for (const [key, value] of Object.entries(defaultSiteContent)) {
@@ -1137,6 +1117,48 @@ export async function getUserByEmail(db, email) {
 
 export async function getUserById(db, userId) {
   return db.prepare("SELECT * FROM users WHERE id = ?").bind(userId).first();
+}
+
+export async function restoreAdminUser(db, { email, nombre = "Administrador Gray C Shop", passwordHash, resetPassword = true }) {
+  const adminEmail = String(email || "").trim().toLowerCase();
+  const adminName = String(nombre || "Administrador Gray C Shop").trim();
+  const existing = await getUserByEmail(db, adminEmail);
+  const address = JSON.stringify({
+    calle: "Av. Reforma 100",
+    ciudad: "Ciudad de Mexico",
+    estado: "CDMX",
+    cp: "06600",
+    pais: "MX"
+  });
+
+  if (!adminEmail || !passwordHash) {
+    throw new Error("Email y contrasena de administrador son obligatorios.");
+  }
+
+  if (existing) {
+    const passwordAssignment = resetPassword ? ", password_hash = ?" : "";
+    const statement = `
+      UPDATE users
+      SET role = 'admin', nombre = ?, is_active = 1${passwordAssignment}
+      WHERE email = ?
+    `;
+    const binding = resetPassword ? [adminName, passwordHash, adminEmail] : [adminName, adminEmail];
+
+    await db.prepare(statement).bind(...binding).run();
+    return getUserByEmail(db, adminEmail);
+  }
+
+  const result = await db
+    .prepare(
+      `
+      INSERT INTO users (role, nombre, email, password_hash, telefono, nickname, avatar_url, geo_meta, direccion, is_active)
+      VALUES ('admin', ?, ?, ?, '', '', '', '{}', ?, 1)
+    `
+    )
+    .bind(adminName, adminEmail, passwordHash, address)
+    .run();
+
+  return getUserById(db, result.meta.last_row_id);
 }
 
 export async function saveRegistrationCode(db, email, payload, code, expiresAtIso) {
@@ -1922,7 +1944,7 @@ export async function decrementStockForOrder(db, orderId) {
 export async function getUserDashboard(db, userId) {
   const user = await getUserById(db, userId);
   const orders = await db
-    .prepare("SELECT id, total, estado, tracking, created_at FROM orders WHERE user_id = ? ORDER BY created_at DESC LIMIT 10")
+    .prepare("SELECT id, total, estado, proveedor_pago, direccion, tracking, created_at FROM orders WHERE user_id = ? ORDER BY created_at DESC LIMIT 10")
     .bind(userId)
     .all();
   const orderRows = orders.results || [];
@@ -1978,6 +2000,10 @@ export async function getUserDashboard(db, userId) {
         id: item.id,
         total: Number(item.total),
         estado: item.estado,
+        paymentStatus: item.estado,
+        proveedorPago: item.proveedor_pago,
+        direccion: parseJson(item.direccion, {}),
+        direccionEnvio: parseJson(item.direccion, {}),
         tracking: parseJson(item.tracking, []),
         fecha: item.created_at,
         items: itemsByOrder.get(item.id) || []
@@ -2147,7 +2173,9 @@ export async function getAdminUserDetail(db, userId) {
   return {
     user: serializeUser(user),
     historial: dashboard.historial,
-    cart
+    cart: cart.items || [],
+    cartSummary: cart,
+    orders: dashboard.historial?.ordenes || []
   };
 }
 
@@ -2155,6 +2183,11 @@ export async function setUserActiveStatus(db, userId, isActive) {
   const targetId = Number(userId || 0);
   if (!targetId) {
     throw new Error("Usuario invalido.");
+  }
+
+  const target = await getUserById(db, targetId);
+  if (!target || target.role === "admin") {
+    return null;
   }
 
   await db

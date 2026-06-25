@@ -9,9 +9,11 @@
       content="Gray C Shop, marketplace premium con productos, suscripciones IA, electronica, hogar, panel administrador y experiencia moderna."
     />
     <script>
-      document.documentElement.setAttribute("data-theme", "day");
       try {
-        window.localStorage.setItem("gc_theme", "day");
+        const savedTheme = window.localStorage.getItem("gc_theme");
+        const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const theme = savedTheme === "dark" || savedTheme === "neo" ? "dark" : savedTheme === "day" ? "day" : prefersDark ? "dark" : "day";
+        document.documentElement.setAttribute("data-theme", theme);
       } catch {}
     </script>
     <script type="module" src="/src/main.jsx"></script>

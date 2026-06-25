@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
   telefono TEXT NOT NULL DEFAULT '',
   nickname TEXT NOT NULL DEFAULT '',
   avatar_url TEXT NOT NULL DEFAULT '',
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
   direccion JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -17,6 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
 ALTER TABLE users ADD COLUMN IF NOT EXISTS telefono TEXT NOT NULL DEFAULT '';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS nickname TEXT NOT NULL DEFAULT '';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT NOT NULL DEFAULT '';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_nickname_unique
   ON users (LOWER(nickname))
@@ -166,11 +168,14 @@ CREATE TABLE IF NOT EXISTS payments (
 CREATE TABLE IF NOT EXISTS messages (
   id BIGSERIAL PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  sender_role TEXT NOT NULL CHECK (sender_role IN ('customer', 'admin', 'system')),
+  sender_role TEXT NOT NULL CHECK (sender_role IN ('customer', 'admin', 'system', 'bot')),
   mensaje TEXT NOT NULL,
   leido BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_sender_role_check;
+ALTER TABLE messages ADD CONSTRAINT messages_sender_role_check CHECK (sender_role IN ('customer', 'admin', 'system', 'bot'));
 
 CREATE TABLE IF NOT EXISTS search_history (
   id BIGSERIAL PRIMARY KEY,

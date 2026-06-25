@@ -64,6 +64,41 @@ function fileToDataUrl(file) {
   });
 }
 
+function formatMoney(value) {
+  const amount = Number(value || 0);
+  return Number.isFinite(amount) ? `$${amount.toFixed(2)}` : "$0.00";
+}
+
+function formatAddress(address) {
+  if (!address || typeof address !== "object") {
+    return "Sin direccion";
+  }
+
+  return Object.entries(address)
+    .filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== "")
+    .map(([key, value]) => `${key}: ${value}`)
+    .join(" | ") || "Sin direccion";
+}
+
+function normalizeAdminUserDetail(detail) {
+  const cartItems = Array.isArray(detail?.cart)
+    ? detail.cart
+    : Array.isArray(detail?.cart?.items)
+      ? detail.cart.items
+      : [];
+  const orders = Array.isArray(detail?.orders)
+    ? detail.orders
+    : Array.isArray(detail?.historial?.ordenes)
+      ? detail.historial.ordenes
+      : [];
+
+  return {
+    ...detail,
+    cart: cartItems,
+    orders
+  };
+}
+
 function removeWhiteBackgroundFromImage(dataUrl, threshold = 242) {
   return new Promise((resolve) => {
     const image = new Image();
@@ -379,7 +414,7 @@ export function AdminPage() {
 
   const openUser = async (userId) => {
     const detail = await apiFetch(`/admin/users/${userId}`, { token });
-    setSelectedUser(detail);
+    setSelectedUser(normalizeAdminUserDetail(detail));
     setTab("users");
   };
 
@@ -527,6 +562,9 @@ export function AdminPage() {
     await loadAdmin();
   };
 
+  const selectedUserCart = selectedUser?.cart || [];
+  const selectedUserOrders = selectedUser?.orders || [];
+
   return (
     <div className="page-stack">
       <section className="section-card">
@@ -613,7 +651,7 @@ export function AdminPage() {
 
       {tab === "products" && (
         <div className="admin-grid">
-          <form className="section-card" onSubmit={saveProduct}>
+          <form className="section-card admin-product-form" onSubmit={saveProduct}>
             <div className="section-heading section-heading--compact">
               <div>
                 <p className="section-label">{productForm.id ? "Editar producto" : "Nuevo producto"}</p>
@@ -705,6 +743,7 @@ export function AdminPage() {
             </div>
             <label>
               Subir imagenes
+              <small className="field-help">Puedes subir varias fotos. La primera sera la imagen principal del producto.</small>
               <input
                 type="file"
                 multiple
@@ -715,7 +754,7 @@ export function AdminPage() {
                 }}
               />
             </label>
-            <div className="pill-row">
+            <div className="admin-product-preview-grid">
               {productForm.imagenes.map((image, index) => (
                 <img key={index} className="media-thumb" src={image} alt={`preview-${index}`} />
               ))}
@@ -863,12 +902,14 @@ export function AdminPage() {
                 <article key={user.id} className="mini-item">
                   <button type="button" className="user-list-button" onClick={() => openUser(user.id)}>
                     <strong>{user.nombre}</strong>
-                    <span>{user.telefono || user.email}</span>
+                    <span>{user.nickname ? `@${user.nickname}` : user.email}</span>
+                    <span>{user.telefono || "Sin telefono"} | {formatAddress(user.direccion)}</span>
+                    <small>{user.totalOrdenes || 0} pedido(s) | {formatMoney(user.gastoTotal)}</small>
                     <small>{user.isActive ? "Activa" : "Desactivada"}</small>
                   </button>
                   <button
                     type="button"
-                    className="button button--ghost"
+                    className={`button ${user.isActive ? "button--danger" : "button--primary"}`}
                     onClick={() => toggleUserActive(user.id, !Boolean(user.isActive))}
                   >
                     {user.isActive ? "Desactivar" : "Activar"}
@@ -888,13 +929,17 @@ export function AdminPage() {
 
             {selectedUser ? (
               <div className="list-stack">
-                <article className="mini-item"><strong>Correo</strong><span>{selectedUser.user.email}</span></article>
-                <article className="mini-item"><strong>Estado</strong><span>{selectedUser.user.isActive ? "Activa" : "Desactivada"}</span></article>
-                <article className="mini-item"><strong>Telefono</strong><span>{selectedUser.user.telefono || "Sin telefono"}</span></article>
-                <article className="mini-item"><strong>Direccion</strong><span>{Object.values(selectedUser.user.direccion || {}).filter(Boolean).join(", ") || "Sin direccion"}</span></article>
+                <div className="user-detail-grid">
+                  {selectedUser.user.avatarUrl && <img className="profile-avatar-preview__small" src={selectedUser.user.avatarUrl} alt={selectedUser.user.nombre} />}
+                  <article className="mini-item"><strong>Nick</strong><span>{selectedUser.user.nickname ? `@${selectedUser.user.nickname}` : "Sin nick"}</span></article>
+                  <article className="mini-item"><strong>Correo</strong><span>{selectedUser.user.email}</span></article>
+                  <article className="mini-item"><strong>Estado</strong><span>{selectedUser.user.isActive ? "Activa" : "Desactivada"}</span></article>
+                  <article className="mini-item"><strong>Telefono</strong><span>{selectedUser.user.telefono || "Sin telefono"}</span></article>
+                  <article className="mini-item mini-item--wide"><strong>Direccion de cliente</strong><span>{formatAddress(selectedUser.user.direccion)}</span></article>
+                </div>
                 <button
                   type="button"
-                  className="button button--ghost"
+                  className={`button ${selectedUser.user.isActive ? "button--danger" : "button--primary"}`}
                   onClick={() => toggleUserActive(selectedUser.user.id, !Boolean(selectedUser.user.isActive))}
                 >
                   {selectedUser.user.isActive ? "Desactivar cuenta de este usuario" : "Activar cuenta de este usuario"}
@@ -903,10 +948,10 @@ export function AdminPage() {
                 <article className="detail-card">
                   <h3>Carrito actual</h3>
                   <div className="list-stack">
-                    {selectedUser.cart.length ? selectedUser.cart.map((item) => (
+                    {selectedUserCart.length ? selectedUserCart.map((item) => (
                       <article key={`${item.productoId}-${item.nombre}`} className="mini-item">
                         <strong>{item.nombre}</strong>
-                        <span>{item.cantidad} · ${item.precio.toFixed(2)}</span>
+                        <span>{item.cantidad} pieza(s) | {formatMoney(item.precio)} c/u | subtotal {formatMoney(item.subtotal || Number(item.precio || 0) * Number(item.cantidad || 0))}</span>
                       </article>
                     )) : <p className="muted-text">No tiene productos en carrito.</p>}
                   </div>
@@ -915,14 +960,22 @@ export function AdminPage() {
                 <article className="detail-card">
                   <h3>Pedidos</h3>
                   <div className="list-stack">
-                    {selectedUser.orders.length ? selectedUser.orders.map((order) => (
+                    {selectedUserOrders.length ? selectedUserOrders.map((order) => (
                       <article key={order.id} className="order-card">
                         <div className="order-card__head">
                           <strong>{order.id}</strong>
                           <span className={statusClass(order.estado)}>{statusLabel(order.estado)}</span>
                         </div>
                         <small>{new Date(order.fecha).toLocaleString()}</small>
-                        <p>Total: ${order.total.toFixed(2)}</p>
+                        <p>Total: {formatMoney(order.total)} | Pago: {statusLabel(order.paymentStatus || order.estado)}</p>
+                        <p>Direccion de envio: {formatAddress(order.direccionEnvio || order.direccion)}</p>
+                        <div className="order-item-list">
+                          {(order.items || []).length ? order.items.map((item) => (
+                            <span key={`${order.id}-${item.id || item.productoId}-${item.nombre}`}>
+                              {item.cantidad} x {item.nombre} | {formatMoney(item.precio)}
+                            </span>
+                          )) : <span>Sin items detallados para este pedido.</span>}
+                        </div>
                         <div className="action-row">
                           {["pending_payment", "paid", "cancelled"].map((status) => (
                             <button key={status} type="button" className="button button--ghost" onClick={() => updateOrderStatus(order.id, status)}>
