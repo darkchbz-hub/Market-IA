@@ -359,7 +359,8 @@ export function AppShell() {
           aria-pressed={isDarkTheme}
           title={isDarkTheme ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
         >
-          Accesibilidad: {isDarkTheme ? "Claro" : "Oscuro"}
+          <span className="theme-label theme-label--full">Accesibilidad: {isDarkTheme ? "Claro" : "Oscuro"}</span>
+          <span className="theme-label theme-label--short">{isDarkTheme ? "Claro" : "Oscuro"}</span>
         </button>
         <main className="market-content">
           <Outlet />
@@ -600,7 +601,8 @@ export function AppShell() {
           aria-pressed={isDarkTheme}
           title={isDarkTheme ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
         >
-          Accesibilidad: {isDarkTheme ? "Claro" : "Oscuro"}
+          <span className="theme-label theme-label--full">Accesibilidad: {isDarkTheme ? "Claro" : "Oscuro"}</span>
+          <span className="theme-label theme-label--short">{isDarkTheme ? "Claro" : "Oscuro"}</span>
         </button>
       </div>
 
