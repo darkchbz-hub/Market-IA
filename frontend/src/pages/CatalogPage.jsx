@@ -5,6 +5,20 @@ import { ProductCarousel } from "../components/ProductCarousel.jsx";
 import { useCart } from "../context/CartContext.jsx";
 import { apiFetch } from "../lib/api.js";
 
+const upcomingSections = [
+  { title: "Mas vendidos", text: "Productos con mejor movimiento apareceran aqui." },
+  { title: "Nuevos productos", text: "Novedades listas para publicarse proximamente." },
+  { title: "Suscripciones IA", text: "Accesos digitales y herramientas inteligentes." },
+  { title: "Ofertas destacadas", text: "Promociones seleccionadas para comprar mejor." },
+  { title: "Proximamente", text: "Categorias nuevas en preparacion." }
+];
+
+function productCountLabel(total) {
+  const count = Number(total || 0);
+  if (count === 1) return "1 producto disponible";
+  return `${count} productos disponibles`;
+}
+
 export function CatalogPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -77,6 +91,10 @@ export function CatalogPage() {
     setSearchParams(params);
   };
 
+  const showAvailableProducts = () => {
+    setSearchParams(new URLSearchParams());
+  };
+
   const addProductToCart = async (product) => {
     setBusyProductId(product.id);
     try {
@@ -101,11 +119,11 @@ export function CatalogPage() {
     }
   };
 
-  const emptyTitle = activeSearch ? "Sin coincidencias por ahora" : "Proximamente";
+  const emptyTitle = activeSearch ? "Sin coincidencias por ahora" : "Muy pronto tendremos productos en esta categoria";
   const emptyText = activeSearch
     ? `No encontramos productos para "${activeSearch}". Prueba con menos letras, marca, categoria o tags.`
     : activeCategory
-      ? `La categoria ${activeCategory} todavia no tiene productos disponibles.`
+      ? "Mientras tanto, puedes explorar nuestras ofertas disponibles."
       : "Aun no hay productos publicados. Vuelve pronto para ver la nueva coleccion.";
 
   return (
@@ -114,7 +132,7 @@ export function CatalogPage() {
         <div className="section-heading">
           <div>
             <p className="section-label">{activeSearch ? "Busqueda inteligente" : "Catalogo renovado"}</p>
-            <h1>{pagination.total ? `${pagination.total} producto(s) disponible(s)` : "Muy pronto tendremos nuevos productos"}</h1>
+            <h1>{pagination.total ? productCountLabel(pagination.total) : "Muy pronto tendremos nuevos productos"}</h1>
           </div>
         </div>
 
@@ -160,11 +178,41 @@ export function CatalogPage() {
           <div className="empty-state empty-state--premium">
             <strong>{emptyTitle}</strong>
             <span>{emptyText}</span>
+            {(activeCategory || activeSearch) && (
+              <button type="button" className="button button--primary" onClick={showAvailableProducts}>
+                Ver productos disponibles
+              </button>
+            )}
           </div>
         )}
 
         {message && <p className="inline-message">{message}</p>}
       </section>
+
+      {!loading && products.length <= 1 && (
+        <section className="section-card catalog-coming-soon">
+          <div className="section-heading section-heading--compact">
+            <div>
+              <p className="section-label">Mas para explorar</p>
+              <h2>La tienda sigue creciendo</h2>
+            </div>
+          </div>
+          <div className="trust-badge-grid">
+            <span>Entrega rapida</span>
+            <span>Soporte por WhatsApp</span>
+            <span>Pago seguro</span>
+            <span>Garantia segun producto</span>
+          </div>
+          <div className="coming-soon-grid">
+            {upcomingSections.map((section) => (
+              <article key={section.title} className="coming-soon-card">
+                <strong>{section.title}</strong>
+                <p>{section.text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

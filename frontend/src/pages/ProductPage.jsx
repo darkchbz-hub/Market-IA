@@ -192,7 +192,7 @@ export function ProductPage() {
           <h1>{product.nombre}</h1>
           {product.mostrarSelloOficial && product.vendedorOficial && (
             <div className="official-seller-badge" aria-label={`Vendedor oficial ${product.vendedorOficial}`}>
-              <span className="official-seller-badge__check">V</span>
+              <img className="official-seller-badge__icon" src="/assets/verified-badge.png" alt="" />
               <span>Vendedor oficial: {product.vendedorOficial}</span>
             </div>
           )}
@@ -222,6 +222,12 @@ export function ProductPage() {
             <span>{product.stock} disponibles</span>
             <span>{product.infoEnvio || "Envio nacional con seguimiento"}</span>
             <span>{product.fechaEstimada || "Entrega estimada variable"}</span>
+          </div>
+          <div className="trust-badge-grid trust-badge-grid--compact">
+            <span>Entrega rapida</span>
+            <span>Soporte por WhatsApp</span>
+            <span>Pago seguro</span>
+            <span>Garantia segun producto</span>
           </div>
 
           <label className="quantity-picker">

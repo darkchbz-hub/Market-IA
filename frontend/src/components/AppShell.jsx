@@ -290,6 +290,10 @@ export function AppShell() {
   }, [isAdmin]);
 
   const quickCategories = useMemo(() => siteData.categories.slice(0, 8), [siteData.categories]);
+  const whatsappLink = siteData.general?.paymentLinks?.whatsapp || siteData.general?.whatsapp || "";
+  const supportHref = whatsappLink || "/chat";
+  const supportIsExternal = /^https?:\/\//i.test(supportHref);
+  const supportEmail = siteData.general?.supportEmail || "soporte@graycshop.trade";
 
   const commandItems = useMemo(() => {
     const actionItems = [
@@ -430,7 +434,7 @@ export function AppShell() {
                     <img src={product.imagenes?.[0] || "/assets/gray-c-shop-logo.png?v=20260514-2"} alt="" />
                     <span>
                       <strong>{product.nombre}</strong>
-                      <small>{product.marca || product.categoria} · ${Number(product.precio || 0).toFixed(2)}</small>
+                      <small>{product.marca || product.categoria} | ${Number(product.precio || 0).toFixed(2)}</small>
                     </span>
                   </button>
                 ))}
@@ -594,6 +598,14 @@ export function AppShell() {
       </nav>
 
       <div className="magic-dock" aria-label="Accesibilidad visual">
+        <a
+          className="magic-dock__button magic-dock__button--support"
+          href={supportHref}
+          target={supportIsExternal ? "_blank" : undefined}
+          rel={supportIsExternal ? "noreferrer" : undefined}
+        >
+          Soporte
+        </a>
         <button
           type="button"
           className="magic-dock__button magic-dock__button--accent magic-dock__button--theme"
@@ -648,15 +660,21 @@ export function AppShell() {
       )}
 
       <footer className="market-footer">
-        <div>
+        <div className="market-footer__brand">
           <strong>{siteData.general.siteName || "Gray C Shop"}</strong>
-          <p>Nueva experiencia visual, navegacion avanzada y herramientas de productividad integradas.</p>
+          <p>Productos digitales, tecnologia, hogar y suscripciones IA.</p>
         </div>
         <div className="market-footer__links">
-          <Link to="/perfil"><AppIcon name="profile" />Mi cuenta</Link>
-          <Link to="/chat"><AppIcon name="support" />Centro de soporte</Link>
-          <Link to="/centro-control"><AppIcon name="control" />Centro de control</Link>
-          <Link to="/sobre-nosotros"><AppIcon name="about" />Sobre nosotros</Link>
+          <Link to="/"><AppIcon name="home" />Inicio</Link>
+          <Link to="/catalogo"><AppIcon name="catalog" />Catalogo</Link>
+          <Link to="/chat"><AppIcon name="support" />Soporte</Link>
+          <Link to="/terminos"><AppIcon name="about" />Terminos y condiciones</Link>
+          <Link to="/terminos"><AppIcon name="about" />Politica de privacidad</Link>
+          <Link to="/terminos"><AppIcon name="about" />Reembolsos</Link>
+          <a href={supportHref} target={supportIsExternal ? "_blank" : undefined} rel={supportIsExternal ? "noreferrer" : undefined}>
+            <AppIcon name="support" />WhatsApp
+          </a>
+          <a href={`mailto:${supportEmail}`}><AppIcon name="support" />Correo de soporte</a>
         </div>
       </footer>
     </div>

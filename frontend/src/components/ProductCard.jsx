@@ -21,7 +21,7 @@ export function ProductCard({ product, onAddToCart, onBuyNow, busy }) {
         </div>
         {product.mostrarSelloOficial && product.vendedorOficial && (
           <div className="official-seller-badge" aria-label={`Vendedor oficial ${product.vendedorOficial}`}>
-            <span className="official-seller-badge__check">V</span>
+            <img className="official-seller-badge__icon" src="/assets/verified-badge.png" alt="" />
             <span>{product.vendedorOficial}</span>
           </div>
         )}
