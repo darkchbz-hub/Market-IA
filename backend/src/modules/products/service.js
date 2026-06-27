@@ -127,6 +127,8 @@ export function mapProductRow(row) {
     variantes: parseJson(row.variantes, []),
     atributos: parseJson(row.atributos, []),
     metodosPago: parseJson(row.metodos_pago, []),
+    vendedorOficial: row.vendedor_oficial || "",
+    mostrarSelloOficial: Boolean(row.mostrar_sello_oficial),
     garantia: row.garantia || "",
     devolucion: row.devolucion || "",
     infoEnvio: row.info_envio || "",
@@ -433,12 +435,12 @@ export async function createProduct(payload) {
         INSERT INTO products (
           slug, nombre, descripcion, descripcion_corta, marca, precio_cents, precio_anterior_cents,
           descuento_porcentaje, moneda, imagenes, stock, categoria, tags, variantes, atributos,
-          metodos_pago, garantia, devolucion, info_envio, fecha_estimada, disponibilidad,
-          destacado, oferta, mas_vendido, recomendado, is_active
+          metodos_pago, vendedor_oficial, mostrar_sello_oficial, garantia, devolucion, info_envio,
+          fecha_estimada, disponibilidad, destacado, oferta, mas_vendido, recomendado, is_active
         )
         VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11, $12, $13::text[],
-          $14::jsonb, $15::jsonb, $16::jsonb, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26
+          $14::jsonb, $15::jsonb, $16::jsonb, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28
         )
         RETURNING *
       `,
@@ -459,6 +461,8 @@ export async function createProduct(payload) {
         JSON.stringify(normalizeJsonList(payload.variantes)),
         JSON.stringify(normalizeJsonList(payload.atributos)),
         JSON.stringify(normalizeMethods(payload.metodosPago)),
+        String(payload.vendedorOficial || "").trim(),
+        normalizeBoolean(payload.mostrarSelloOficial),
         String(payload.garantia || "").trim(),
         String(payload.devolucion || "").trim(),
         String(payload.infoEnvio || "").trim(),
@@ -507,6 +511,8 @@ export async function updateProduct(productId, payload) {
   if (payload.variantes !== undefined) pushUpdate("variantes", JSON.stringify(normalizeJsonList(payload.variantes)), "::jsonb");
   if (payload.atributos !== undefined) pushUpdate("atributos", JSON.stringify(normalizeJsonList(payload.atributos)), "::jsonb");
   if (payload.metodosPago !== undefined) pushUpdate("metodos_pago", JSON.stringify(normalizeMethods(payload.metodosPago)), "::jsonb");
+  if (payload.vendedorOficial !== undefined) pushUpdate("vendedor_oficial", String(payload.vendedorOficial || "").trim());
+  if (payload.mostrarSelloOficial !== undefined) pushUpdate("mostrar_sello_oficial", normalizeBoolean(payload.mostrarSelloOficial));
   if (payload.garantia !== undefined) pushUpdate("garantia", String(payload.garantia || "").trim());
   if (payload.devolucion !== undefined) pushUpdate("devolucion", String(payload.devolucion || "").trim());
   if (payload.infoEnvio !== undefined) pushUpdate("info_envio", String(payload.infoEnvio || "").trim());

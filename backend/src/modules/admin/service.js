@@ -41,6 +41,8 @@ function mapProductLite(row) {
     activo: Boolean(row.is_active),
     oferta: Boolean(row.oferta),
     recomendado: Boolean(row.recomendado),
+    vendedorOficial: row.vendedor_oficial || "",
+    mostrarSelloOficial: Boolean(row.mostrar_sello_oficial),
     imagenes: parseJson(row.imagenes, [])
   };
 }

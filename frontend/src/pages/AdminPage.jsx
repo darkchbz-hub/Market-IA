@@ -22,6 +22,8 @@ const initialProduct = {
   infoEnvio: "",
   fechaEstimada: "",
   disponibilidad: "Disponible",
+  vendedorOficial: "",
+  mostrarSelloOficial: false,
   envioGratis: false,
   mostrarEnvioGratis: false
 };
@@ -225,6 +227,8 @@ export function AdminPage() {
       infoEnvio: product.infoEnvio || "",
       fechaEstimada: product.fechaEstimada || "",
       disponibilidad: product.disponibilidad || "Disponible",
+      vendedorOficial: product.vendedorOficial || "",
+      mostrarSelloOficial: Boolean(product.mostrarSelloOficial),
       envioGratis: Boolean(product.envioGratis),
       mostrarEnvioGratis: Boolean(product.mostrarEnvioGratis)
     });
@@ -706,6 +710,10 @@ export function AdminPage() {
                 Disponibilidad
                 <input value={productForm.disponibilidad} onChange={(event) => setProductForm((current) => ({ ...current, disponibilidad: event.target.value }))} />
               </label>
+              <label>
+                Vendedor oficial
+                <input value={productForm.vendedorOficial} onChange={(event) => setProductForm((current) => ({ ...current, vendedorOficial: event.target.value }))} placeholder="Gray C Shop" />
+              </label>
             </div>
             <label>
               Descripcion corta
@@ -771,6 +779,14 @@ export function AdminPage() {
                   onChange={(event) => setProductForm((current) => ({ ...current, mostrarEnvioGratis: event.target.checked }))}
                 />
                 Mostrar envio gratis
+              </label>
+              <label className="checkbox-chip">
+                <input
+                  type="checkbox"
+                  checked={productForm.mostrarSelloOficial}
+                  onChange={(event) => setProductForm((current) => ({ ...current, mostrarSelloOficial: event.target.checked }))}
+                />
+                Mostrar sello oficial con palomita verde
               </label>
             </div>
             <button type="submit" className="button button--primary">

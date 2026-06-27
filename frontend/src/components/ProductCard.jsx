@@ -18,6 +18,12 @@ export function ProductCard({ product, onAddToCart, onBuyNow, busy }) {
           <span>{product.categoria}</span>
           {product.marca && <span>{product.marca}</span>}
         </div>
+        {product.mostrarSelloOficial && product.vendedorOficial && (
+          <div className="official-seller-badge" aria-label={`Vendedor oficial ${product.vendedorOficial}`}>
+            <span className="official-seller-badge__check">✓</span>
+            <span>{product.vendedorOficial}</span>
+          </div>
+        )}
         <Link to={`/producto/${product.slug || product.id}`} className="product-card__title">
           {product.nombre}
         </Link>

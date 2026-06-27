@@ -623,6 +623,8 @@ const schemaStatements = [
       categoria TEXT NOT NULL,
       tags TEXT NOT NULL DEFAULT '[]',
       imagenes TEXT NOT NULL DEFAULT '[]',
+      vendedor_oficial TEXT NOT NULL DEFAULT '',
+      mostrar_sello_oficial INTEGER NOT NULL DEFAULT 0,
       envio_gratis INTEGER NOT NULL DEFAULT 0,
       mostrar_envio_gratis INTEGER NOT NULL DEFAULT 0,
       precio_descuento REAL NOT NULL DEFAULT 0,
@@ -917,6 +919,8 @@ export function serializeProduct(row) {
     tags: parseJson(row.tags, []),
     imagenes: parseJson(row.imagenes, []),
     caracteristicas: parseJson(row.caracteristicas, []),
+    vendedorOficial: row.vendedor_oficial || "",
+    mostrarSelloOficial: Boolean(Number(row.mostrar_sello_oficial || 0)),
     envioGratis: Boolean(Number(row.envio_gratis || 0)),
     mostrarEnvioGratis: Boolean(Number(row.mostrar_envio_gratis || 0)),
     disponibilidad: row.disponibilidad || (Number(row.stock || 0) > 0 ? "Disponible" : "Agotado"),
@@ -1088,6 +1092,8 @@ export async function ensureDatabase(env) {
       await ensureColumn(env.DB, "products", "fecha_estimada", "TEXT NOT NULL DEFAULT ''");
       await ensureColumn(env.DB, "products", "garantia", "TEXT NOT NULL DEFAULT ''");
       await ensureColumn(env.DB, "products", "devolucion", "TEXT NOT NULL DEFAULT ''");
+      await ensureColumn(env.DB, "products", "vendedor_oficial", "TEXT NOT NULL DEFAULT ''");
+      await ensureColumn(env.DB, "products", "mostrar_sello_oficial", "INTEGER NOT NULL DEFAULT 0");
       await ensureColumn(env.DB, "products", "envio_gratis", "INTEGER NOT NULL DEFAULT 0");
       await ensureColumn(env.DB, "products", "mostrar_envio_gratis", "INTEGER NOT NULL DEFAULT 0");
       await ensureColumn(env.DB, "products", "precio_descuento", "REAL NOT NULL DEFAULT 0");
@@ -1427,6 +1433,12 @@ export async function createProduct(db, input) {
   const fechaEstimada = String(input.fechaEstimada || "").trim();
   const garantia = String(input.garantia || "").trim();
   const devolucion = String(input.devolucion || "").trim();
+  const vendedorOficial = String(input.vendedorOficial || "").trim();
+  const mostrarSelloOficial =
+    input.mostrarSelloOficial === true ||
+    input.mostrarSelloOficial === "true" ||
+    input.mostrarSelloOficial === "on" ||
+    Number(input.mostrarSelloOficial) === 1;
 
   if (!nombre || !descripcion || !allowedCategories.includes(categoria)) {
     throw new Error("Completa nombre, descripcion y una categoria valida.");
@@ -1461,9 +1473,9 @@ export async function createProduct(db, input) {
       `
       INSERT INTO products (
         slug, nombre, descripcion, descripcion_corta, marca, precio, stock, vendidos, categoria, tags, imagenes, caracteristicas,
-        disponibilidad, info_envio, fecha_estimada, garantia, devolucion, envio_gratis, mostrar_envio_gratis, precio_descuento
+        disponibilidad, info_envio, fecha_estimada, garantia, devolucion, vendedor_oficial, mostrar_sello_oficial, envio_gratis, mostrar_envio_gratis, precio_descuento
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
     )
     .bind(
@@ -1484,6 +1496,8 @@ export async function createProduct(db, input) {
       fechaEstimada,
       garantia,
       devolucion,
+      vendedorOficial,
+      mostrarSelloOficial ? 1 : 0,
       envioGratis ? 1 : 0,
       mostrarEnvioGratis ? 1 : 0,
       Number.isFinite(precioDescuento) && precioDescuento > 0 && precioDescuento < precio ? precioDescuento : 0
@@ -1603,6 +1617,14 @@ export async function updateProduct(db, productId, input) {
   const fechaEstimada = String(input.fechaEstimada ?? existing.fechaEstimada ?? "").trim();
   const garantia = String(input.garantia ?? existing.garantia ?? "").trim();
   const devolucion = String(input.devolucion ?? existing.devolucion ?? "").trim();
+  const vendedorOficial = String(input.vendedorOficial ?? existing.vendedorOficial ?? "").trim();
+  const mostrarSelloOficial =
+    input.mostrarSelloOficial !== undefined
+      ? input.mostrarSelloOficial === true ||
+        input.mostrarSelloOficial === "true" ||
+        input.mostrarSelloOficial === "on" ||
+        Number(input.mostrarSelloOficial) === 1
+      : existing.mostrarSelloOficial;
 
   if (!nombre || !descripcion || !allowedCategories.includes(categoria)) {
     throw new Error("Completa nombre, descripcion y una categoria valida.");
@@ -1642,7 +1664,7 @@ export async function updateProduct(db, productId, input) {
     .prepare(
       `
       UPDATE products
-      SET slug = ?, nombre = ?, descripcion = ?, descripcion_corta = ?, marca = ?, precio = ?, stock = ?, vendidos = ?, categoria = ?, tags = ?, imagenes = ?, caracteristicas = ?, disponibilidad = ?, info_envio = ?, fecha_estimada = ?, garantia = ?, devolucion = ?, envio_gratis = ?, mostrar_envio_gratis = ?, precio_descuento = ?
+      SET slug = ?, nombre = ?, descripcion = ?, descripcion_corta = ?, marca = ?, precio = ?, stock = ?, vendidos = ?, categoria = ?, tags = ?, imagenes = ?, caracteristicas = ?, disponibilidad = ?, info_envio = ?, fecha_estimada = ?, garantia = ?, devolucion = ?, vendedor_oficial = ?, mostrar_sello_oficial = ?, envio_gratis = ?, mostrar_envio_gratis = ?, precio_descuento = ?
       WHERE id = ?
     `
     )
@@ -1664,6 +1686,8 @@ export async function updateProduct(db, productId, input) {
       fechaEstimada,
       garantia,
       devolucion,
+      vendedorOficial,
+      mostrarSelloOficial ? 1 : 0,
       envioGratis ? 1 : 0,
       mostrarEnvioGratis ? 1 : 0,
       precioDescuento > 0 && precioDescuento < precio ? precioDescuento : 0,
