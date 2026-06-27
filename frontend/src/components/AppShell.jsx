@@ -108,6 +108,9 @@ export function AppShell() {
   const { user, loading, isAuthenticated, isAdmin, logout } = useAuth();
   const { itemCount } = useCart();
   const [search, setSearch] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [searchSuggestions, setSearchSuggestions] = useState([]);
+  const [searchSuggesting, setSearchSuggesting] = useState(false);
   const [headerHidden, setHeaderHidden] = useState(false);
   const [siteData, setSiteData] = useState({ settings: {}, general: {}, categories: [] });
   const [commandOpen, setCommandOpen] = useState(false);
@@ -152,6 +155,42 @@ export function AppShell() {
     const searchParam = new URLSearchParams(location.search).get("search") || "";
     setSearch(searchParam);
   }, [location.search]);
+
+  useEffect(() => {
+    const query = search.trim();
+
+    if (query.length < 2) {
+      setSearchSuggestions([]);
+      setSearchSuggesting(false);
+      return undefined;
+    }
+
+    let active = true;
+    const timer = window.setTimeout(() => {
+      setSearchSuggesting(true);
+      apiFetch(`/products?search=${encodeURIComponent(query)}&limit=5`)
+        .then((payload) => {
+          if (active) {
+            setSearchSuggestions(payload.items || []);
+          }
+        })
+        .catch(() => {
+          if (active) {
+            setSearchSuggestions([]);
+          }
+        })
+        .finally(() => {
+          if (active) {
+            setSearchSuggesting(false);
+          }
+        });
+    }, 180);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [search]);
 
   useEffect(() => {
     if (isAuthPage) {
@@ -229,6 +268,7 @@ export function AppShell() {
     }
 
     navigate(`/catalogo${params.toString() ? `?${params.toString()}` : ""}`);
+    setSearchFocused(false);
   };
 
   const navItems = useMemo(() => {
@@ -362,11 +402,44 @@ export function AppShell() {
             </span>
             <input
               type="search"
-              placeholder="Buscar secciones, novedades y soporte"
+              placeholder="Busca por nombre, marca, categoria o tags"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => window.setTimeout(() => setSearchFocused(false), 140)}
             />
             <button type="submit">Buscar</button>
+            {searchFocused && search.trim().length >= 2 && (
+              <div className="search-suggestions">
+                <div className="search-suggestions__top">
+                  <strong>Sugerencias</strong>
+                  <small>{searchSuggesting ? "Buscando..." : `${searchSuggestions.length} resultado(s)`}</small>
+                </div>
+                {searchSuggestions.map((product) => (
+                  <button
+                    key={product.id}
+                    type="button"
+                    className="search-suggestion"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => {
+                      setSearchFocused(false);
+                      navigate(`/producto/${product.slug || product.id}`);
+                    }}
+                  >
+                    <img src={product.imagenes?.[0] || "/assets/gray-c-shop-logo.png?v=20260514-2"} alt="" />
+                    <span>
+                      <strong>{product.nombre}</strong>
+                      <small>{product.marca || product.categoria} · ${Number(product.precio || 0).toFixed(2)}</small>
+                    </span>
+                  </button>
+                ))}
+                {!searchSuggesting && !searchSuggestions.length && (
+                  <button type="submit" className="search-suggestion search-suggestion--plain">
+                    Ver busqueda completa para "{search.trim()}"
+                  </button>
+                )}
+              </div>
+            )}
           </form>
 
           <div className="header-actions">

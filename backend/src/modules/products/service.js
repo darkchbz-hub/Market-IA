@@ -276,8 +276,14 @@ export async function listProducts(filters = {}) {
   const offset = (page - 1) * limit;
 
   if (filters.search?.trim()) {
-    values.push(`%${filters.search.trim()}%`);
-    conditions.push(`(p.nombre ILIKE $${values.length} OR p.descripcion ILIKE $${values.length} OR p.descripcion_corta ILIKE $${values.length} OR p.marca ILIKE $${values.length})`);
+    const terms = filters.search.trim().split(/\s+/).filter(Boolean).slice(0, 8);
+
+    for (const term of terms) {
+      values.push(`%${term}%`);
+      conditions.push(
+        `(p.nombre ILIKE $${values.length} OR p.descripcion ILIKE $${values.length} OR p.descripcion_corta ILIKE $${values.length} OR p.marca ILIKE $${values.length} OR p.categoria ILIKE $${values.length} OR p.tags::text ILIKE $${values.length} OR p.vendedor_oficial ILIKE $${values.length})`
+      );
+    }
   }
 
   if (filters.category?.trim()) {

@@ -226,12 +226,13 @@ textarea {
 }
 
 .searchbar {
+  position: relative;
   display: grid;
   grid-template-columns: auto 1fr auto;
   min-width: min(680px, 100%);
   min-height: 52px;
   border-radius: 999px;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid var(--line);
   background: var(--panel-strong);
   box-shadow: 0 14px 34px color-mix(in srgb, var(--primary) 9%, transparent);
@@ -262,12 +263,77 @@ textarea {
 
 .searchbar button {
   border: 0;
-  border-radius: 0;
+  border-radius: 0 999px 999px 0;
   min-width: 104px;
   padding: 0 18px;
   background: linear-gradient(135deg, var(--primary), var(--primary-strong));
   color: #ffffff;
   font-weight: 700;
+}
+
+.search-suggestions {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  right: 0;
+  z-index: 90;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--panel-strong);
+  box-shadow: var(--shadow);
+}
+
+.search-suggestions__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.search-suggestions__top strong {
+  color: var(--text);
+}
+
+.search-suggestion {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 9px;
+  background: var(--panel);
+  color: var(--text);
+  text-align: left;
+}
+
+.search-suggestion img {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: var(--bg-soft);
+}
+
+.search-suggestion strong,
+.search-suggestion small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.search-suggestion small {
+  color: var(--muted);
+}
+
+.search-suggestion--plain {
+  grid-template-columns: 1fr;
+  justify-items: start;
 }
 
 .market-nav {

@@ -1312,8 +1312,19 @@ export async function listProducts(db, filters = {}) {
   const maxPrice = Number(filters.maxPrice);
 
   if (filters.search) {
-    clauses.push("(LOWER(nombre) LIKE ? OR LOWER(descripcion) LIKE ?)");
-    bindings.push(`%${String(filters.search).trim().toLowerCase()}%`, `%${String(filters.search).trim().toLowerCase()}%`);
+    const terms = String(filters.search)
+      .trim()
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 8);
+
+    for (const term of terms) {
+      clauses.push(
+        "(LOWER(nombre) LIKE ? OR LOWER(descripcion) LIKE ? OR LOWER(descripcion_corta) LIKE ? OR LOWER(marca) LIKE ? OR LOWER(categoria) LIKE ? OR LOWER(tags) LIKE ? OR LOWER(vendedor_oficial) LIKE ?)"
+      );
+      bindings.push(...Array.from({ length: 7 }, () => `%${term}%`));
+    }
   }
 
   if (filters.category) {
@@ -1332,6 +1343,17 @@ export async function listProducts(db, filters = {}) {
   }
 
   const whereClause = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  const aliasedWhereClause = whereClause
+    ? whereClause
+        .replace(/\bdescripcion_corta\b/g, "p.descripcion_corta")
+        .replace(/\bvendedor_oficial\b/g, "p.vendedor_oficial")
+        .replace(/\bdescripcion\b/g, "p.descripcion")
+        .replace(/\bcategoria\b/g, "p.categoria")
+        .replace(/\bnombre\b/g, "p.nombre")
+        .replace(/\bmarca\b/g, "p.marca")
+        .replace(/\btags\b/g, "p.tags")
+        .replace(/\bprecio\b/g, "p.precio")
+    : "";
   const limit = Number.isFinite(Number(filters.limit)) && Number(filters.limit) > 0 ? Number(filters.limit) : 24;
   const countSql = `SELECT COUNT(*) AS total FROM products ${whereClause}`;
   const itemsSql = `
@@ -1341,7 +1363,7 @@ export async function listProducts(db, filters = {}) {
       COUNT(pc.id) AS rating_total
     FROM products p
     LEFT JOIN product_comments pc ON pc.product_id = p.id
-    ${whereClause ? whereClause.replaceAll("nombre", "p.nombre").replaceAll("descripcion", "p.descripcion").replaceAll("categoria", "p.categoria").replaceAll("precio", "p.precio") : ""}
+    ${aliasedWhereClause}
     GROUP BY p.id
     ORDER BY p.id DESC
     LIMIT ?
