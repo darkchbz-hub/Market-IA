@@ -223,9 +223,11 @@ export function CheckoutPage() {
 
         {message && <p className="inline-message">{message}</p>}
 
-        <button type="submit" className="button button--primary" disabled={submitting}>
-          {submitting ? "Generando pedido..." : "Crear pedido y continuar"}
-        </button>
+        <div className="checkout-actions">
+          <button type="submit" className="button button--primary" disabled={submitting}>
+            {submitting ? "Generando pedido..." : "Crear pedido y continuar"}
+          </button>
+        </div>
       </form>
 
       <aside className="section-card order-summary">
