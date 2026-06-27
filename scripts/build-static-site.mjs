@@ -1,5 +1,5 @@
 import { execSync } from "node:child_process";
-import { copyFileSync, cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
+import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -51,6 +51,16 @@ copyFileSync(path.join(frontendDistDir, "index.html"), path.join(htmlUploadDir, 
 
 replaceDirectory(path.join(frontendDistDir, "assets"), rootAssetsDir);
 replaceDirectory(path.join(frontendDistDir, "assets"), htmlUploadAssetsDir);
+
+for (const item of readdirSync(frontendDistDir)) {
+  const sourcePath = path.join(frontendDistDir, item);
+  if (item === "index.html" || item === "assets" || !statSync(sourcePath).isFile()) {
+    continue;
+  }
+
+  copyFileSync(sourcePath, path.join(rootDir, item));
+  copyFileSync(sourcePath, path.join(htmlUploadDir, item));
+}
 
 copyFileSync(path.join(htmlUploadDir, "_redirects"), path.join(rootDir, "_redirects"));
 
