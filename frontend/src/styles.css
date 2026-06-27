@@ -870,6 +870,23 @@ textarea {
   border: 1px solid var(--line);
 }
 
+.order-card {
+  display: grid;
+  gap: 10px;
+}
+
+.order-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.order-card__head .status-pill {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
 .button,
 .pill {
   border: 1px solid var(--line);
