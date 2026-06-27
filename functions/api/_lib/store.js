@@ -1031,7 +1031,9 @@ async function ensureColumn(db, tableName, columnName, definition) {
 }
 
 async function seedDatabase(db, env) {
-  if (seedProducts.length) {
+  const shouldSeedProducts = String(env?.SEED_PRODUCTS || "").toLowerCase() === "true";
+
+  if (shouldSeedProducts && seedProducts.length) {
     for (const product of seedProducts) {
       const existing = await db.prepare("SELECT id FROM products WHERE slug = ?").bind(product.slug).first();
 
