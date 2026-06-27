@@ -1,6 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext.jsx";
 
+const FALLBACK_IMAGE = "/assets/gray-c-shop-logo.png?v=20260514-2";
+
 export function CartPage() {
   const navigate = useNavigate();
   const { cart, loading, updateQuantity, removeItem } = useCart();
@@ -24,15 +26,13 @@ export function CartPage() {
             <div className="cart-list">
               {cart.items.map((item) => (
                 <article key={item.productoId} className="cart-item">
-                  <img src={item.imagenes?.[0]} alt={item.nombre} />
+                  <img src={item.imagenes?.[0] || FALLBACK_IMAGE} alt={item.nombre} />
                   <div className="cart-item__body">
                     <strong>{item.nombre}</strong>
-                    <p>{item.descripcion}</p>
-                    <small>{item.categoria}</small>
                   </div>
                   <div className="cart-item__pricing">
-                    <span>${item.precio.toFixed(2)} c/u</span>
-                    <strong>${item.subtotal.toFixed(2)}</strong>
+                    <strong>${item.precio.toFixed(2)}</strong>
+                    {item.cantidad > 1 && <span>{item.cantidad} pzas. | ${item.subtotal.toFixed(2)}</span>}
                   </div>
                   <div className="cart-item__controls">
                     <div className="quantity-control">
