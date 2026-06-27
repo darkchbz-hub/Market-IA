@@ -2765,11 +2765,16 @@ textarea {
 
   .app-theme-fab {
     top: 10px;
+    bottom: auto;
     right: 10px;
     min-width: 0;
+    width: auto;
+    height: auto;
+    min-height: 36px;
     padding: 8px 10px;
     border-radius: 999px;
     font-size: 0.78rem;
+    line-height: 1;
   }
 }
 
