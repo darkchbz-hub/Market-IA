@@ -1101,25 +1101,101 @@ textarea {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.product-grid--loading {
+  display: grid;
+}
+
+.product-carousel {
+  position: relative;
+  margin-top: 18px;
+}
+
+.product-carousel__track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(250px, 292px);
+  gap: 18px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: inline mandatory;
+  scroll-padding-inline: 6px;
+  padding: 8px 8px 18px;
+  scrollbar-width: none;
+}
+
+.product-carousel__track::-webkit-scrollbar {
+  display: none;
+}
+
+.product-carousel__track > .product-card {
+  scroll-snap-align: start;
+}
+
+.product-carousel__arrow {
+  position: absolute;
+  top: 42%;
+  z-index: 2;
+  width: 54px;
+  height: 54px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--panel) 96%, transparent);
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.16);
+  color: var(--primary);
+  cursor: pointer;
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.product-carousel__arrow--left {
+  left: -12px;
+}
+
+.product-carousel__arrow--right {
+  right: -12px;
+}
+
+.product-carousel__arrow:hover {
+  background: var(--primary);
+  color: #fff;
+}
+
 .product-card {
+  min-width: 0;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 430px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 22px 44px rgba(15, 23, 42, 0.16);
 }
 
 .product-card__image {
   display: block;
-  aspect-ratio: 1 / 1;
-  background: var(--bg-soft);
+  aspect-ratio: 1.08 / 1;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(15, 109, 106, 0.1), transparent 34%),
+    var(--bg-soft);
 }
 
 .product-card__image img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  padding: 12px;
 }
 
 .product-card__body,
 .product-card__footer {
   padding: 16px;
+}
+
+.product-card__body {
+  flex: 1;
 }
 
 .product-card__meta,
@@ -1139,6 +1215,7 @@ textarea {
   display: block;
   margin: 8px 0;
   font-weight: 700;
+  min-height: 46px;
 }
 
 .official-seller-badge,
@@ -1181,6 +1258,12 @@ textarea {
   border-radius: 999px;
   color: #fff;
   background: linear-gradient(135deg, var(--accent), #f17f3b);
+}
+
+.product-card__actions {
+  display: grid;
+  gap: 8px;
+  width: 100%;
 }
 
 .skeleton-card {
@@ -2006,6 +2089,25 @@ textarea {
 
   .support-bot-grid {
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  }
+
+  .product-carousel__track {
+    grid-auto-columns: minmax(230px, 78vw);
+    padding-inline: 2px;
+  }
+
+  .product-carousel__arrow {
+    width: 44px;
+    height: 44px;
+    font-size: 1.8rem;
+  }
+
+  .product-carousel__arrow--left {
+    left: 2px;
+  }
+
+  .product-carousel__arrow--right {
+    right: 2px;
   }
 }
 

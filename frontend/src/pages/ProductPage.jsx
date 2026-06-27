@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ProductCard } from "../components/ProductCard.jsx";
+import { ProductCarousel } from "../components/ProductCarousel.jsx";
 import { useCart } from "../context/CartContext.jsx";
 import { apiFetch } from "../lib/api.js";
 
@@ -303,7 +304,7 @@ export function ProductPage() {
               <h2>Productos relacionados</h2>
             </div>
           </div>
-          <div className="product-grid">
+          <ProductCarousel label="Productos relacionados">
             {relatedProducts.map((item) => (
               <ProductCard
                 key={item.id}
@@ -313,7 +314,7 @@ export function ProductPage() {
                 onBuyNow={buyRelatedNow}
               />
             ))}
-          </div>
+          </ProductCarousel>
         </section>
       )}
     </div>

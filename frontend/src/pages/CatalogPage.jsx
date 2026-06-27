@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ProductCard } from "../components/ProductCard.jsx";
+import { ProductCarousel } from "../components/ProductCarousel.jsx";
 import { useCart } from "../context/CartContext.jsx";
 import { apiFetch } from "../lib/api.js";
 
@@ -140,11 +141,11 @@ export function CatalogPage() {
         </div>
 
         {loading ? (
-          <div className="product-grid">
+          <div className="product-grid product-grid--loading">
             {Array.from({ length: 6 }, (_, index) => <div key={index} className="skeleton-card" />)}
           </div>
         ) : products.length ? (
-          <div className="product-grid">
+          <ProductCarousel label="Productos del catalogo">
             {products.map((product) => (
               <ProductCard
                 key={product.id}
@@ -154,7 +155,7 @@ export function CatalogPage() {
                 onBuyNow={buyProductNow}
               />
             ))}
-          </div>
+          </ProductCarousel>
         ) : (
           <div className="empty-state empty-state--premium">
             <strong>{emptyTitle}</strong>
