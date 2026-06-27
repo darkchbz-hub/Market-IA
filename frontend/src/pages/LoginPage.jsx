@@ -9,11 +9,6 @@ export function LoginPage() {
   const { login } = useAuth();
   const [form, setForm] = useState({ email: "", password: "" });
   const [forgotEmail, setForgotEmail] = useState("");
-  const [adminRecovery, setAdminRecovery] = useState({
-    email: "admin@marketzone.mx",
-    password: "",
-    recoveryKey: ""
-  });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -41,27 +36,6 @@ export function LoginPage() {
       setMessage(payload.resetToken ? `Token de prueba generado: ${payload.resetToken}` : payload.message);
     } catch (error) {
       setMessage(error.message);
-    }
-  };
-
-  const recoverAdmin = async () => {
-    setLoading(true);
-    setMessage("");
-
-    try {
-      await apiFetch("/auth/admin/recover", {
-        method: "POST",
-        body: adminRecovery
-      });
-      await login({
-        email: adminRecovery.email,
-        password: adminRecovery.password
-      });
-      navigate("/admin");
-    } catch (error) {
-      setMessage(error.message);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -106,39 +80,6 @@ export function LoginPage() {
           </label>
           <button type="button" className="button button--ghost" onClick={requestReset}>
             Recuperar acceso
-          </button>
-        </details>
-
-        <details className="admin-recovery-panel admin-recovery-panel--internal">
-          <summary>Acceso interno</summary>
-          <label>
-            Correo administrador
-            <input
-              type="email"
-              value={adminRecovery.email}
-              onChange={(event) => setAdminRecovery((current) => ({ ...current, email: event.target.value }))}
-            />
-          </label>
-          <label>
-            Nueva contrasena admin
-            <input
-              type="password"
-              value={adminRecovery.password}
-              onChange={(event) => setAdminRecovery((current) => ({ ...current, password: event.target.value }))}
-              placeholder="Minimo 8 caracteres"
-            />
-          </label>
-          <label>
-            Clave de recuperacion
-            <input
-              type="password"
-              value={adminRecovery.recoveryKey}
-              onChange={(event) => setAdminRecovery((current) => ({ ...current, recoveryKey: event.target.value }))}
-              placeholder="ADMIN_RECOVERY_KEY"
-            />
-          </label>
-          <button type="button" className="button button--ghost" onClick={recoverAdmin} disabled={loading}>
-            Restaurar admin
           </button>
         </details>
 

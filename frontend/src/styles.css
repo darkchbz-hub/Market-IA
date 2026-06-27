@@ -2130,28 +2130,6 @@ textarea {
   gap: 10px;
 }
 
-.admin-recovery-panel {
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 12px;
-  background: color-mix(in srgb, var(--panel) 88%, transparent);
-}
-
-.admin-recovery-panel--internal {
-  opacity: 0.72;
-  font-size: 0.92rem;
-}
-
-.admin-recovery-panel summary {
-  cursor: pointer;
-  font-weight: 800;
-}
-
-.admin-recovery-panel[open] {
-  display: grid;
-  gap: 10px;
-}
-
 .checkbox-chip {
   display: flex !important;
   gap: 8px !important;
@@ -2479,8 +2457,7 @@ textarea {
     width: 100%;
   }
 
-  .password-recovery-panel,
-  .admin-recovery-panel {
+  .password-recovery-panel {
     border-radius: 16px;
   }
 
