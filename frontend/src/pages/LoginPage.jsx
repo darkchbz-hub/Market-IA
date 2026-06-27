@@ -69,27 +69,23 @@ export function LoginPage() {
     <section className="auth-layout">
       <div className="auth-copy">
         <p className="section-label">Acceso seguro</p>
-        <h1>Entra a tu cuenta para seguir comprando con historial, carrito y pedidos guardados.</h1>
-        <p>La sesion queda protegida y preparada para administrar compras, favoritos y seguimiento.</p>
+        <h1>Vuelve a tu cuenta y continua comprando sin perder tu historial.</h1>
+        <p>Consulta pedidos, carrito guardado, favoritos y seguimiento desde un acceso seguro.</p>
       </div>
 
-      <form className="auth-card" onSubmit={handleSubmit}>
-        <h2>Iniciar sesion</h2>
-        <label>
-          Correo
-          <input type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} required />
-        </label>
-        <label>
-          Contrasena
-          <input type="password" value={form.password} onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))} required />
-        </label>
-        <label>
-          Recuperar contrasena
-          <input type="email" value={forgotEmail} onChange={(event) => setForgotEmail(event.target.value)} placeholder="Correo para recuperacion" />
-        </label>
-        {message && <p className="inline-message">{message}</p>}
-        <div className="action-row">
-          <button type="submit" className="button button--primary" disabled={loading}>
+      <div className="auth-card auth-card--login">
+        <form className="login-form" onSubmit={handleSubmit}>
+          <h2>Iniciar sesion</h2>
+          <label>
+            Correo
+            <input type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} required />
+          </label>
+          <label>
+            Contrasena
+            <input type="password" value={form.password} onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))} required />
+          </label>
+          {message && <p className="inline-message">{message}</p>}
+          <button type="submit" className="button button--primary login-submit" disabled={loading}>
             {loading ? (
               <>
                 <span className="button-spinner" aria-hidden="true" />
@@ -99,13 +95,22 @@ export function LoginPage() {
               "Entrar"
             )}
           </button>
+        </form>
+
+        <details className="password-recovery-panel">
+          <summary>Olvide mi contrasena</summary>
+          <p className="muted-text">Te ayudamos a recuperar el acceso con tu correo registrado.</p>
+          <label>
+            Correo de recuperacion
+            <input type="email" value={forgotEmail} onChange={(event) => setForgotEmail(event.target.value)} placeholder="correo@ejemplo.com" />
+          </label>
           <button type="button" className="button button--ghost" onClick={requestReset}>
             Recuperar acceso
           </button>
-        </div>
+        </details>
 
-        <details className="admin-recovery-panel">
-          <summary>Recuperar administrador</summary>
+        <details className="admin-recovery-panel admin-recovery-panel--internal">
+          <summary>Acceso interno</summary>
           <label>
             Correo administrador
             <input
@@ -140,7 +145,7 @@ export function LoginPage() {
         <p className="muted-text">
           No tienes cuenta? <Link to="/register">Creala aqui</Link>
         </p>
-      </form>
+      </div>
     </section>
   );
 }

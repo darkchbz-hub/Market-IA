@@ -2102,11 +2102,44 @@ textarea {
   max-width: 720px;
 }
 
+.auth-card--login,
+.login-form {
+  display: grid;
+  gap: 12px;
+}
+
+.login-submit {
+  width: fit-content;
+  min-width: 120px;
+}
+
+.password-recovery-panel {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px;
+  background: color-mix(in srgb, var(--primary) 5%, var(--panel));
+}
+
+.password-recovery-panel summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.password-recovery-panel[open] {
+  display: grid;
+  gap: 10px;
+}
+
 .admin-recovery-panel {
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 12px;
   background: color-mix(in srgb, var(--panel) 88%, transparent);
+}
+
+.admin-recovery-panel--internal {
+  opacity: 0.72;
+  font-size: 0.92rem;
 }
 
 .admin-recovery-panel summary {
@@ -2415,6 +2448,40 @@ textarea {
 
   .market-content {
     padding: 14px 0 calc(118px + env(safe-area-inset-bottom));
+  }
+
+  .auth-layout {
+    min-height: auto;
+    align-items: start;
+  }
+
+  .auth-copy {
+    padding: 8px 6px 0;
+  }
+
+  .auth-copy h1 {
+    font-size: clamp(1.9rem, 9vw, 2.7rem);
+    line-height: 1.08;
+    max-width: 11.5ch;
+  }
+
+  .auth-copy p:not(.section-label) {
+    font-size: 1rem;
+    line-height: 1.45;
+    max-width: 34ch;
+  }
+
+  .auth-card--login {
+    gap: 14px;
+  }
+
+  .login-submit {
+    width: 100%;
+  }
+
+  .password-recovery-panel,
+  .admin-recovery-panel {
+    border-radius: 16px;
   }
 
   .button,
@@ -2799,6 +2866,19 @@ textarea {
   .brand small,
   .account-chip small {
     display: none;
+  }
+
+  .auth-copy {
+    padding-inline: 2px;
+  }
+
+  .auth-copy h1 {
+    font-size: clamp(1.65rem, 8.2vw, 2.15rem);
+    max-width: 12.5ch;
+  }
+
+  .auth-copy p:not(.section-label) {
+    font-size: 0.95rem;
   }
 
   .cart-button,
