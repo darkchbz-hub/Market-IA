@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ProductCard } from "../components/ProductCard.jsx";
 import { ProductCarousel } from "../components/ProductCarousel.jsx";
+import { RatingStars, clampRating } from "../components/RatingStars.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCart } from "../context/CartContext.jsx";
 import { apiFetch } from "../lib/api.js";
@@ -17,23 +18,6 @@ function formatMoney(value) {
 
 function safeList(value) {
   return Array.isArray(value) ? value.filter(Boolean) : [];
-}
-
-function clampRating(value) {
-  return Math.max(0, Math.min(5, Number(value || 0)));
-}
-
-function StarRating({ rating = 0, label, compact = false }) {
-  const score = clampRating(rating);
-  const percentage = `${(score / 5) * 100}%`;
-  const accessibleLabel = label || `${score.toFixed(1)} de 5 estrellas`;
-
-  return (
-    <span className={`star-rating${compact ? " star-rating--compact" : ""}`} aria-label={accessibleLabel} title={accessibleLabel}>
-      <span className="star-rating__base" aria-hidden="true">★★★★★</span>
-      <span className="star-rating__fill" style={{ width: percentage }} aria-hidden="true">★★★★★</span>
-    </span>
-  );
 }
 
 export function ProductPage() {
@@ -256,7 +240,7 @@ export function ProductPage() {
             </div>
           )}
           <div className="rating-row">
-            <StarRating rating={reviewAverage} label={`Promedio ${reviewAverage.toFixed(1)} de 5 estrellas`} />
+            <RatingStars rating={reviewAverage} label={`Promedio ${reviewAverage.toFixed(1)} de 5 estrellas`} />
             <strong>{reviewAverage.toFixed(1)} / 5</strong>
             <span>{reviewCount} opiniones</span>
             <span>{product.vendidos || 0} vendidos</span>
@@ -370,7 +354,7 @@ export function ProductPage() {
             <h2>Comentarios de clientes</h2>
           </div>
           <div className="review-summary">
-            <StarRating rating={reviewAverage} label={`Promedio ${reviewAverage.toFixed(1)} de 5 estrellas`} />
+            <RatingStars rating={reviewAverage} label={`Promedio ${reviewAverage.toFixed(1)} de 5 estrellas`} />
             <strong>{reviewAverage.toFixed(1)}</strong>
             <span>{reviewCount} reseñas</span>
           </div>
@@ -382,7 +366,7 @@ export function ProductPage() {
                 <div className="review-item__head">
                   <strong>{comment.nickname || comment.usuario || "Cliente"}</strong>
                   <span>
-                    <StarRating rating={comment.rating} label={`${Number(comment.rating || 0).toFixed(1)} de 5 estrellas`} compact />
+                    <RatingStars rating={comment.rating} label={`${Number(comment.rating || 0).toFixed(1)} de 5 estrellas`} compact />
                     {Number(comment.rating || 0).toFixed(1)} / 5
                   </span>
                 </div>

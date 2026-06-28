@@ -1244,6 +1244,32 @@ textarea {
   min-height: 46px;
 }
 
+.product-card__price {
+  align-items: baseline;
+}
+
+.product-card__price-original {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
+.product-card__discount {
+  color: #dc1111;
+  font-weight: 900;
+}
+
+.product-card__shipping {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.product-card__shipping strong {
+  color: #0f9f55;
+  font-weight: 900;
+}
+
 .official-seller-badge,
 .official-seller-line {
   display: inline-flex;

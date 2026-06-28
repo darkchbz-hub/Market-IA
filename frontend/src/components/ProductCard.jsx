@@ -1,12 +1,12 @@
 import { Link } from "react-router-dom";
+import { RatingStars } from "./RatingStars.jsx";
 
 const FALLBACK_IMAGE = "/assets/gray-c-shop-logo.png?v=20260514-2";
 
-function renderRating(rating = 0) {
-  return `${Number(rating || 0).toFixed(1)} / 5`;
-}
-
 export function ProductCard({ product, onAddToCart, onBuyNow, busy }) {
+  const hasOffer = Number(product.precioOriginal || 0) > Number(product.precio || 0);
+  const rating = Number(product.ratingPromedio || 0);
+
   return (
     <article className="product-card">
       <Link to={`/producto/${product.slug || product.id}`} className="product-card__image">
@@ -30,19 +30,20 @@ export function ProductCard({ product, onAddToCart, onBuyNow, busy }) {
         </Link>
 
         <div className="rating-row">
-          <strong>{renderRating(product.ratingPromedio || 0)}</strong>
+          <RatingStars rating={rating} label={`${rating.toFixed(1)} de 5 estrellas`} compact />
+          <strong>{rating.toFixed(1)} / 5</strong>
           <span>{product.ratingTotal || 0} opiniones</span>
         </div>
 
         <div className="product-card__price">
-          {product.precioOriginal > product.precio && <small>${product.precioOriginal.toFixed(2)}</small>}
+          {hasOffer && <small className="product-card__price-original">${product.precioOriginal.toFixed(2)}</small>}
           <strong>${product.precio.toFixed(2)}</strong>
-          {product.descuento > 0 && <span>{product.descuento}% off</span>}
+          {product.descuento > 0 && <span className="product-card__discount">{product.descuento}% off</span>}
         </div>
 
         <div className="product-card__shipping">
-          <span>{product.infoEnvio || "Envio nacional con seguimiento"}</span>
-          <small>{product.fechaEstimada || "Entrega estimada variable"}</small>
+          <span><strong>Envio:</strong> {product.infoEnvio || "Envio nacional con seguimiento"}</span>
+          <small><strong>Fecha estimada:</strong> {product.fechaEstimada || "Entrega estimada variable"}</small>
         </div>
       </div>
 
