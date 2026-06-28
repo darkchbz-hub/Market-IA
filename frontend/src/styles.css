@@ -1292,6 +1292,68 @@ textarea {
   background: linear-gradient(135deg, var(--accent), #f17f3b);
 }
 
+.star-rating {
+  position: relative;
+  display: inline-block;
+  width: 6.1em;
+  min-width: 6.1em;
+  height: 1.1em;
+  color: #d7dde6;
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+  line-height: 1;
+}
+
+.star-rating--compact {
+  width: 5.9em;
+  min-width: 5.9em;
+  font-size: 0.94rem;
+}
+
+.star-rating__base,
+.star-rating__fill {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.star-rating__fill {
+  color: #f7b731;
+  text-shadow: 0 3px 8px rgba(247, 183, 49, 0.24);
+}
+
+.review-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: var(--panel-strong);
+  color: var(--muted);
+}
+
+.review-summary strong {
+  color: var(--text);
+}
+
+.review-item__head {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.review-item__head span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
 .product-card__actions {
   display: grid;
   gap: 8px;
@@ -2705,6 +2767,15 @@ textarea {
     display: grid;
     align-items: start;
     gap: 10px;
+  }
+
+  .review-summary {
+    width: fit-content;
+  }
+
+  .review-item__head {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .hero-shell {

@@ -19,6 +19,23 @@ function safeList(value) {
   return Array.isArray(value) ? value.filter(Boolean) : [];
 }
 
+function clampRating(value) {
+  return Math.max(0, Math.min(5, Number(value || 0)));
+}
+
+function StarRating({ rating = 0, label, compact = false }) {
+  const score = clampRating(rating);
+  const percentage = `${(score / 5) * 100}%`;
+  const accessibleLabel = label || `${score.toFixed(1)} de 5 estrellas`;
+
+  return (
+    <span className={`star-rating${compact ? " star-rating--compact" : ""}`} aria-label={accessibleLabel} title={accessibleLabel}>
+      <span className="star-rating__base" aria-hidden="true">★★★★★</span>
+      <span className="star-rating__fill" style={{ width: percentage }} aria-hidden="true">★★★★★</span>
+    </span>
+  );
+}
+
 export function ProductPage() {
   const { productId } = useParams();
   const navigate = useNavigate();
@@ -82,6 +99,16 @@ export function ProductPage() {
   const tags = useMemo(() => safeList(product?.tags), [product]);
   const visibleTags = showAllTags ? tags : tags.slice(0, 3);
   const features = useMemo(() => safeList(product?.caracteristicas), [product]);
+  const reviewAverage = useMemo(() => {
+    const ratedComments = comments.map((comment) => clampRating(comment.rating)).filter((rating) => rating > 0);
+
+    if (!ratedComments.length) {
+      return clampRating(product?.ratingPromedio);
+    }
+
+    return ratedComments.reduce((total, rating) => total + rating, 0) / ratedComments.length;
+  }, [comments, product]);
+  const reviewCount = comments.length || Number(product?.ratingTotal || 0);
   const maxQuantity = Math.max(1, Math.min(Number(product?.stock || 1), 10));
   const canBuy = product && Number(product.stock || 0) > 0;
 
@@ -229,8 +256,9 @@ export function ProductPage() {
             </div>
           )}
           <div className="rating-row">
-            <strong>{Number(product.ratingPromedio || 0).toFixed(1)} / 5</strong>
-            <span>{product.ratingTotal || 0} opiniones</span>
+            <StarRating rating={reviewAverage} label={`Promedio ${reviewAverage.toFixed(1)} de 5 estrellas`} />
+            <strong>{reviewAverage.toFixed(1)} / 5</strong>
+            <span>{reviewCount} opiniones</span>
             <span>{product.vendidos || 0} vendidos</span>
           </div>
           <p className="muted-text">{product.descripcionCorta || product.descripcion || "Producto publicado en catalogo."}</p>
@@ -341,13 +369,23 @@ export function ProductPage() {
             <p className="section-label">Opiniones</p>
             <h2>Comentarios de clientes</h2>
           </div>
+          <div className="review-summary">
+            <StarRating rating={reviewAverage} label={`Promedio ${reviewAverage.toFixed(1)} de 5 estrellas`} />
+            <strong>{reviewAverage.toFixed(1)}</strong>
+            <span>{reviewCount} reseñas</span>
+          </div>
         </div>
         {comments.length ? (
           <div className="review-list">
             {comments.map((comment) => (
               <article key={comment.id} className="mini-item mini-item--wide">
-                <strong>{comment.nickname || comment.usuario || "Cliente"}</strong>
-                <span>{Number(comment.rating || 0).toFixed(1)} / 5</span>
+                <div className="review-item__head">
+                  <strong>{comment.nickname || comment.usuario || "Cliente"}</strong>
+                  <span>
+                    <StarRating rating={comment.rating} label={`${Number(comment.rating || 0).toFixed(1)} de 5 estrellas`} compact />
+                    {Number(comment.rating || 0).toFixed(1)} / 5
+                  </span>
+                </div>
                 <p>{comment.comentario}</p>
               </article>
             ))}
