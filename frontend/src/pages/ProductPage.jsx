@@ -208,7 +208,7 @@ export function ProductPage() {
           <h1>{product.nombre}</h1>
           {product.mostrarSelloOficial && product.vendedorOficial && (
             <div className="official-seller-badge" aria-label={`Vendedor oficial ${product.vendedorOficial}`}>
-              <img className="official-seller-badge__icon" src="/assets/verified-badge.png" alt="" />
+              <img className="official-seller-badge__icon" src="/assets/verified-badge.png?v=20260628-clean" alt="" />
               <span>Vendedor oficial: {product.vendedorOficial}</span>
             </div>
           )}
