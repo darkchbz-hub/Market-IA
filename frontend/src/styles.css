@@ -912,6 +912,19 @@ textarea {
   font-weight: 800;
 }
 
+.order-review-box__done {
+  border: 1px solid rgba(16, 185, 129, 0.32);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+  font-size: 0.92rem;
+}
+
+.order-review-box__hidden-action {
+  display: none;
+}
+
 .order-review-form {
   border-top: 1px solid var(--line);
   padding-top: 12px;

@@ -148,6 +148,11 @@ export function ProfilePage() {
     return ["paid", "pagado"].includes(estado);
   };
 
+  const hasReviewedProduct = (productId) => {
+    const reviewed = dashboard?.historial?.productosResenados || [];
+    return reviewed.map(Number).includes(Number(productId));
+  };
+
   const getReviewForm = (key) => {
     return reviewForms[key] || { rating: "5", comentario: "" };
   };
@@ -183,6 +188,13 @@ export function ProfilePage() {
       setReviewForms((current) => ({
         ...current,
         [key]: { rating: "5", comentario: "" }
+      }));
+      setDashboard((current) => ({
+        ...current,
+        historial: {
+          ...current.historial,
+          productosResenados: Array.from(new Set([...(current.historial.productosResenados || []), Number(item.productoId)]))
+        }
       }));
       setActiveReviewKey("");
       setMessage("Gracias, tu reseña ya aparece en el producto.");
@@ -398,16 +410,18 @@ export function ProfilePage() {
                           const reviewKey = `${order.id}-${item.id || item.productoId}`;
                           const review = getReviewForm(reviewKey);
                           const isOpen = activeReviewKey === reviewKey;
+                          const alreadyReviewed = hasReviewedProduct(item.productoId);
 
                           return (
                             <div key={reviewKey} className="order-review-box">
                               <div className="order-review-box__head">
                                 <span>{item.nombre}</span>
-                                <button type="button" className="button button--ghost" onClick={() => setActiveReviewKey(isOpen ? "" : reviewKey)}>
+                                {alreadyReviewed && <span className="order-review-box__done">Ya has hecho una reseña de este producto</span>}
+                                <button type="button" className={`button button--ghost${alreadyReviewed ? " order-review-box__hidden-action" : ""}`} disabled={alreadyReviewed} onClick={() => setActiveReviewKey(isOpen ? "" : reviewKey)}>
                                   {isOpen ? "Cerrar reseña" : "Escribir reseña"}
                                 </button>
                               </div>
-                              {isOpen && (
+                              {isOpen && !alreadyReviewed && (
                                 <form className="order-review-form" onSubmit={(event) => submitProductReview(event, order, item)}>
                                   <label>
                                     Calificacion

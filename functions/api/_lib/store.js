@@ -2042,6 +2042,11 @@ export async function getUserDashboard(db, userId) {
     )
     .bind(userId)
     .all();
+  const reviewedProducts = await db
+    .prepare("SELECT DISTINCT product_id FROM product_comments WHERE user_id = ?")
+    .bind(userId)
+    .all();
+  const reviewedProductIds = (reviewedProducts.results || []).map((item) => Number(item.product_id));
 
   return {
     user: serializeUser(user),
@@ -2071,6 +2076,7 @@ export async function getUserDashboard(db, userId) {
           slug: normalizeSlug(item.nombre)
         }
       })),
+      productosResenados: reviewedProductIds,
       favoritos: []
     }
   };
@@ -2393,6 +2399,15 @@ export async function createProductComment(db, userId, productId, input) {
 
   if (!(await canUserCommentOnProduct(db, userId, productId))) {
     throw new Error("Podras comentar cuando tu compra este confirmada.");
+  }
+
+  const existingComment = await db
+    .prepare("SELECT id FROM product_comments WHERE product_id = ? AND user_id = ? LIMIT 1")
+    .bind(Number(productId), Number(userId))
+    .first();
+
+  if (existingComment) {
+    throw new Error("Ya has hecho una resena de este producto.");
   }
 
   await db
