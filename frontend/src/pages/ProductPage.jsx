@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ProductCard } from "../components/ProductCard.jsx";
 import { ProductCarousel } from "../components/ProductCarousel.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
 import { useCart } from "../context/CartContext.jsx";
 import { apiFetch } from "../lib/api.js";
 
@@ -21,9 +22,12 @@ function safeList(value) {
 export function ProductPage() {
   const { productId } = useParams();
   const navigate = useNavigate();
+  const { token } = useAuth();
   const { addToCart } = useCart();
   const [product, setProduct] = useState(null);
   const [comments, setComments] = useState([]);
+  const [canComment, setCanComment] = useState(false);
+  const [reviewForm, setReviewForm] = useState({ rating: "5", comentario: "" });
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -39,11 +43,12 @@ export function ProductPage() {
     setError("");
     setMessage("");
 
-    apiFetch(`/products/${encodeURIComponent(productId)}`)
+    apiFetch(`/products/${encodeURIComponent(productId)}`, { token })
       .then((payload) => {
         if (!active) return;
         setProduct(payload.product || null);
         setComments(payload.comments || []);
+        setCanComment(Boolean(payload.canComment));
         setRelatedProducts(payload.relatedProducts || []);
         setSelectedImage(0);
         setQuantity(1);
@@ -52,6 +57,7 @@ export function ProductPage() {
         if (!active) return;
         setProduct(null);
         setComments([]);
+        setCanComment(false);
         setRelatedProducts([]);
         setError(requestError.message || "No se pudo cargar el producto.");
       })
@@ -64,7 +70,7 @@ export function ProductPage() {
     return () => {
       active = false;
     };
-  }, [productId]);
+  }, [productId, token]);
 
   const images = useMemo(() => {
     const productImages = safeList(product?.imagenes);
@@ -125,6 +131,29 @@ export function ProductPage() {
       navigate("/checkout");
     } catch (cartError) {
       setMessage(cartError.message || "No se pudo iniciar la compra.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submitReview = async (event) => {
+    event.preventDefault();
+    if (!product) return;
+
+    setBusy(true);
+    setMessage("");
+    try {
+      const payload = await apiFetch(`/products/${product.slug || product.id}/comments`, {
+        method: "POST",
+        token,
+        body: reviewForm
+      });
+      setComments(payload.comments || []);
+      setCanComment(false);
+      setReviewForm({ rating: "5", comentario: "" });
+      setMessage("Gracias por compartir tu opinion.");
+    } catch (reviewError) {
+      setMessage(reviewError.message || "No se pudo guardar tu opinion.");
     } finally {
       setBusy(false);
     }
@@ -299,6 +328,34 @@ export function ProductPage() {
           </div>
         ) : (
           <p className="muted-text">Aun no hay opiniones para este producto.</p>
+        )}
+        {canComment ? (
+          <form className="review-form" onSubmit={submitReview}>
+            <label>
+              Calificacion
+              <select value={reviewForm.rating} onChange={(event) => setReviewForm((current) => ({ ...current, rating: event.target.value }))}>
+                <option value="5">5 estrellas</option>
+                <option value="4">4 estrellas</option>
+                <option value="3">3 estrellas</option>
+                <option value="2">2 estrellas</option>
+                <option value="1">1 estrella</option>
+              </select>
+            </label>
+            <label>
+              Tu opinion
+              <textarea
+                rows="3"
+                value={reviewForm.comentario}
+                onChange={(event) => setReviewForm((current) => ({ ...current, comentario: event.target.value }))}
+                placeholder="Cuéntanos como fue tu experiencia con este producto"
+              />
+            </label>
+            <button type="submit" className="button button--primary" disabled={busy}>
+              Publicar opinion
+            </button>
+          </form>
+        ) : (
+          <p className="muted-text">Solo los clientes que compraron este producto pueden publicar una opinion.</p>
         )}
       </section>
 

@@ -16,6 +16,7 @@ import {
   clearAllProducts,
   createChatMessage,
   createOrderFromCart,
+  createAdminProductComment,
   createProductComment,
   createProduct,
   createUser,
@@ -56,6 +57,7 @@ import {
   setCartItem,
   setUserActiveStatus,
   updateSiteContent,
+  updateAdminProductComment,
   updateOrderItemStatus,
   updateOrderStatus,
   updateOrderTracking,
@@ -659,7 +661,8 @@ async function listAdminReviewItems(db) {
     id: Number(row.id),
     productoId: Number(row.product_id),
     productoNombre: row.producto_nombre,
-    usuarioNombre: row.nombre,
+    usuarioNombre: row.reviewer_name || row.nombre,
+    reviewerName: row.reviewer_name || row.nombre,
     nickname: row.nickname || "",
     rating: Number(row.rating || 0),
     comentario: row.comentario,
@@ -1288,6 +1291,26 @@ export async function onRequest(context) {
     if (first === "admin" && second === "reviews" && !third && request.method === "GET") {
       const user = await authenticate(request, env, db);
       requireAdmin(user);
+      return json({
+        items: await listAdminReviewItems(db)
+      });
+    }
+
+    if (first === "admin" && second === "reviews" && !third && request.method === "POST") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      const body = await readJson(request);
+      await createAdminProductComment(db, user.id, body);
+      return json({
+        items: await listAdminReviewItems(db)
+      }, 201);
+    }
+
+    if (first === "admin" && second === "reviews" && third && request.method === "PATCH") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      const body = await readJson(request);
+      await updateAdminProductComment(db, Number(third), body);
       return json({
         items: await listAdminReviewItems(db)
       });

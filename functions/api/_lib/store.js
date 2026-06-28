@@ -727,6 +727,7 @@ const schemaStatements = [
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       product_id INTEGER NOT NULL,
       user_id INTEGER NOT NULL,
+      reviewer_name TEXT NOT NULL DEFAULT '',
       rating INTEGER NOT NULL,
       comentario TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -1108,6 +1109,7 @@ export async function ensureDatabase(env) {
       await ensureColumn(env.DB, "users", "nickname", "TEXT NOT NULL DEFAULT ''");
       await ensureColumn(env.DB, "users", "avatar_url", "TEXT NOT NULL DEFAULT ''");
       await ensureColumn(env.DB, "users", "geo_meta", "TEXT NOT NULL DEFAULT '{}'");
+      await ensureColumn(env.DB, "product_comments", "reviewer_name", "TEXT NOT NULL DEFAULT ''");
       await seedDatabase(env.DB, env);
     })().catch((error) => {
       bootstrapPromise = undefined;
@@ -2363,8 +2365,8 @@ export async function listProductComments(db, productId) {
     id: Number(comment.id),
     productId: Number(comment.product_id),
     userId: Number(comment.user_id),
-    usuario: comment.nombre,
-    nickname: comment.nickname || "",
+    usuario: comment.reviewer_name || comment.nombre,
+    nickname: comment.reviewer_name || comment.nickname || "",
     avatarUrl: comment.avatar_url || "",
     rating: Number(comment.rating),
     comentario: comment.comentario,
@@ -2394,6 +2396,63 @@ export async function createProductComment(db, userId, productId, input) {
     .run();
 
   return listProductComments(db, productId);
+}
+
+export async function createAdminProductComment(db, adminUserId, input) {
+  const productId = Number(input.productId || input.productoId);
+  const rating = Number(input.rating);
+  const comentario = String(input.comentario || "").trim();
+  const reviewerName = String(input.reviewerName || input.nombre || "").trim();
+
+  if (!Number.isFinite(productId)) {
+    throw new Error("Selecciona un producto valido.");
+  }
+
+  if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+    throw new Error("Selecciona una calificacion de 1 a 5 estrellas.");
+  }
+
+  if (comentario.length < 3) {
+    throw new Error("Escribe un comentario un poco mas completo.");
+  }
+
+  const product = await getProductById(db, productId);
+  if (!product) {
+    throw new Error("El producto no existe.");
+  }
+
+  await db
+    .prepare("INSERT INTO product_comments (product_id, user_id, reviewer_name, rating, comentario) VALUES (?, ?, ?, ?, ?)")
+    .bind(productId, Number(adminUserId), reviewerName, rating, comentario)
+    .run();
+
+  return listProductComments(db, productId);
+}
+
+export async function updateAdminProductComment(db, commentId, input) {
+  const id = Number(commentId);
+  const rating = Number(input.rating);
+  const comentario = String(input.comentario || "").trim();
+  const reviewerName = String(input.reviewerName || input.nombre || "").trim();
+
+  if (!Number.isFinite(id)) {
+    throw new Error("Comentario invalido.");
+  }
+
+  if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+    throw new Error("Selecciona una calificacion de 1 a 5 estrellas.");
+  }
+
+  if (comentario.length < 3) {
+    throw new Error("Escribe un comentario un poco mas completo.");
+  }
+
+  await db
+    .prepare("UPDATE product_comments SET reviewer_name = ?, rating = ?, comentario = ? WHERE id = ?")
+    .bind(reviewerName, rating, comentario, id)
+    .run();
+
+  return { ok: true };
 }
 
 export async function deleteProductComment(db, commentId) {

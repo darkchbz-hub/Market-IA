@@ -32,6 +32,7 @@ const initialBanner = { titulo: "", subtitulo: "", mediaUrl: "", linkUrl: "/cata
 const initialVideo = { titulo: "", descripcion: "", videoUrl: "", posterUrl: "", activa: true, orden: 1 };
 const initialMusic = { titulo: "", artista: "", audioUrl: "", portadaUrl: "", activa: true, orden: 1 };
 const initialPartner = { name: "", logoUrl: "" };
+const initialReview = { id: null, productId: "", reviewerName: "", rating: "5", comentario: "" };
 const initialCatalogGenerator = {
   total: "10000",
   batchSize: "250",
@@ -157,6 +158,7 @@ export function AdminPage() {
   const [videoForm, setVideoForm] = useState(initialVideo);
   const [musicForm, setMusicForm] = useState(initialMusic);
   const [partnerForm, setPartnerForm] = useState(initialPartner);
+  const [reviewForm, setReviewForm] = useState(initialReview);
   const [generatorForm, setGeneratorForm] = useState(initialCatalogGenerator);
   const [importJson, setImportJson] = useState("");
   const [runningBulkTask, setRunningBulkTask] = useState(false);
@@ -564,6 +566,39 @@ export function AdminPage() {
       token
     });
     await loadAdmin();
+  };
+
+  const resetReviewForm = () => {
+    setReviewForm(initialReview);
+  };
+
+  const fillReviewForm = (review) => {
+    setReviewForm({
+      id: review.id,
+      productId: String(review.productoId || ""),
+      reviewerName: review.reviewerName || review.usuarioNombre || "",
+      rating: String(review.rating || 5),
+      comentario: review.comentario || ""
+    });
+  };
+
+  const saveReview = async (event) => {
+    event.preventDefault();
+    const method = reviewForm.id ? "PATCH" : "POST";
+    const path = reviewForm.id ? `/admin/reviews/${reviewForm.id}` : "/admin/reviews";
+    const payload = await apiFetch(path, {
+      method,
+      token,
+      body: {
+        productId: reviewForm.productId,
+        reviewerName: reviewForm.reviewerName,
+        rating: reviewForm.rating,
+        comentario: reviewForm.comentario
+      }
+    });
+    setReviews(payload.items || []);
+    resetReviewForm();
+    setMessage(reviewForm.id ? "Reseña actualizada." : "Reseña creada.");
   };
 
   const selectedUserCart = selectedUser?.cart || [];
@@ -1060,6 +1095,86 @@ export function AdminPage() {
               </article>
             ))}
           </div>
+        </section>
+      )}
+
+      {tab === "reviews" && (
+        <section className="section-card">
+          <form className="review-form" onSubmit={saveReview}>
+            <div className="section-heading section-heading--compact">
+              <div>
+                <p className="section-label">{reviewForm.id ? "Editar resena" : "Nueva resena"}</p>
+                <h2>{reviewForm.id ? "Actualiza nombre y comentario" : "Sube una resena como administrador"}</h2>
+              </div>
+              {reviewForm.id && (
+                <button type="button" className="button button--ghost" onClick={resetReviewForm}>
+                  Nueva
+                </button>
+              )}
+            </div>
+            <label>
+              Editar resena existente
+              <select
+                value={reviewForm.id || ""}
+                onChange={(event) => {
+                  const selected = reviews.find((review) => String(review.id) === event.target.value);
+                  if (selected) {
+                    fillReviewForm(selected);
+                  } else {
+                    resetReviewForm();
+                  }
+                }}
+              >
+                <option value="">Crear nueva resena</option>
+                {reviews.map((review) => (
+                  <option key={review.id} value={review.id}>
+                    {review.productoNombre} | {review.usuarioNombre}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Producto
+              <select value={reviewForm.productId} onChange={(event) => setReviewForm((current) => ({ ...current, productId: event.target.value }))} required>
+                <option value="">Selecciona producto</option>
+                {products.map((product) => (
+                  <option key={product.id} value={product.id}>
+                    {product.nombre}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Nombre visible
+              <input
+                value={reviewForm.reviewerName}
+                onChange={(event) => setReviewForm((current) => ({ ...current, reviewerName: event.target.value }))}
+                placeholder="Cliente verificado"
+              />
+            </label>
+            <label>
+              Calificacion
+              <select value={reviewForm.rating} onChange={(event) => setReviewForm((current) => ({ ...current, rating: event.target.value }))}>
+                <option value="5">5 estrellas</option>
+                <option value="4">4 estrellas</option>
+                <option value="3">3 estrellas</option>
+                <option value="2">2 estrellas</option>
+                <option value="1">1 estrella</option>
+              </select>
+            </label>
+            <label>
+              Comentario
+              <textarea
+                rows="5"
+                value={reviewForm.comentario}
+                onChange={(event) => setReviewForm((current) => ({ ...current, comentario: event.target.value }))}
+                required
+              />
+            </label>
+            <button type="submit" className="button button--primary">
+              {reviewForm.id ? "Guardar resena" : "Crear resena"}
+            </button>
+          </form>
         </section>
       )}
 
