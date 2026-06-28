@@ -415,7 +415,7 @@ export function ProfilePage() {
                           return (
                             <div key={reviewKey} className="order-review-box">
                               <div className="order-review-box__head">
-                                <span>{item.nombre}</span>
+                                <span>{item.nombre} {item.folio ? `| Folio ${item.folio}` : ""}</span>
                                 {alreadyReviewed && <span className="order-review-box__done">Ya has hecho una reseña de este producto</span>}
                                 <button type="button" className={`button button--ghost${alreadyReviewed ? " order-review-box__hidden-action" : ""}`} disabled={alreadyReviewed} onClick={() => setActiveReviewKey(isOpen ? "" : reviewKey)}>
                                   {isOpen ? "Cerrar reseña" : "Escribir reseña"}

@@ -164,9 +164,11 @@ export function AdminPage() {
   const [runningBulkTask, setRunningBulkTask] = useState(false);
   const [message, setMessage] = useState("");
   const [userSearch, setUserSearch] = useState("");
+  const [folioSearch, setFolioSearch] = useState("");
+  const [folioResults, setFolioResults] = useState([]);
 
   const loadAdmin = async () => {
-    const [summaryPayload, productsPayload, ordersPayload, usersPayload, reviewsPayload, categoriesPayload, contentPayload] =
+    const [summaryPayload, productsPayload, ordersPayload, usersPayload, reviewsPayload, categoriesPayload, contentPayload, foliosPayload] =
       await Promise.all([
         apiFetch("/admin/summary", { token }),
         apiFetch("/admin/products", { token }),
@@ -174,7 +176,8 @@ export function AdminPage() {
         apiFetch(`/admin/users${userSearch ? `?search=${encodeURIComponent(userSearch)}` : ""}`, { token }),
         apiFetch("/admin/reviews", { token }),
         apiFetch("/admin/categories", { token }),
-        apiFetch("/admin/content", { token })
+        apiFetch("/admin/content", { token }),
+        apiFetch("/admin/folios", { token })
       ]);
 
     setSummary(summaryPayload);
@@ -183,6 +186,7 @@ export function AdminPage() {
     setUsers(usersPayload.items || []);
     setReviews(reviewsPayload.items || []);
     setCategories(categoriesPayload.items || []);
+    setFolioResults(foliosPayload.items || []);
     setContent({
       homepage: contentPayload.homepage || {},
       general: contentPayload.general || {},
@@ -195,6 +199,11 @@ export function AdminPage() {
   useEffect(() => {
     loadAdmin().catch((error) => setMessage(error.message));
   }, [token, userSearch]);
+
+  const searchFolios = async () => {
+    const payload = await apiFetch(`/admin/folios${folioSearch ? `?search=${encodeURIComponent(folioSearch)}` : ""}`, { token });
+    setFolioResults(payload.items || []);
+  };
 
   const metrics = useMemo(
     () => [
@@ -621,6 +630,7 @@ export function AdminPage() {
             ["products", "Productos"],
             ["users", "Usuarios"],
             ["orders", "Pedidos"],
+            ["folios", "Buscador de folios"],
             ["reviews", "Reseñas"],
             ["categories", "Categorias"],
             ["content", "Portada y medios"],
@@ -1023,7 +1033,7 @@ export function AdminPage() {
                         <div className="order-item-list">
                           {(order.items || []).length ? order.items.map((item) => (
                             <span key={`${order.id}-${item.id || item.productoId}-${item.nombre}`}>
-                              {item.cantidad} x {item.nombre} | {formatMoney(item.precio)}
+                              Folio {item.folio || "Sin folio"} | {item.cantidad} x {item.nombre} | {formatMoney(item.precio)}
                             </span>
                           )) : <span>Sin items detallados para este pedido.</span>}
                         </div>
@@ -1175,6 +1185,52 @@ export function AdminPage() {
               {reviewForm.id ? "Guardar resena" : "Crear resena"}
             </button>
           </form>
+        </section>
+      )}
+
+      {tab === "folios" && (
+        <section className="section-card">
+          <div className="section-heading section-heading--compact">
+            <div>
+              <p className="section-label">Buscador de folios</p>
+              <h2>Encuentra productos comprados por folio</h2>
+            </div>
+          </div>
+          <div className="form-inline">
+            <label>
+              Folio, cliente, correo, producto o pedido
+              <input value={folioSearch} onChange={(event) => setFolioSearch(event.target.value)} placeholder="Ej. 1000000001" />
+            </label>
+            <button type="button" className="button button--primary" onClick={searchFolios}>
+              Buscar folio
+            </button>
+          </div>
+          <div className="list-stack">
+            {folioResults.length ? (
+              folioResults.map((item) => (
+                <article key={`${item.folio}-${item.id}`} className="folio-result-card">
+                  <div>
+                    <p className="section-label">Folio</p>
+                    <h3>{item.folio}</h3>
+                  </div>
+                  <div className="folio-result-grid">
+                    <span><strong>Producto:</strong> {item.productoNombre}</span>
+                    <span><strong>Cliente:</strong> {item.usuarioNombre}</span>
+                    <span><strong>Correo:</strong> {item.usuarioEmail}</span>
+                    <span><strong>Telefono:</strong> {item.usuarioTelefono || "Sin telefono"}</span>
+                    <span><strong>Pedido:</strong> {item.orderId}</span>
+                    <span><strong>Estado:</strong> {statusLabel(item.estadoPedido)}</span>
+                    <span><strong>Cantidad:</strong> {item.cantidad}</span>
+                    <span><strong>Precio:</strong> {formatMoney(item.precio)}</span>
+                    <span><strong>Total pedido:</strong> {formatMoney(item.totalPedido)}</span>
+                    <span><strong>Fecha:</strong> {new Date(item.fecha).toLocaleString()}</span>
+                  </div>
+                </article>
+              ))
+            ) : (
+              <p className="muted-text">No hay resultados para ese folio.</p>
+            )}
+          </div>
         </section>
       )}
 

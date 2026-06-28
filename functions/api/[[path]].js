@@ -41,6 +41,7 @@ import {
   listAdminUsers,
   listAdminProducts,
   listAdminCarts,
+  searchAdminFolios,
   listChatMessagesByUser,
   listChatThreads,
   listAdminOrders,
@@ -254,6 +255,16 @@ function formatCurrency(value) {
   return Number.isFinite(amount) ? `$${amount.toFixed(2)}` : "$0.00";
 }
 
+function statusLabel(status) {
+  const value = String(status || "").trim().toLowerCase();
+  if (["paid", "pagado"].includes(value)) return "Pagado";
+  if (["cancelled", "canceled", "cancelado"].includes(value)) return "Cancelado";
+  if (["pending_payment", "pending", "pendiente", "pago_pendiente", "created", "processing"].includes(value)) {
+    return "Pendiente por pagar";
+  }
+  return "Pendiente por pagar";
+}
+
 function extractOpenAiText(payload) {
   if (typeof payload?.output_text === "string" && payload.output_text.trim()) {
     return payload.output_text.trim();
@@ -273,7 +284,7 @@ function extractOpenAiText(payload) {
 
 function botInstructions(botId) {
   const shared =
-    "Eres un asistente de una tienda online. Responde en espanol, rapido, claro y amable. Usa solo el contexto enviado: catalogo, categorias, portada, perfil, carrito, compras y pagos del usuario. No inventes stock, precios, pedidos ni politicas. Si falta un dato, dilo y ofrece el siguiente paso. No reveles datos privados de otros usuarios ni secretos del sistema.";
+    "Eres un asistente de una tienda online. Responde en espanol, rapido, claro y amable. Usa solo el contexto enviado: catalogo, categorias, portada, perfil, carrito, compras y pagos del usuario. No inventes stock, precios, pedidos ni politicas. Si falta un dato, dilo y ofrece el siguiente paso. No reveles datos privados de otros usuarios ni secretos del sistema. Cuando hables de estados de pedido usa solo estos textos: Pagado, Cancelado o Pendiente por pagar; no uses codigos como paid, pending_payment o cancelled.";
 
   if (botId === "grayce") {
     return `${shared} Tu nombre es Grayce. Tu especialidad es recomendar productos, ofertas, categorias y opciones segun presupuesto, carrito e intereses del cliente.`;
@@ -317,7 +328,15 @@ async function buildOpenAiAssistantReply({ env, botId, user, dashboard, cart, us
           },
           sitio: siteContext,
           carrito: cart?.items || [],
-          pedidos: dashboard?.historial?.ordenes || []
+          pedidos: (dashboard?.historial?.ordenes || []).map((order) => ({
+            ...order,
+            estadoCodigo: order.estado,
+            paymentStatusCodigo: order.paymentStatus || order.estado,
+            estado: statusLabel(order.estado),
+            paymentStatus: statusLabel(order.paymentStatus || order.estado),
+            estadoTexto: statusLabel(order.estado),
+            paymentStatusTexto: statusLabel(order.paymentStatus || order.estado)
+          }))
         })
       })
     });
@@ -346,6 +365,7 @@ async function buildAssistantReply({ env, db, botId, user, dashboard, cart, user
   const orders = Array.isArray(dashboard?.historial?.ordenes) ? dashboard.historial.ordenes : [];
   const pendingOrders = orders.filter((order) => ["pending_payment", "paid"].includes(String(order.estado || "")));
   const latestOrder = orders[0];
+  const latestOrderStatus = statusLabel(latestOrder?.estado);
   const cartItems = Array.isArray(cart?.items) ? cart.items : [];
   const cartItemsCount = cartItems.reduce((sum, item) => sum + Number(item.cantidad || 0), 0);
   const viewedProducts = Array.isArray(dashboard?.historial?.productosVistos) ? dashboard.historial.productosVistos : [];
@@ -392,7 +412,7 @@ async function buildAssistantReply({ env, db, botId, user, dashboard, cart, user
     core = `Tienes ${cartItemsCount} articulo(s) en carrito con total aproximado de ${formatCurrency(cart?.total)}.`;
   } else if (/pedido|orden|id|seguimiento|estatus|estado/.test(text)) {
     if (latestOrder) {
-      core = `Tu orden mas reciente es ${latestOrder.id} y su estado actual es ${latestOrder.estado}. Tambien tienes ${pendingOrders.length} pedido(s) activo(s).`;
+      core = `Tu orden mas reciente es ${latestOrder.id} y su estado actual es ${latestOrderStatus}. Tambien tienes ${pendingOrders.length} pedido(s) activo(s).`;
     } else {
       core = "Aun no tienes pedidos registrados en tu cuenta.";
     }
@@ -400,7 +420,7 @@ async function buildAssistantReply({ env, db, botId, user, dashboard, cart, user
     core = "Puedes pagar por Mercado Pago, PayPal o tarjeta. Si un pago queda pendiente, vuelve a seleccionar forma de pago desde tu pedido.";
   } else if (/envio|entrega|llega|tiempo|dias/.test(text)) {
     core = latestOrder
-      ? `Tu pedido ${latestOrder.id} muestra estado ${latestOrder.estado}. Revisa tracking en Tu cuenta > Tus compras para ver el avance.`
+      ? `Tu pedido ${latestOrder.id} muestra estado ${latestOrderStatus}. Revisa tracking en Tu cuenta > Tus compras para ver el avance.`
       : "Cuando tengas un pedido activo, aqui te mostraremos seguimiento y fecha estimada.";
   } else if (/cuenta|login|acceso|correo|codigo|verificacion|nickname/.test(text)) {
     core = `Tu cuenta esta vinculada a ${user.email}. Si el codigo de acceso falla, solicita uno nuevo desde registro.`;
@@ -1196,6 +1216,14 @@ export async function onRequest(context) {
       requireAdmin(user);
       return json({
         items: await listAdminOrders(db)
+      });
+    }
+
+    if (first === "admin" && second === "folios" && !third && request.method === "GET") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      return json({
+        items: await searchAdminFolios(db, url.searchParams.get("search") || "")
       });
     }
 

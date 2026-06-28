@@ -1031,6 +1031,37 @@ async function ensureColumn(db, tableName, columnName, definition) {
   }
 }
 
+function buildOrderItemFolioFromId(id) {
+  return String(1000000000 + Number(id || 0)).slice(0, 12);
+}
+
+async function backfillOrderItemFolios(db) {
+  const rows = await db
+    .prepare("SELECT id, folio FROM order_items WHERE folio IS NULL OR folio = '' OR LENGTH(folio) < 8 OR LENGTH(folio) > 12")
+    .all();
+
+  for (const row of rows.results || []) {
+    await db
+      .prepare("UPDATE order_items SET folio = ? WHERE id = ?")
+      .bind(buildOrderItemFolioFromId(row.id), Number(row.id))
+      .run();
+  }
+}
+
+async function createUniqueOrderItemFolio(db) {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const folio = String(Math.floor(1000000000 + Math.random() * 9000000000));
+    const existing = await db.prepare("SELECT id FROM order_items WHERE folio = ? LIMIT 1").bind(folio).first();
+
+    if (!existing) {
+      return folio;
+    }
+  }
+
+  const latest = await db.prepare("SELECT id FROM order_items ORDER BY id DESC LIMIT 1").first();
+  return buildOrderItemFolioFromId(Number(latest?.id || 0) + Date.now() % 100000);
+}
+
 async function seedDatabase(db, env) {
   const shouldSeedProducts = String(env?.SEED_PRODUCTS || "").toLowerCase() === "true";
 
@@ -1103,6 +1134,7 @@ export async function ensureDatabase(env) {
       await ensureColumn(env.DB, "products", "vendidos", "INTEGER NOT NULL DEFAULT 0");
       await ensureColumn(env.DB, "order_items", "estado", "TEXT NOT NULL DEFAULT 'pendiente'");
       await ensureColumn(env.DB, "order_items", "updated_at", "TEXT NOT NULL DEFAULT ''");
+      await ensureColumn(env.DB, "order_items", "folio", "TEXT NOT NULL DEFAULT ''");
       await ensureColumn(env.DB, "orders", "tracking", "TEXT NOT NULL DEFAULT '[]'");
       await ensureColumn(env.DB, "users", "telefono", "TEXT NOT NULL DEFAULT ''");
       await ensureColumn(env.DB, "users", "is_active", "INTEGER NOT NULL DEFAULT 1");
@@ -1110,6 +1142,7 @@ export async function ensureDatabase(env) {
       await ensureColumn(env.DB, "users", "avatar_url", "TEXT NOT NULL DEFAULT ''");
       await ensureColumn(env.DB, "users", "geo_meta", "TEXT NOT NULL DEFAULT '{}'");
       await ensureColumn(env.DB, "product_comments", "reviewer_name", "TEXT NOT NULL DEFAULT ''");
+      await backfillOrderItemFolios(env.DB);
       await seedDatabase(env.DB, env);
     })().catch((error) => {
       bootstrapPromise = undefined;
@@ -1871,14 +1904,15 @@ export async function createOrderFromCart(db, userId, { direccion, proveedorPago
     .run();
 
   for (const item of summary.items) {
+    const folio = await createUniqueOrderItemFolio(db);
     await db
       .prepare(
         `
-        INSERT INTO order_items (order_id, product_id, nombre, precio, cantidad, estado, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        INSERT INTO order_items (order_id, product_id, nombre, precio, cantidad, estado, folio, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       `
       )
-      .bind(orderId, item.productoId, item.nombre, item.precio, item.cantidad, "pendiente")
+      .bind(orderId, item.productoId, item.nombre, item.precio, item.cantidad, "pendiente", folio)
       .run();
   }
 
@@ -1921,6 +1955,7 @@ export async function getOrderWithItems(db, orderId) {
       nombre: item.nombre,
       precio: Number(item.precio),
       cantidad: Number(item.cantidad),
+      folio: item.folio || buildOrderItemFolioFromId(item.id),
       estado: item.estado || "pendiente"
     }))
   };
@@ -2002,7 +2037,7 @@ export async function getUserDashboard(db, userId) {
     ? await db
         .prepare(
           `
-          SELECT id, order_id, product_id, nombre, precio, cantidad, estado
+          SELECT id, order_id, product_id, nombre, precio, cantidad, estado, folio
           FROM order_items
           WHERE order_id IN (${orderRows.map(() => "?").join(",")})
           ORDER BY id ASC
@@ -2021,6 +2056,7 @@ export async function getUserDashboard(db, userId) {
       nombre: item.nombre,
       precio: Number(item.precio),
       cantidad: Number(item.cantidad),
+      folio: item.folio || buildOrderItemFolioFromId(item.id),
       estado: item.estado || "pendiente"
     });
     itemsByOrder.set(item.order_id, list);
@@ -2121,6 +2157,7 @@ export async function listAdminOrders(db) {
       nombre: item.nombre,
       precio: Number(item.precio),
       cantidad: Number(item.cantidad),
+      folio: item.folio || buildOrderItemFolioFromId(item.id),
       estado: item.estado || "pendiente"
     });
     itemsByOrder.set(item.order_id, list);
@@ -2139,6 +2176,84 @@ export async function listAdminOrders(db) {
     tracking: parseJson(order.tracking, []),
     fecha: order.created_at,
     items: itemsByOrder.get(order.id) || []
+  }));
+}
+
+export async function searchAdminFolios(db, search = "") {
+  const term = String(search || "").trim();
+  const like = `%${term}%`;
+  const hasSearch = term.length > 0;
+  const result = hasSearch
+    ? await db
+        .prepare(
+          `
+          SELECT
+            oi.id,
+            oi.folio,
+            oi.order_id,
+            oi.product_id,
+            oi.nombre,
+            oi.precio,
+            oi.cantidad,
+            oi.estado AS item_estado,
+            o.estado AS order_estado,
+            o.total,
+            o.created_at,
+            u.nombre AS usuario_nombre,
+            u.email AS usuario_email,
+            u.telefono AS usuario_telefono
+          FROM order_items oi
+          INNER JOIN orders o ON o.id = oi.order_id
+          INNER JOIN users u ON u.id = o.user_id
+          WHERE oi.folio LIKE ? OR oi.nombre LIKE ? OR o.id LIKE ? OR u.nombre LIKE ? OR u.email LIKE ? OR u.telefono LIKE ?
+          ORDER BY o.created_at DESC, oi.id DESC
+          LIMIT 80
+        `
+        )
+        .bind(like, like, like, like, like, like)
+        .all()
+    : await db
+        .prepare(
+          `
+          SELECT
+            oi.id,
+            oi.folio,
+            oi.order_id,
+            oi.product_id,
+            oi.nombre,
+            oi.precio,
+            oi.cantidad,
+            oi.estado AS item_estado,
+            o.estado AS order_estado,
+            o.total,
+            o.created_at,
+            u.nombre AS usuario_nombre,
+            u.email AS usuario_email,
+            u.telefono AS usuario_telefono
+          FROM order_items oi
+          INNER JOIN orders o ON o.id = oi.order_id
+          INNER JOIN users u ON u.id = o.user_id
+          ORDER BY o.created_at DESC, oi.id DESC
+          LIMIT 40
+        `
+        )
+        .all();
+
+  return (result.results || []).map((item) => ({
+    id: Number(item.id),
+    folio: item.folio || buildOrderItemFolioFromId(item.id),
+    orderId: item.order_id,
+    productoId: Number(item.product_id),
+    productoNombre: item.nombre,
+    precio: Number(item.precio),
+    cantidad: Number(item.cantidad),
+    estadoItem: item.item_estado || "pendiente",
+    estadoPedido: item.order_estado || "pending_payment",
+    totalPedido: Number(item.total),
+    fecha: item.created_at,
+    usuarioNombre: item.usuario_nombre,
+    usuarioEmail: item.usuario_email,
+    usuarioTelefono: item.usuario_telefono || ""
   }));
 }
 
