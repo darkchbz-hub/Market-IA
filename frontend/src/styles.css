@@ -1272,6 +1272,16 @@ textarea {
   box-shadow: 0 4px 10px rgba(14, 165, 233, 0.2);
 }
 
+.official-seller-badge + .product-card__title,
+.official-seller-badge + .rating-row,
+.product-card__title + .rating-row {
+  margin-top: 12px;
+}
+
+.product-summary .official-seller-badge + .rating-row {
+  margin-top: 16px;
+}
+
 .product-badge {
   position: absolute;
   top: 14px;
