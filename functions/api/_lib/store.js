@@ -2336,11 +2336,16 @@ export async function canUserCommentOnProduct(db, userId, productId) {
       SELECT oi.id
       FROM order_items oi
       INNER JOIN orders o ON o.id = oi.order_id
-      WHERE o.user_id = ? AND oi.product_id = ? AND oi.estado = 'comprado'
+      WHERE (
+          o.user_id = ? AND oi.product_id = ? AND oi.estado = 'comprado'
+        )
+        OR (
+          o.user_id = ? AND oi.product_id = ? AND LOWER(o.estado) IN ('paid', 'pagado')
+        )
       LIMIT 1
     `
     )
-    .bind(Number(userId), Number(productId))
+    .bind(Number(userId), Number(productId), Number(userId), Number(productId))
     .first();
 
   return Boolean(purchase);

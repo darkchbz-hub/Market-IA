@@ -887,6 +887,36 @@ textarea {
   flex: 0 0 auto;
 }
 
+.order-review-list,
+.order-review-box,
+.order-review-form {
+  display: grid;
+  gap: 10px;
+}
+
+.order-review-box {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px;
+  background: color-mix(in srgb, var(--panel-strong) 82%, transparent);
+}
+
+.order-review-box__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.order-review-box__head span {
+  font-weight: 800;
+}
+
+.order-review-form {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
 .button,
 .pill {
   border: 1px solid var(--line);
@@ -2800,6 +2830,11 @@ textarea {
   }
 
   .review-item__head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .order-review-box__head {
     align-items: flex-start;
     flex-direction: column;
   }

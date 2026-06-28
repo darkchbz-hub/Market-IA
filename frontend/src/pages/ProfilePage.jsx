@@ -43,6 +43,8 @@ export function ProfilePage() {
   const [dashboard, setDashboard] = useState(null);
   const [paymentLinks, setPaymentLinks] = useState({});
   const [orderProviders, setOrderProviders] = useState({});
+  const [activeReviewKey, setActiveReviewKey] = useState("");
+  const [reviewForms, setReviewForms] = useState({});
   const [form, setForm] = useState({
     nombre: "",
     email: "",
@@ -139,6 +141,56 @@ export function ProfilePage() {
     const pendingPaymentStates = ["pending", "pending_payment", "created", "processing", "requires_payment_method"];
 
     return pendingOrderStates.includes(estado) || pendingPaymentStates.includes(paymentStatus);
+  };
+
+  const canReviewOrder = (order) => {
+    const estado = String(order.estado || "").toLowerCase();
+    return ["paid", "pagado"].includes(estado);
+  };
+
+  const getReviewForm = (key) => {
+    return reviewForms[key] || { rating: "5", comentario: "" };
+  };
+
+  const updateReviewForm = (key, nextValues) => {
+    setReviewForms((current) => ({
+      ...current,
+      [key]: {
+        ...(current[key] || { rating: "5", comentario: "" }),
+        ...nextValues
+      }
+    }));
+  };
+
+  const submitProductReview = async (event, order, item) => {
+    event.preventDefault();
+    const key = `${order.id}-${item.id || item.productoId}`;
+    const review = getReviewForm(key);
+
+    setSaving(true);
+    setMessage("");
+
+    try {
+      await apiFetch(`/products/${item.productoId}/comments`, {
+        method: "POST",
+        token,
+        body: {
+          rating: review.rating,
+          comentario: review.comentario
+        }
+      });
+
+      setReviewForms((current) => ({
+        ...current,
+        [key]: { rating: "5", comentario: "" }
+      }));
+      setActiveReviewKey("");
+      setMessage("Gracias, tu reseña ya aparece en el producto.");
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const buildRedirectUrl = (baseUrl, order, provider) => {
@@ -334,12 +386,57 @@ export function ProfilePage() {
                   <small>{new Date(order.fecha).toLocaleString()}</small>
                   <p>Metodo: {order.metodoPago || "Por definir"} · Total: ${order.total.toFixed(2)}</p>
                   {order.items?.length > 0 && (
-                    <p>
-                      Productos:{" "}
-                      {order.items
-                        .map((item) => `${item.nombre}${item.cantidad > 1 ? ` x${item.cantidad}` : ""}`)
-                        .join(", ")}
-                    </p>
+                    <div className="order-review-list">
+                      <p>
+                        Productos:{" "}
+                        {order.items
+                          .map((item) => `${item.nombre}${item.cantidad > 1 ? ` x${item.cantidad}` : ""}`)
+                          .join(", ")}
+                      </p>
+                      {canReviewOrder(order) &&
+                        order.items.map((item) => {
+                          const reviewKey = `${order.id}-${item.id || item.productoId}`;
+                          const review = getReviewForm(reviewKey);
+                          const isOpen = activeReviewKey === reviewKey;
+
+                          return (
+                            <div key={reviewKey} className="order-review-box">
+                              <div className="order-review-box__head">
+                                <span>{item.nombre}</span>
+                                <button type="button" className="button button--ghost" onClick={() => setActiveReviewKey(isOpen ? "" : reviewKey)}>
+                                  {isOpen ? "Cerrar reseña" : "Escribir reseña"}
+                                </button>
+                              </div>
+                              {isOpen && (
+                                <form className="order-review-form" onSubmit={(event) => submitProductReview(event, order, item)}>
+                                  <label>
+                                    Calificacion
+                                    <select value={review.rating} onChange={(event) => updateReviewForm(reviewKey, { rating: event.target.value })}>
+                                      <option value="5">5 estrellas</option>
+                                      <option value="4">4 estrellas</option>
+                                      <option value="3">3 estrellas</option>
+                                      <option value="2">2 estrellas</option>
+                                      <option value="1">1 estrella</option>
+                                    </select>
+                                  </label>
+                                  <label>
+                                    Tu reseña
+                                    <textarea
+                                      rows="3"
+                                      value={review.comentario}
+                                      onChange={(event) => updateReviewForm(reviewKey, { comentario: event.target.value })}
+                                      placeholder="Escribe tu experiencia con este producto"
+                                    />
+                                  </label>
+                                  <button type="submit" className="button button--primary" disabled={saving}>
+                                    {saving ? "Publicando..." : "Publicar reseña"}
+                                  </button>
+                                </form>
+                              )}
+                            </div>
+                          );
+                        })}
+                    </div>
                   )}
                   <p>Entrega estimada: {order.fechaEstimada ? new Date(order.fechaEstimada).toLocaleDateString() : "Por definir"}</p>
                   {isOrderPendingPayment(order) && !["cancelado", "cancelled", "canceled"].includes(String(order.estado || "").toLowerCase()) && (
