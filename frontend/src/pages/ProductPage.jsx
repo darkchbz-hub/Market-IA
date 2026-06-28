@@ -31,6 +31,7 @@ export function ProductPage() {
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [showAllTags, setShowAllTags] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -52,6 +53,7 @@ export function ProductPage() {
         setRelatedProducts(payload.relatedProducts || []);
         setSelectedImage(0);
         setQuantity(1);
+        setShowAllTags(false);
       })
       .catch((requestError) => {
         if (!active) return;
@@ -78,6 +80,7 @@ export function ProductPage() {
   }, [product]);
 
   const tags = useMemo(() => safeList(product?.tags), [product]);
+  const visibleTags = showAllTags ? tags : tags.slice(0, 3);
   const features = useMemo(() => safeList(product?.caracteristicas), [product]);
   const maxQuantity = Math.max(1, Math.min(Number(product?.stock || 1), 10));
   const canBuy = product && Number(product.stock || 0) > 0;
@@ -233,9 +236,14 @@ export function ProductPage() {
           <p className="muted-text">{product.descripcionCorta || product.descripcion || "Producto publicado en catalogo."}</p>
           {tags.length > 0 && (
             <div className="product-tag-list">
-              {tags.map((tag) => (
+              {visibleTags.map((tag) => (
                 <span key={tag}>{tag}</span>
               ))}
+              {tags.length > 3 && (
+                <button type="button" className="product-tag-toggle" onClick={() => setShowAllTags((current) => !current)}>
+                  {showAllTags ? "Ver menos" : "Ver mas..."}
+                </button>
+              )}
             </div>
           )}
         </article>
@@ -282,30 +290,48 @@ export function ProductPage() {
         </aside>
       </section>
 
-      <section className="detail-columns product-detail-info">
-        <article className="detail-card">
-          <p className="section-label">Descripcion</p>
-          <h2>Detalles del producto</h2>
-          <p className="muted-text">{product.descripcion || product.descripcionCorta || "Sin descripcion adicional por ahora."}</p>
+      <section className="product-detail-info product-detail-info--horizontal">
+        <article className="detail-card product-info-row">
+          <div className="product-info-row__head">
+            <p className="section-label">Descripcion</p>
+            <h2>Detalles del producto</h2>
+          </div>
+          <div className="product-info-row__body">
+            <p className="muted-text">{product.descripcion || product.descripcionCorta || "Sin descripcion adicional por ahora."}</p>
+          </div>
         </article>
-        <article className="detail-card">
-          <p className="section-label">Caracteristicas</p>
-          <h2>Lo mas importante</h2>
-          {features.length ? (
-            <ul className="feature-list">
-              {features.map((feature) => (
-                <li key={feature}>{feature}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="muted-text">Este producto aun no tiene caracteristicas extra.</p>
-          )}
+        <article className="detail-card product-info-row">
+          <div className="product-info-row__head">
+            <p className="section-label">Caracteristicas</p>
+            <h2>Lo mas importante</h2>
+          </div>
+          <div className="product-info-row__body">
+            {features.length ? (
+              <ul className="feature-list feature-list--inline">
+                {features.map((feature) => (
+                  <li key={feature}>{feature}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="muted-text">Este producto aun no tiene caracteristicas extra.</p>
+            )}
+          </div>
         </article>
-        <article className="detail-card">
-          <p className="section-label">Compra segura</p>
-          <h2>Envio y garantia</h2>
-          <p className="muted-text">{product.garantia || "Garantia segun condiciones del vendedor."}</p>
-          <p className="muted-text">{product.devolucion || "Puedes contactar soporte para dudas sobre entrega o devoluciones."}</p>
+        <article className="detail-card product-info-row">
+          <div className="product-info-row__head">
+            <p className="section-label">Compra segura</p>
+            <h2>Envio y garantia</h2>
+          </div>
+          <div className="product-info-row__body shipping-info-row">
+            <div className="shipping-info-item">
+              <strong>Garantia</strong>
+              <p className="muted-text">{product.garantia || "Garantia segun condiciones del vendedor."}</p>
+            </div>
+            <div className="shipping-info-item">
+              <strong>Envio y devoluciones</strong>
+              <p className="muted-text">{product.devolucion || "Puedes contactar soporte para dudas sobre entrega o devoluciones."}</p>
+            </div>
+          </div>
         </article>
       </section>
 
