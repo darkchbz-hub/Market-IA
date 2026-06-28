@@ -82,6 +82,7 @@ export function ProductPage() {
   const tags = useMemo(() => safeList(product?.tags), [product]);
   const visibleTags = showAllTags ? tags : tags.slice(0, 3);
   const features = useMemo(() => safeList(product?.caracteristicas), [product]);
+  const summaryFeatures = features.slice(0, 6);
   const maxQuantity = Math.max(1, Math.min(Number(product?.stock || 1), 10));
   const canBuy = product && Number(product.stock || 0) > 0;
 
@@ -244,6 +245,16 @@ export function ProductPage() {
                   {showAllTags ? "Ver menos" : "Ver mas..."}
                 </button>
               )}
+            </div>
+          )}
+          {summaryFeatures.length > 0 && (
+            <div className="product-feature-preview">
+              <p className="section-label">Caracteristicas</p>
+              <ul>
+                {summaryFeatures.map((feature) => (
+                  <li key={feature}>{feature}</li>
+                ))}
+              </ul>
             </div>
           )}
         </article>
