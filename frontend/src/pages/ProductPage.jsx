@@ -27,8 +27,6 @@ export function ProductPage() {
   const { addToCart } = useCart();
   const [product, setProduct] = useState(null);
   const [comments, setComments] = useState([]);
-  const [canComment, setCanComment] = useState(false);
-  const [reviewForm, setReviewForm] = useState({ rating: "5", comentario: "" });
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -50,7 +48,6 @@ export function ProductPage() {
         if (!active) return;
         setProduct(payload.product || null);
         setComments(payload.comments || []);
-        setCanComment(Boolean(payload.canComment));
         setRelatedProducts(payload.relatedProducts || []);
         setSelectedImage(0);
         setQuantity(1);
@@ -60,7 +57,6 @@ export function ProductPage() {
         if (!active) return;
         setProduct(null);
         setComments([]);
-        setCanComment(false);
         setRelatedProducts([]);
         setError(requestError.message || "No se pudo cargar el producto.");
       })
@@ -145,29 +141,6 @@ export function ProductPage() {
       navigate("/checkout");
     } catch (cartError) {
       setMessage(cartError.message || "No se pudo iniciar la compra.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const submitReview = async (event) => {
-    event.preventDefault();
-    if (!product) return;
-
-    setBusy(true);
-    setMessage("");
-    try {
-      const payload = await apiFetch(`/products/${product.slug || product.id}/comments`, {
-        method: "POST",
-        token,
-        body: reviewForm
-      });
-      setComments(payload.comments || []);
-      setCanComment(false);
-      setReviewForm({ rating: "5", comentario: "" });
-      setMessage("Gracias por compartir tu opinion.");
-    } catch (reviewError) {
-      setMessage(reviewError.message || "No se pudo guardar tu opinion.");
     } finally {
       setBusy(false);
     }
@@ -377,7 +350,7 @@ export function ProductPage() {
         ) : (
           <p className="muted-text">Aun no hay opiniones para este producto.</p>
         )}
-        {canComment ? (
+        {false ? (
           <form className="review-form" onSubmit={submitReview}>
             <label>
               Calificacion
@@ -403,7 +376,7 @@ export function ProductPage() {
             </button>
           </form>
         ) : (
-          <p className="muted-text">Solo los clientes que compraron este producto pueden publicar una opinion.</p>
+          <p className="muted-text">Para escribir una reseña, entra a tu cuenta y abre el producto desde tu historial de compras.</p>
         )}
       </section>
 
