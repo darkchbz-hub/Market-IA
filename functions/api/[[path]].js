@@ -60,6 +60,7 @@ import {
   updateSiteContent,
   updateAdminProductComment,
   updateOrderItemStatus,
+  updateOrderItemShipping,
   updateOrderStatus,
   updateOrderTracking,
   updateProduct,
@@ -1281,6 +1282,13 @@ export async function onRequest(context) {
       return json({
         items: await listAdminCarts(db)
       });
+    }
+
+    if (first === "admin" && second === "order-items" && third && segments[3] === "shipping" && request.method === "PATCH") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      const body = await readJson(request);
+      return json(await updateOrderItemShipping(db, Number(third), body));
     }
 
     if (first === "admin" && second === "order-items" && third && request.method === "PATCH") {

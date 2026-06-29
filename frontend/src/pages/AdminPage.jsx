@@ -33,6 +33,13 @@ const initialVideo = { titulo: "", descripcion: "", videoUrl: "", posterUrl: "",
 const initialMusic = { titulo: "", artista: "", audioUrl: "", portadaUrl: "", activa: true, orden: 1 };
 const initialPartner = { name: "", logoUrl: "" };
 const initialReview = { id: null, productId: "", reviewerName: "", rating: "5", comentario: "" };
+const shippingIconOptions = [
+  { id: "avion", label: "Avion", icon: "✈" },
+  { id: "barco", label: "Barco", icon: "🚢" },
+  { id: "tren", label: "Tren", icon: "🚆" },
+  { id: "coche", label: "Coche", icon: "🚗" },
+  { id: "moto", label: "Moto", icon: "🏍" }
+];
 const initialCatalogGenerator = {
   total: "10000",
   batchSize: "250",
@@ -410,6 +417,36 @@ export function AdminPage() {
     });
     await loadAdmin();
     setMessage("Seguimiento actualizado.");
+  };
+
+  const updateOrderItemLocal = (orderId, itemId, changes) => {
+    setOrders((current) =>
+      current.map((order) =>
+        order.id === orderId
+          ? {
+              ...order,
+              items: (order.items || []).map((item) => (Number(item.id) === Number(itemId) ? { ...item, ...changes } : item))
+            }
+          : order
+      )
+    );
+  };
+
+  const saveOrderItemShipping = async (orderId, item) => {
+    await apiFetch(`/admin/order-items/${item.id}/shipping`, {
+      method: "PATCH",
+      token,
+      body: {
+        entregaEstimada: item.entregaEstimada || "",
+        detalleEnvio: item.detalleEnvio || "",
+        iconoEnvio: item.iconoEnvio || "coche"
+      }
+    });
+    await loadAdmin();
+    if (selectedUser?.user?.id) {
+      await openUser(selectedUser.user.id);
+    }
+    setMessage("Informacion de envio actualizada.");
   };
 
   const removeOrder = async (orderId) => {
@@ -1073,6 +1110,54 @@ export function AdminPage() {
                 </div>
                 <small>{order.usuarioEmail} · {order.usuarioTelefono || "Sin telefono"}</small>
                 <p>{order.proveedorPago || "Sin proveedor"} · ${order.total.toFixed(2)}</p>
+                <div className="admin-shipping-list">
+                  {(order.items || []).length ? (
+                    order.items.map((item) => (
+                      <article key={`${order.id}-${item.id}`} className="admin-shipping-item">
+                        <div className="admin-shipping-item__head">
+                          <strong>{item.nombre}</strong>
+                          <span>Folio {item.folio || "Sin folio"}</span>
+                        </div>
+                        <div className="form-grid form-grid--wide">
+                          <label>
+                            Entrega estimada
+                            <input
+                              value={item.entregaEstimada || ""}
+                              onChange={(event) => updateOrderItemLocal(order.id, item.id, { entregaEstimada: event.target.value })}
+                              placeholder="Ej. 15 min a 1 hr, manana, 3 a 5 dias"
+                            />
+                          </label>
+                          <label>
+                            Detalle del envio
+                            <input
+                              value={item.detalleEnvio || ""}
+                              onChange={(event) => updateOrderItemLocal(order.id, item.id, { detalleEnvio: event.target.value })}
+                              placeholder="Ej. En almacen, aduana, terminal o reparto"
+                            />
+                          </label>
+                        </div>
+                        <div className="shipping-icon-picker">
+                          {shippingIconOptions.map((option) => (
+                            <button
+                              key={option.id}
+                              type="button"
+                              className={`shipping-icon-option${(item.iconoEnvio || "coche") === option.id ? " is-selected" : ""}`}
+                              onClick={() => updateOrderItemLocal(order.id, item.id, { iconoEnvio: option.id })}
+                            >
+                              <span>{option.icon}</span>
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                        <button type="button" className="button button--primary" onClick={() => saveOrderItemShipping(order.id, item)}>
+                          Guardar envio del producto
+                        </button>
+                      </article>
+                    ))
+                  ) : (
+                    <p className="muted-text">Sin productos detallados para editar envio.</p>
+                  )}
+                </div>
                 <div className="action-row">
                   {["pending_payment", "paid", "cancelled"].map((status) => (
                     <button key={status} type="button" className="button button--ghost" onClick={() => updateOrderStatus(order.id, status)}>

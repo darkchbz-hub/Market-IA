@@ -11,6 +11,17 @@ const initialAddress = {
   pais: "Mexico"
 };
 
+const shippingIconMap = {
+  avion: "✈",
+  barco: "🚢",
+  tren: "🚆",
+  coche: "🚗",
+  moto: "🏍"
+};
+
+const shippingUpdateMessage =
+  "Su pedido se modificara cada que llegue a una terminal, aduana, o almacen nuevo. Trabajamos con Mercado Libre, FedEx, DHL, J&T Express y Estafeta para un envio mas facil y en menos tiempo.";
+
 function statusLabel(status) {
   const value = String(status || "").trim().toLowerCase();
   if (["paid", "pagado"].includes(value)) return "Pagado";
@@ -405,23 +416,33 @@ export function ProfilePage() {
                           .map((item) => `${item.nombre}${item.cantidad > 1 ? ` x${item.cantidad}` : ""}`)
                           .join(", ")}
                       </p>
-                      {canReviewOrder(order) &&
-                        order.items.map((item) => {
+                      {order.items.map((item) => {
                           const reviewKey = `${order.id}-${item.id || item.productoId}`;
                           const review = getReviewForm(reviewKey);
                           const isOpen = activeReviewKey === reviewKey;
                           const alreadyReviewed = hasReviewedProduct(item.productoId);
+                          const canWriteReview = canReviewOrder(order);
 
                           return (
                             <div key={reviewKey} className="order-review-box">
                               <div className="order-review-box__head">
                                 <span>{item.nombre} {item.folio ? `| Folio ${item.folio}` : ""}</span>
                                 {alreadyReviewed && <span className="order-review-box__done">Ya has hecho una reseña de este producto</span>}
-                                <button type="button" className={`button button--ghost${alreadyReviewed ? " order-review-box__hidden-action" : ""}`} disabled={alreadyReviewed} onClick={() => setActiveReviewKey(isOpen ? "" : reviewKey)}>
+                                <button type="button" className={`button button--ghost${!canWriteReview || alreadyReviewed ? " order-review-box__hidden-action" : ""}`} disabled={!canWriteReview || alreadyReviewed} onClick={() => setActiveReviewKey(isOpen ? "" : reviewKey)}>
                                   {isOpen ? "Cerrar reseña" : "Escribir reseña"}
                                 </button>
                               </div>
-                              {isOpen && !alreadyReviewed && (
+                              <div className="customer-shipping-status">
+                                <div className="customer-shipping-status__icon" aria-hidden="true">
+                                  {shippingIconMap[item.iconoEnvio || "coche"] || shippingIconMap.coche}
+                                </div>
+                                <div>
+                                  <strong>Entrega estimada: {item.entregaEstimada || "Por definir"}</strong>
+                                  <p>{item.detalleEnvio || "Tu paquete esta en preparacion. Actualizaremos este detalle pronto."}</p>
+                                  <small>{shippingUpdateMessage}</small>
+                                </div>
+                              </div>
+                              {canWriteReview && isOpen && !alreadyReviewed && (
                                 <form className="order-review-form" onSubmit={(event) => submitProductReview(event, order, item)}>
                                   <label>
                                     Calificacion
@@ -452,7 +473,6 @@ export function ProfilePage() {
                         })}
                     </div>
                   )}
-                  <p>Entrega estimada: {order.fechaEstimada ? new Date(order.fechaEstimada).toLocaleDateString() : "Por definir"}</p>
                   {isOrderPendingPayment(order) && !["cancelado", "cancelled", "canceled"].includes(String(order.estado || "").toLowerCase()) && (
                     <div className="form-inline">
                       <label>

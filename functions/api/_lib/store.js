@@ -1062,6 +1062,21 @@ async function createUniqueOrderItemFolio(db) {
   return buildOrderItemFolioFromId(Number(latest?.id || 0) + Date.now() % 100000);
 }
 
+function serializeOrderItem(item) {
+  return {
+    id: Number(item.id),
+    productoId: Number(item.product_id),
+    nombre: item.nombre,
+    precio: Number(item.precio),
+    cantidad: Number(item.cantidad),
+    folio: item.folio || buildOrderItemFolioFromId(item.id),
+    estado: item.estado || "pendiente",
+    entregaEstimada: item.entrega_estimada || "",
+    detalleEnvio: item.detalle_envio || "",
+    iconoEnvio: item.icono_envio || "coche"
+  };
+}
+
 async function seedDatabase(db, env) {
   const shouldSeedProducts = String(env?.SEED_PRODUCTS || "").toLowerCase() === "true";
 
@@ -1135,6 +1150,9 @@ export async function ensureDatabase(env) {
       await ensureColumn(env.DB, "order_items", "estado", "TEXT NOT NULL DEFAULT 'pendiente'");
       await ensureColumn(env.DB, "order_items", "updated_at", "TEXT NOT NULL DEFAULT ''");
       await ensureColumn(env.DB, "order_items", "folio", "TEXT NOT NULL DEFAULT ''");
+      await ensureColumn(env.DB, "order_items", "entrega_estimada", "TEXT NOT NULL DEFAULT ''");
+      await ensureColumn(env.DB, "order_items", "detalle_envio", "TEXT NOT NULL DEFAULT ''");
+      await ensureColumn(env.DB, "order_items", "icono_envio", "TEXT NOT NULL DEFAULT 'coche'");
       await ensureColumn(env.DB, "orders", "tracking", "TEXT NOT NULL DEFAULT '[]'");
       await ensureColumn(env.DB, "users", "telefono", "TEXT NOT NULL DEFAULT ''");
       await ensureColumn(env.DB, "users", "is_active", "INTEGER NOT NULL DEFAULT 1");
@@ -1949,15 +1967,7 @@ export async function getOrderWithItems(db, orderId) {
     total: Number(order.total),
     direccion: parseJson(order.direccion, {}),
     tracking: parseJson(order.tracking, []),
-    items: (items.results || []).map((item) => ({
-      id: Number(item.id),
-      productoId: Number(item.product_id),
-      nombre: item.nombre,
-      precio: Number(item.precio),
-      cantidad: Number(item.cantidad),
-      folio: item.folio || buildOrderItemFolioFromId(item.id),
-      estado: item.estado || "pendiente"
-    }))
+    items: (items.results || []).map(serializeOrderItem)
   };
 }
 
@@ -2037,7 +2047,7 @@ export async function getUserDashboard(db, userId) {
     ? await db
         .prepare(
           `
-          SELECT id, order_id, product_id, nombre, precio, cantidad, estado, folio
+          SELECT id, order_id, product_id, nombre, precio, cantidad, estado, folio, entrega_estimada, detalle_envio, icono_envio
           FROM order_items
           WHERE order_id IN (${orderRows.map(() => "?").join(",")})
           ORDER BY id ASC
@@ -2050,15 +2060,7 @@ export async function getUserDashboard(db, userId) {
 
   for (const item of orderItems.results || []) {
     const list = itemsByOrder.get(item.order_id) || [];
-    list.push({
-      id: Number(item.id),
-      productoId: Number(item.product_id),
-      nombre: item.nombre,
-      precio: Number(item.precio),
-      cantidad: Number(item.cantidad),
-      folio: item.folio || buildOrderItemFolioFromId(item.id),
-      estado: item.estado || "pendiente"
-    });
+    list.push(serializeOrderItem(item));
     itemsByOrder.set(item.order_id, list);
   }
   const searches = await db
@@ -2151,15 +2153,7 @@ export async function listAdminOrders(db) {
 
   for (const item of items.results || []) {
     const list = itemsByOrder.get(item.order_id) || [];
-    list.push({
-      id: Number(item.id),
-      productoId: Number(item.product_id),
-      nombre: item.nombre,
-      precio: Number(item.precio),
-      cantidad: Number(item.cantidad),
-      folio: item.folio || buildOrderItemFolioFromId(item.id),
-      estado: item.estado || "pendiente"
-    });
+    list.push(serializeOrderItem(item));
     itemsByOrder.set(item.order_id, list);
   }
 
@@ -2196,6 +2190,9 @@ export async function searchAdminFolios(db, search = "") {
             oi.precio,
             oi.cantidad,
             oi.estado AS item_estado,
+            oi.entrega_estimada,
+            oi.detalle_envio,
+            oi.icono_envio,
             o.estado AS order_estado,
             o.total,
             o.created_at,
@@ -2224,6 +2221,9 @@ export async function searchAdminFolios(db, search = "") {
             oi.precio,
             oi.cantidad,
             oi.estado AS item_estado,
+            oi.entrega_estimada,
+            oi.detalle_envio,
+            oi.icono_envio,
             o.estado AS order_estado,
             o.total,
             o.created_at,
@@ -2248,6 +2248,9 @@ export async function searchAdminFolios(db, search = "") {
     precio: Number(item.precio),
     cantidad: Number(item.cantidad),
     estadoItem: item.item_estado || "pendiente",
+    entregaEstimada: item.entrega_estimada || "",
+    detalleEnvio: item.detalle_envio || "",
+    iconoEnvio: item.icono_envio || "coche",
     estadoPedido: item.order_estado || "pending_payment",
     totalPedido: Number(item.total),
     fecha: item.created_at,
@@ -2398,6 +2401,27 @@ export async function updateOrderItemStatus(db, itemId, estado) {
   }
 
   return { ok: true };
+}
+
+export async function updateOrderItemShipping(db, itemId, input = {}) {
+  const allowedIcons = new Set(["avion", "barco", "tren", "coche", "moto"]);
+  const entregaEstimada = String(input.entregaEstimada || input.entrega_estimada || "").trim();
+  const detalleEnvio = String(input.detalleEnvio || input.detalle_envio || "").trim();
+  const iconoEnvio = allowedIcons.has(String(input.iconoEnvio || input.icono_envio || "")) ? String(input.iconoEnvio || input.icono_envio) : "coche";
+
+  await db
+    .prepare(
+      `
+      UPDATE order_items
+      SET entrega_estimada = ?, detalle_envio = ?, icono_envio = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `
+    )
+    .bind(entregaEstimada, detalleEnvio, iconoEnvio, Number(itemId))
+    .run();
+
+  const item = await db.prepare("SELECT * FROM order_items WHERE id = ?").bind(Number(itemId)).first();
+  return { ok: true, item: item ? serializeOrderItem(item) : null };
 }
 
 export async function updateOrderTracking(db, orderId, tracking) {
