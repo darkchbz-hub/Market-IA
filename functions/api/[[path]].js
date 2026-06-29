@@ -30,6 +30,7 @@ import {
   getCartState,
   getOrderById,
   getOrderWithItems,
+  findUserOrderItemByFolio,
   getProductById,
   getRegistrationCode,
   getSiteContent,
@@ -266,6 +267,100 @@ function statusLabel(status) {
   return "Pendiente por pagar";
 }
 
+function extractFolio(text) {
+  const match = String(text || "").match(/\b\d{8,12}\b/);
+  return match ? match[0] : "";
+}
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function botName(botId) {
+  if (botId === "grayce") return "Grayce";
+  if (botId === "barban") return "BarbaN";
+  return "Taz";
+}
+
+function formatOrderItemInsight(match) {
+  if (!match?.order || !match?.item) {
+    return "";
+  }
+
+  const order = match.order;
+  const item = match.item;
+  const tracking = Array.isArray(order.tracking) ? order.tracking : [];
+  const latestTracking = tracking.length ? tracking[tracking.length - 1] : null;
+  const lines = [
+    `Folio ${item.folio}: ${item.nombre}`,
+    `Cantidad: ${item.cantidad}`,
+    `Precio del producto: ${formatCurrency(item.precio)}`,
+    `Pedido: ${order.id}`,
+    `Estado del pedido: ${statusLabel(order.estado)}`,
+    `Metodo de pago: ${order.proveedorPago || "Por definir"}`,
+    `Entrega estimada: ${item.entregaEstimada || "Por definir"}`,
+    `Detalle de envio: ${item.detalleEnvio || "Aun no hay actualizacion de ruta"}`,
+    `Transporte asignado: ${item.iconoEnvio || "coche"}`
+  ];
+
+  if (latestTracking) {
+    lines.push(`Ultimo movimiento: ${latestTracking.title || "Actualizacion"}${latestTracking.location ? ` en ${latestTracking.location}` : ""}${latestTracking.note ? `. ${latestTracking.note}` : ""}`);
+  }
+
+  return lines.join(". ");
+}
+
+function flattenOrderItems(orders) {
+  return (orders || []).filter(Boolean).flatMap((order) =>
+    (order.items || []).map((item) => ({
+      order,
+      item
+    }))
+  );
+}
+
+function findLocalFolioMatch(orders, folio) {
+  if (!folio) {
+    return null;
+  }
+
+  return flattenOrderItems(orders).find(({ item }) => String(item.folio || "") === String(folio)) || null;
+}
+
+function buildProductSuggestions(catalog, cartItems, viewedProducts, userText) {
+  const query = normalizeText(userText);
+  const queryWords = query.split(/[^a-z0-9]+/).filter((word) => word.length >= 3);
+  const products = Array.isArray(catalog?.items) ? catalog.items : [];
+  const scored = products
+    .map((product) => {
+      const haystack = normalizeText([product.nombre, product.descripcionCorta, product.descripcion, product.categoria, ...(product.tags || [])].filter(Boolean).join(" "));
+      const score = queryWords.reduce((sum, word) => sum + (haystack.includes(word) ? 2 : 0), 0) + (Number(product.precioDescuento || 0) > 0 ? 1 : 0);
+      return { product, score };
+    })
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map(({ product }) => product);
+
+  const fallbackNames = [
+    ...cartItems.map((item) => ({ nombre: item.nombre, precio: item.precio, categoria: item.categoria })),
+    ...viewedProducts.map((item) => ({ nombre: item.producto?.nombre, precio: 0, categoria: "" })),
+    ...products
+  ].filter((item) => item?.nombre);
+
+  const unique = [];
+  for (const product of [...scored, ...fallbackNames]) {
+    if (!unique.some((item) => item.nombre === product.nombre)) {
+      unique.push(product);
+    }
+    if (unique.length >= 3) break;
+  }
+
+  return unique;
+}
+
 function extractOpenAiText(payload) {
   if (typeof payload?.output_text === "string" && payload.output_text.trim()) {
     return payload.output_text.trim();
@@ -285,7 +380,7 @@ function extractOpenAiText(payload) {
 
 function botInstructions(botId) {
   const shared =
-    "Eres un asistente de una tienda online. Responde en espanol, rapido, claro y amable. Usa solo el contexto enviado: catalogo, categorias, portada, perfil, carrito, compras y pagos del usuario. No inventes stock, precios, pedidos ni politicas. Si falta un dato, dilo y ofrece el siguiente paso. No reveles datos privados de otros usuarios ni secretos del sistema. Cuando hables de estados de pedido usa solo estos textos: Pagado, Cancelado o Pendiente por pagar; no uses codigos como paid, pending_payment o cancelled.";
+    "Eres un asistente de una tienda online. Responde en espanol, rapido, claro y amable. Usa solo el contexto enviado: catalogo, categorias, portada, perfil, carrito, compras, folios, envios y pagos del usuario. No inventes stock, precios, pedidos, folios, rutas ni politicas. Si falta un dato, dilo y ofrece el siguiente paso. No reveles datos privados de otros usuarios ni secretos del sistema. Cuando hables de estados de pedido usa solo estos textos: Pagado, Cancelado o Pendiente por pagar; no uses codigos como paid, pending_payment o cancelled. Si hay folioEncontrado, priorizalo y responde con producto, estado, precio, cantidad, entrega estimada, detalle de envio y metodo de pago.";
 
   if (botId === "grayce") {
     return `${shared} Tu nombre es Grayce. Tu especialidad es recomendar productos, ofertas, categorias y opciones segun presupuesto, carrito e intereses del cliente.`;
@@ -298,7 +393,7 @@ function botInstructions(botId) {
   return `${shared} Tu nombre es Taz. Tu especialidad es dar informes de cuenta del propio usuario: carrito, compras, pagos, totales, estado de pedidos y resumen de actividad.`;
 }
 
-async function buildOpenAiAssistantReply({ env, botId, user, dashboard, cart, userText, siteContext }) {
+async function buildOpenAiAssistantReply({ env, botId, user, dashboard, cart, userText, siteContext, folioContext }) {
   if (!env.OPENAI_API_KEY) {
     return null;
   }
@@ -329,6 +424,7 @@ async function buildOpenAiAssistantReply({ env, botId, user, dashboard, cart, us
           },
           sitio: siteContext,
           carrito: cart?.items || [],
+          folioEncontrado: folioContext || null,
           pedidos: (dashboard?.historial?.ordenes || []).map((order) => ({
             ...order,
             estadoCodigo: order.estado,
@@ -363,6 +459,8 @@ async function buildOpenAiAssistantReply({ env, botId, user, dashboard, cart, us
 
 async function buildAssistantReply({ env, db, botId, user, dashboard, cart, userText }) {
   const text = String(userText || "").toLowerCase();
+  const normalizedText = normalizeText(userText);
+  const requestedFolio = extractFolio(userText);
   const orders = Array.isArray(dashboard?.historial?.ordenes) ? dashboard.historial.ordenes : [];
   const pendingOrders = orders.filter((order) => ["pending_payment", "paid"].includes(String(order.estado || "")));
   const latestOrder = orders[0];
@@ -385,6 +483,11 @@ async function buildAssistantReply({ env, db, botId, user, dashboard, cart, user
     categorias: buildCategoryItems(),
     productos: catalog.items || []
   };
+  const localFolioMatch = findLocalFolioMatch(orders, requestedFolio);
+  const dbFolioMatch = requestedFolio && !localFolioMatch ? await findUserOrderItemByFolio(db, user.id, requestedFolio) : null;
+  const folioContext = localFolioMatch
+    ? { order: localFolioMatch.order, item: localFolioMatch.item }
+    : dbFolioMatch;
 
   const aiReply = await buildOpenAiAssistantReply({
     env,
@@ -393,7 +496,8 @@ async function buildAssistantReply({ env, db, botId, user, dashboard, cart, user
     dashboard,
     cart,
     userText,
-    siteContext
+    siteContext,
+    folioContext
   });
 
   if (aiReply) {
@@ -401,27 +505,56 @@ async function buildAssistantReply({ env, db, botId, user, dashboard, cart, user
   }
 
   let core = "";
+  const name = botName(botId);
   const categoryText = siteContext.categorias.map((item) => item.nombre).filter(Boolean).slice(0, 5).join(", ") || "categorias principales";
   const productText = siteContext.productos.map((item) => item.nombre).filter(Boolean).slice(0, 3).join(", ") || recommendationText;
+  const suggestions = buildProductSuggestions(catalog, cartItems, viewedProducts, userText);
+  const suggestionText = suggestions.length
+    ? suggestions.map((product) => `${product.nombre}${Number(product.precioDescuento || 0) > 0 ? ` en oferta a ${formatCurrency(product.precioDescuento)}` : product.precio ? ` por ${formatCurrency(product.precio)}` : ""}`).join("; ")
+    : recommendationText;
 
-  if (/pagina|tienda|catalogo|categorias|secciones|que sabes|sabes de/.test(text)) {
-    const botName = botId === "grayce" ? "Grayce" : botId === "barban" ? "BarbaN" : "Taz";
-    return `${botName}: Conozco el catalogo disponible, categorias como ${categoryText}, productos destacados como ${productText}, tu carrito, tus compras y tus pagos registrados. Preguntame por recomendaciones, pedidos, carrito o pagos y te contesto con lo que exista en tu cuenta.`;
+  if (requestedFolio && !folioContext) {
+    if (botId === "grayce") {
+      return "Grayce: Ese folio pertenece al area de pedidos. Para revisarlo con seguridad, usa BarbaN para envio/soporte o Taz para informe de compra y pago.";
+    }
+    return `${name}: Busque el folio ${requestedFolio} en tus compras y no aparece en tu cuenta. Revisa que tenga entre 8 y 12 numeros o enviame una captura para que soporte humano lo valide.`;
   }
 
-  if (/carrito|cart|agregad/.test(text)) {
-    core = `Tienes ${cartItemsCount} articulo(s) en carrito con total aproximado de ${formatCurrency(cart?.total)}.`;
-  } else if (/pedido|orden|id|seguimiento|estatus|estado/.test(text)) {
+  if (folioContext) {
+    const folioDetail = formatOrderItemInsight(folioContext);
+    if (botId === "grayce") {
+      return `Grayce: Puedo ayudarte a elegir productos, pero ese folio lo atiende mejor BarbaN o Taz. Dato rapido: ${folioContext.item.nombre} esta en tu historial. Si quieres, tambien puedo recomendarte algo parecido.`;
+    }
+    if (botId === "barban") {
+      return `BarbaN: Claro, encontre tu folio. ${folioDetail}. Su pedido se actualizara cada que llegue a una terminal, aduana o almacen nuevo.`;
+    }
+    return `Taz: Encontre el folio en tu cuenta. ${folioDetail}. Si quieres, tambien puedo resumirte todos tus pagos o compras activas.`;
+  }
+
+  if (/pagina|tienda|catalogo|categorias|secciones|que sabes|sabes de/.test(text)) {
+    return `${name}: Conozco el catalogo disponible, categorias como ${categoryText}, productos destacados como ${productText}, tu carrito, tus compras, pagos y folios registrados en tu cuenta. Preguntame por productos, un folio, pedidos, carrito o pagos y te respondo con datos reales.`;
+  }
+
+  if (/recom|producto|interesar|categoria|presupuesto|oferta|barato|digital|suscripcion|comprar/.test(normalizedText)) {
+    core = `Con lo que hay disponible, revisaria: ${suggestionText}. Si me dices presupuesto, categoria o uso exacto, afino mejor la recomendacion.`;
+  } else if (/carrito|cart|agregad/.test(text)) {
+    const cartDetail = cartItems.length ? cartItems.map((item) => `${item.cantidad} x ${item.nombre} (${formatCurrency(item.subtotal || item.precio * item.cantidad)})`).join("; ") : "sin productos agregados";
+    core = `Tienes ${cartItemsCount} articulo(s) en carrito con total aproximado de ${formatCurrency(cart?.total)}: ${cartDetail}.`;
+  } else if (/pedido|orden|id|seguimiento|estatus|estado|folio/.test(text)) {
     if (latestOrder) {
-      core = `Tu orden mas reciente es ${latestOrder.id} y su estado actual es ${latestOrderStatus}. Tambien tienes ${pendingOrders.length} pedido(s) activo(s).`;
+      const folios = flattenOrderItems([latestOrder]).map(({ item }) => item.folio).filter(Boolean).slice(0, 3).join(", ");
+      core = `Tu orden mas reciente es ${latestOrder.id} y su estado actual es ${latestOrderStatus}. Tambien tienes ${pendingOrders.length} pedido(s) activo(s). ${folios ? `Folios recientes: ${folios}. Enviame uno para darte el detalle exacto.` : ""}`;
     } else {
       core = "Aun no tienes pedidos registrados en tu cuenta.";
     }
   } else if (/pago|tarjeta|paypal|mercado\s*pago|transferencia|visa|mastercard/.test(text)) {
-    core = "Puedes pagar por Mercado Pago, PayPal o tarjeta. Si un pago queda pendiente, vuelve a seleccionar forma de pago desde tu pedido.";
+    const paidCount = orders.filter((order) => ["paid", "pagado"].includes(String(order.estado || "").toLowerCase())).length;
+    const pendingPaymentCount = orders.filter((order) => statusLabel(order.estado) === "Pendiente por pagar").length;
+    core = `Tienes ${paidCount} pedido(s) pagado(s) y ${pendingPaymentCount} pendiente(s) por pagar. Puedes pagar por Mercado Pago, PayPal o tarjeta segun la opcion disponible en checkout.`;
   } else if (/envio|entrega|llega|tiempo|dias/.test(text)) {
+    const latestItem = flattenOrderItems([latestOrder]).find(Boolean)?.item;
     core = latestOrder
-      ? `Tu pedido ${latestOrder.id} muestra estado ${latestOrderStatus}. Revisa tracking en Tu cuenta > Tus compras para ver el avance.`
+      ? `Tu pedido ${latestOrder.id} muestra estado ${latestOrderStatus}. ${latestItem ? `Entrega estimada del producto ${latestItem.nombre}: ${latestItem.entregaEstimada || "Por definir"}. Detalle: ${latestItem.detalleEnvio || "Aun sin actualizacion de ruta"}.` : "Revisa Tu cuenta > Tus compras para ver el avance."}`
       : "Cuando tengas un pedido activo, aqui te mostraremos seguimiento y fecha estimada.";
   } else if (/cuenta|login|acceso|correo|codigo|verificacion|nickname/.test(text)) {
     core = `Tu cuenta esta vinculada a ${user.email}. Si el codigo de acceso falla, solicita uno nuevo desde registro.`;
@@ -434,13 +567,22 @@ async function buildAssistantReply({ env, db, botId, user, dashboard, cart, user
   }
 
   if (botId === "grayce") {
-    return `Grayce: Hola ${user.nombre}. ${core} Por tus intereses, revisaria ${recommendationText}. Si me dices presupuesto o categoria, te recomiendo algo mas exacto.`;
+    if (/pedido|envio|entrega|folio|pago|carrito/.test(normalizedText)) {
+      return `Grayce: Mi fuerte son recomendaciones y productos. Sobre eso: ${core} Para soporte de pedido usa BarbaN y para informe de compras/pagos usa Taz.`;
+    }
+    return `Grayce: Hola ${user.nombre}. ${core}`;
   }
   if (botId === "barban") {
     if (/asesor|humano|agente|persona/.test(text)) {
       return "BarbaN: Te dejo en espera para soporte humano. Si el administrador no esta conectado, tu mensaje queda guardado para seguimiento.";
     }
-    return `BarbaN: Entendido. ${core} Si necesitas revisar un pedido especifico, enviame el folio o escribe que quieres hablar con asesor.`;
+    if (/recom|producto|categoria|oferta|presupuesto/.test(normalizedText) && !/pedido|envio|entrega|folio/.test(normalizedText)) {
+      return "BarbaN: Eso lo atiende mejor Grayce, que recomienda productos y ofertas. Yo puedo ayudarte con pedidos, envios, entregas, cancelaciones y folios.";
+    }
+    return `BarbaN: Entendido. ${core} Si necesitas revisar un producto comprado en especifico, enviame su folio de 8 a 12 numeros.`;
+  }
+  if (/recom|oferta|categoria|presupuesto/.test(normalizedText) && !/carrito|compra|pago|pedido|folio/.test(normalizedText)) {
+    return "Taz: Eso lo ve mejor Grayce porque ella recomienda productos. Yo puedo darte informes de tu carrito, compras, pagos, folios y estado de cuenta.";
   }
   return `Taz: Informe rapido: ${orders.length} compra(s), ${pendingOrders.length} pedido(s) activo(s), ${cartItemsCount} articulo(s) en carrito y total aproximado ${formatCurrency(cart?.total)}. ${core}`;
 }

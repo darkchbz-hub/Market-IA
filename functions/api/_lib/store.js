@@ -1971,6 +1971,52 @@ export async function getOrderWithItems(db, orderId) {
   };
 }
 
+export async function findUserOrderItemByFolio(db, userId, folio) {
+  const cleanFolio = String(folio || "").trim();
+
+  if (!/^\d{8,12}$/.test(cleanFolio)) {
+    return null;
+  }
+
+  const row = await db
+    .prepare(
+      `
+      SELECT
+        oi.*,
+        o.id AS order_id_value,
+        o.total AS order_total,
+        o.estado AS order_estado,
+        o.proveedor_pago,
+        o.direccion,
+        o.tracking,
+        o.created_at AS order_created_at
+      FROM order_items oi
+      INNER JOIN orders o ON o.id = oi.order_id
+      WHERE o.user_id = ? AND oi.folio = ?
+      LIMIT 1
+    `
+    )
+    .bind(Number(userId), cleanFolio)
+    .first();
+
+  if (!row) {
+    return null;
+  }
+
+  return {
+    order: {
+      id: row.order_id_value || row.order_id,
+      total: Number(row.order_total),
+      estado: row.order_estado,
+      proveedorPago: row.proveedor_pago || "",
+      direccion: parseJson(row.direccion, {}),
+      tracking: parseJson(row.tracking, []),
+      fecha: row.order_created_at
+    },
+    item: serializeOrderItem(row)
+  };
+}
+
 export async function savePaymentRecord(db, { orderId, provider, status, externalId = "", approvalUrl = "", payload = "" }) {
   const existing = await db.prepare("SELECT id FROM payments WHERE order_id = ? AND provider = ?").bind(orderId, provider).first();
 
