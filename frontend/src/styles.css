@@ -2294,6 +2294,69 @@ textarea {
   display: block;
 }
 
+.payment-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.payment-card__logos {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 5px;
+  max-width: 172px;
+}
+
+.payment-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  border-radius: 8px;
+  padding: 4px 7px;
+  background: #fff;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: #0f172a;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+}
+
+.payment-logo.is-mercado {
+  min-width: 92px;
+  color: #047bc7;
+  background: linear-gradient(135deg, #e0f2fe, #ffffff);
+}
+
+.payment-logo.is-paypal {
+  min-width: 70px;
+  color: #003087;
+  background: linear-gradient(135deg, #ffffff, #dbeafe);
+}
+
+.payment-logo.is-visa {
+  color: #1a1f71;
+}
+
+.payment-logo.is-mastercard {
+  color: #eb001b;
+}
+
+.payment-logo.is-apple {
+  color: #111827;
+}
+
+.payment-logo.is-google {
+  color: #1a73e8;
+}
+
+.payment-logo.is-link {
+  color: #635bff;
+}
+
 .payment-card span {
   color: var(--muted);
   line-height: 1.35;
@@ -3025,6 +3088,16 @@ textarea {
   .market-footer,
   .market-footer__links {
     grid-template-columns: 1fr;
+  }
+
+  .payment-card__top {
+    display: grid;
+    gap: 8px;
+  }
+
+  .payment-card__logos {
+    justify-content: flex-start;
+    max-width: none;
   }
 
   .pill-row,

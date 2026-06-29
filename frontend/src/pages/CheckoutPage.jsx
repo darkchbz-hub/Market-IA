@@ -175,9 +175,30 @@ export function CheckoutPage() {
 
         <div className="payment-grid">
           {[
-            { id: "mercadopago", title: "Mercado Pago", description: "Transferencia o pago guiado por link personalizado." },
-            { id: "paypal", title: "PayPal", description: "Pago con posible comision segun tu configuracion." },
-            { id: "stripe", title: "Tarjeta", description: "Visa / Mastercard por link configurado." }
+            {
+              id: "mercadopago",
+              title: "Mercado Pago",
+              description: "Pago seguro por Mercado Pago",
+              logos: [{ label: "Mercado Pago", className: "is-mercado" }]
+            },
+            {
+              id: "paypal",
+              title: "PayPal",
+              description: "Medio de pago oficial y seguro",
+              logos: [{ label: "PayPal", className: "is-paypal" }]
+            },
+            {
+              id: "stripe",
+              title: "Tarjeta",
+              description: "VISA y MASTERCARD con pagos seguros y protegidos (Apple Pay, Google Pay, Link)",
+              logos: [
+                { label: "VISA", className: "is-visa" },
+                { label: "Mastercard", className: "is-mastercard" },
+                { label: "Apple Pay", className: "is-apple" },
+                { label: "G Pay", className: "is-google" },
+                { label: "Link", className: "is-link" }
+              ]
+            }
           ].map((item) => (
             <button
               key={item.id}
@@ -185,7 +206,16 @@ export function CheckoutPage() {
               className={`payment-card ${provider === item.id ? "is-selected" : ""}`}
               onClick={() => setProvider(item.id)}
             >
-              <strong>{item.title}</strong>
+              <span className="payment-card__top">
+                <strong>{item.title}</strong>
+                <span className="payment-card__logos" aria-label={`Logos de ${item.title}`}>
+                  {item.logos.map((logo) => (
+                    <span key={logo.label} className={`payment-logo ${logo.className}`}>
+                      {logo.label}
+                    </span>
+                  ))}
+                </span>
+              </span>
               <span>{item.description}</span>
               {paymentLinks?.[item.id] && <small>Link activo</small>}
             </button>
