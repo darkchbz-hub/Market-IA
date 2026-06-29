@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCart } from "../context/CartContext.jsx";
 import { apiFetch } from "../lib/api.js";
+
+const PAYPAL_QR_URL = "/assets/paypal-payment-qr.png";
 
 function statusLabel(status) {
   const value = String(status || "").trim().toLowerCase();
@@ -30,7 +32,6 @@ const initialAddress = {
 };
 
 export function CheckoutPage() {
-  const navigate = useNavigate();
   const { token, user } = useAuth();
   const { refreshCart } = useCart();
   const [summary, setSummary] = useState(null);
@@ -79,50 +80,20 @@ export function CheckoutPage() {
   };
 
   const continueWithProvider = async (createdOrder) => {
+    if (provider === "paypal") {
+      window.location.href = buildRedirectUrl(PAYPAL_QR_URL, createdOrder);
+      return;
+    }
+
     const customLink = paymentLinks?.[provider] || "";
-    const whatsappFallback = paymentLinks?.whatsapp || "";
-    const redirectLink = buildRedirectUrl(customLink || whatsappFallback, createdOrder);
+    const redirectLink = buildRedirectUrl(customLink, createdOrder);
 
     if (redirectLink) {
       window.location.href = redirectLink;
       return;
     }
 
-    if (provider === "paypal") {
-      const payload = await apiFetch("/payments/paypal/order", {
-        method: "POST",
-        token,
-        body: { orderId: createdOrder.id }
-      });
-
-      if (payload.approvalUrl) {
-        window.location.href = payload.approvalUrl;
-        return;
-      }
-    }
-
-    if (provider === "mercadopago") {
-      const payload = await apiFetch("/payments/mercadopago/preference", {
-        method: "POST",
-        token,
-        body: { orderId: createdOrder.id }
-      });
-
-      if (payload.initPoint) {
-        window.location.href = payload.initPoint;
-        return;
-      }
-    }
-
-    if (provider === "stripe") {
-      await apiFetch("/payments/stripe/payment-intent", {
-        method: "POST",
-        token,
-        body: { orderId: createdOrder.id }
-      });
-    }
-
-    navigate(`/checkout/success?orderId=${createdOrder.id}`);
+    setMessage("No hay un link de pago configurado para este metodo. Elige otro metodo o contacta soporte.");
   };
 
   const handleSubmit = async (event) => {
