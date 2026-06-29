@@ -2289,8 +2289,7 @@ textarea {
 }
 
 .payment-card strong,
-.payment-card span,
-.payment-card small {
+.payment-card span {
   display: block;
 }
 
@@ -2304,71 +2303,26 @@ textarea {
 .payment-card__logos {
   display: flex;
   justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 5px;
-  max-width: 172px;
-}
-
-.payment-logo {
-  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  min-height: 24px;
-  border-radius: 8px;
-  padding: 4px 7px;
+  max-width: 150px;
+  min-height: 44px;
+  padding: 6px;
+  border-radius: 12px;
   background: #fff;
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  color: #0f172a;
-  font-size: 0.68rem;
-  font-weight: 900;
-  letter-spacing: -0.01em;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
 }
 
-.payment-logo.is-mercado {
-  min-width: 92px;
-  color: #047bc7;
-  background: linear-gradient(135deg, #e0f2fe, #ffffff);
-}
-
-.payment-logo.is-paypal {
-  min-width: 70px;
-  color: #003087;
-  background: linear-gradient(135deg, #ffffff, #dbeafe);
-}
-
-.payment-logo.is-visa {
-  color: #1a1f71;
-}
-
-.payment-logo.is-mastercard {
-  color: #eb001b;
-}
-
-.payment-logo.is-apple {
-  color: #111827;
-}
-
-.payment-logo.is-google {
-  color: #1a73e8;
-}
-
-.payment-logo.is-link {
-  color: #635bff;
+.payment-card__logos img {
+  width: 100%;
+  max-height: 58px;
+  object-fit: contain;
+  border-radius: 8px;
 }
 
 .payment-card span {
   color: var(--muted);
   line-height: 1.35;
-}
-
-.payment-card small {
-  width: fit-content;
-  border-radius: 999px;
-  padding: 5px 9px;
-  background: color-mix(in srgb, #38bdf8 14%, var(--panel));
-  color: #0369a1;
-  font-weight: 800;
 }
 
 .payment-card:hover {
@@ -3097,7 +3051,11 @@ textarea {
 
   .payment-card__logos {
     justify-content: flex-start;
-    max-width: none;
+    max-width: 220px;
+  }
+
+  .payment-card__logos img {
+    max-height: 70px;
   }
 
   .pill-row,

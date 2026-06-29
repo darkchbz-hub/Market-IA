@@ -179,25 +179,22 @@ export function CheckoutPage() {
               id: "mercadopago",
               title: "Mercado Pago",
               description: "Pago seguro por Mercado Pago",
-              logos: [{ label: "Mercado Pago", className: "is-mercado" }]
+              logoSrc: "/assets/payment-mercadopago.png",
+              logoAlt: "Mercado Pago"
             },
             {
               id: "paypal",
               title: "PayPal",
               description: "Medio de pago oficial y seguro",
-              logos: [{ label: "PayPal", className: "is-paypal" }]
+              logoSrc: "/assets/payment-paypal.png",
+              logoAlt: "PayPal"
             },
             {
               id: "stripe",
               title: "Tarjeta",
               description: "VISA y MASTERCARD con pagos seguros y protegidos (Apple Pay, Google Pay, Link)",
-              logos: [
-                { label: "VISA", className: "is-visa" },
-                { label: "Mastercard", className: "is-mastercard" },
-                { label: "Apple Pay", className: "is-apple" },
-                { label: "G Pay", className: "is-google" },
-                { label: "Link", className: "is-link" }
-              ]
+              logoSrc: "/assets/payment-cards-wallets.png",
+              logoAlt: "Visa, Mastercard, American Express, Apple Pay y Google Pay"
             }
           ].map((item) => (
             <button
@@ -209,15 +206,10 @@ export function CheckoutPage() {
               <span className="payment-card__top">
                 <strong>{item.title}</strong>
                 <span className="payment-card__logos" aria-label={`Logos de ${item.title}`}>
-                  {item.logos.map((logo) => (
-                    <span key={logo.label} className={`payment-logo ${logo.className}`}>
-                      {logo.label}
-                    </span>
-                  ))}
+                  <img src={item.logoSrc} alt={item.logoAlt} />
                 </span>
               </span>
               <span>{item.description}</span>
-              {paymentLinks?.[item.id] && <small>Link activo</small>}
             </button>
           ))}
         </div>
