@@ -186,7 +186,7 @@ export function CheckoutPage() {
               id: "paypal",
               title: "PayPal",
               description: "Medio de pago oficial y seguro",
-              logoSrc: "/assets/payment-paypal.png",
+              logoSrc: "/assets/payment-paypal-wide.png",
               logoAlt: "PayPal"
             },
             {
