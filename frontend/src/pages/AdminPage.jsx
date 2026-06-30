@@ -554,7 +554,7 @@ export function AdminPage() {
   const setTrackAsActive = async (track) => {
     const requests = (content.music || []).map((item) =>
       apiFetch(`/admin/music/${item.id}`, {
-        method: "PUT",
+        method: "PATCH",
         token,
         body: {
           ...item,
@@ -664,6 +664,7 @@ export function AdminPage() {
         <div className="admin-tabs">
           {[
             ["dashboard", "Dashboard"],
+            ["home", "Inicio"],
             ["products", "Productos"],
             ["users", "Usuarios"],
             ["orders", "Pedidos"],
@@ -1362,7 +1363,7 @@ export function AdminPage() {
         </section>
       )}
 
-      {tab === "content" && (
+      {(tab === "home" || tab === "content") && (
         <div className="admin-grid">
           <section className="section-card">
             <div className="section-heading section-heading--compact">
@@ -1686,8 +1687,20 @@ export function AdminPage() {
                   />
                 </label>
                 <label>
-                  O pega URL/base64
-                  <input value={videoForm.videoUrl} onChange={(event) => setVideoForm((current) => ({ ...current, videoUrl: event.target.value }))} />
+                  O pega URL/base64 o link de YouTube
+                  <input
+                    value={videoForm.videoUrl}
+                    onChange={(event) => setVideoForm((current) => ({ ...current, videoUrl: event.target.value }))}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                  />
+                </label>
+                <label className="checkbox-chip">
+                  <input
+                    type="checkbox"
+                    checked={videoForm.activa}
+                    onChange={(event) => setVideoForm((current) => ({ ...current, activa: event.target.checked }))}
+                  />
+                  Mostrar este anuncio en el inicio
                 </label>
                 <button type="submit" className="button button--ghost">Guardar video</button>
               </form>

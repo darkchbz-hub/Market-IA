@@ -11,6 +11,37 @@ const fallbackHome = {
   partnerLogos: []
 };
 
+function getYouTubeEmbedUrl(url) {
+  const raw = String(url || "").trim();
+  if (!raw) return "";
+
+  try {
+    const parsed = new URL(raw);
+    const host = parsed.hostname.replace(/^www\./, "");
+    let id = "";
+
+    if (host === "youtu.be") {
+      id = parsed.pathname.split("/").filter(Boolean)[0] || "";
+    } else if (host.includes("youtube.com")) {
+      id = parsed.searchParams.get("v") || "";
+      if (!id && parsed.pathname.includes("/shorts/")) {
+        id = parsed.pathname.split("/shorts/")[1]?.split("/")[0] || "";
+      }
+      if (!id && parsed.pathname.includes("/embed/")) {
+        id = parsed.pathname.split("/embed/")[1]?.split("/")[0] || "";
+      }
+    }
+
+    return id ? `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1` : "";
+  } catch {
+    return "";
+  }
+}
+
+function isVideoUrl(url) {
+  return /\.(mp4|webm|ogg)(\?.*)?$/i.test(String(url || "")) || String(url || "").startsWith("data:video/");
+}
+
 export function HomePage() {
   const navigate = useNavigate();
   const [home, setHome] = useState(fallbackHome);
@@ -51,6 +82,11 @@ export function HomePage() {
     ],
     []
   );
+  const activeVideo = useMemo(() => {
+    const videos = Array.isArray(home.videos) ? home.videos : [];
+    return videos.find((video) => video.activa !== false && video.videoUrl) || videos.find((video) => video.videoUrl) || null;
+  }, [home.videos]);
+  const activeVideoEmbed = getYouTubeEmbedUrl(activeVideo?.videoUrl);
 
   const promoItems = useMemo(() => {
     const banners = (home.banners || []).slice(0, 5).map((banner) => banner.titulo).filter(Boolean);
@@ -171,17 +207,42 @@ export function HomePage() {
           </div>
         </article>
 
-        <aside className="hero-panel hero-panel--secondary">
-          <p className="eyebrow">Tema visual</p>
-          <h2>Una experiencia mas ordenada</h2>
-          <div className="hero-stat-grid">
-            {heroStats.map((item) => (
-              <article key={item.label}>
-                <strong>{item.value}</strong>
-                <span>{item.label}</span>
-              </article>
-            ))}
-          </div>
+        <aside className="hero-panel hero-panel--secondary home-ad-panel">
+          <p className="eyebrow">{activeVideo ? "Anuncio destacado" : "Tema visual"}</p>
+          {activeVideo ? (
+            <>
+              <h2>{activeVideo.titulo || "Anuncio de portada"}</h2>
+              <div className="home-ad-player">
+                {activeVideoEmbed ? (
+                  <iframe
+                    src={activeVideoEmbed}
+                    title={activeVideo.titulo || "Video de portada"}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                ) : isVideoUrl(activeVideo.videoUrl) ? (
+                  <video src={activeVideo.videoUrl} controls playsInline poster={activeVideo.posterUrl || ""} />
+                ) : (
+                  <a className="button button--primary" href={activeVideo.videoUrl} target="_blank" rel="noreferrer">
+                    Ver anuncio
+                  </a>
+                )}
+              </div>
+              {activeVideo.descripcion && <p className="muted-text">{activeVideo.descripcion}</p>}
+            </>
+          ) : (
+            <>
+              <h2>Una experiencia mas ordenada</h2>
+              <div className="hero-stat-grid">
+                {heroStats.map((item) => (
+                  <article key={item.label}>
+                    <strong>{item.value}</strong>
+                    <span>{item.label}</span>
+                  </article>
+                ))}
+              </div>
+            </>
+          )}
         </aside>
       </section>
 

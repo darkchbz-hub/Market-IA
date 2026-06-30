@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api.js";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -102,6 +102,15 @@ function loadJson(key, fallback) {
   }
 }
 
+function isYouTubeUrl(url) {
+  try {
+    const parsed = new URL(String(url || ""));
+    return /(^|\.)youtube\.com$|(^|\.)youtu\.be$/i.test(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
 export function AppShell() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -119,6 +128,8 @@ export function AppShell() {
   const [sectionsOpen, setSectionsOpen] = useState(false);
   const [routeLog, setRouteLog] = useState([]);
   const [theme, setTheme] = useState(getInitialTheme);
+  const audioRef = useRef(null);
+  const [musicPlaying, setMusicPlaying] = useState(false);
   const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
   const isDarkTheme = theme === DARK_THEME;
   const toggleTheme = () => {
@@ -131,11 +142,12 @@ export function AppShell() {
         setSiteData({
           settings: payload.settings || {},
           general: payload.general || {},
-          categories: payload.categories || []
+          categories: payload.categories || [],
+          music: payload.music || []
         });
       })
       .catch(() => {
-        setSiteData({ settings: {}, general: {}, categories: [] });
+        setSiteData({ settings: {}, general: {}, categories: [], music: [] });
       });
   }, []);
 
@@ -294,6 +306,18 @@ export function AppShell() {
   const supportHref = whatsappLink || "/chat";
   const supportIsExternal = /^https?:\/\//i.test(supportHref);
   const supportEmail = siteData.general?.supportEmail || "graycshop.26@gmail.com";
+  const activeTrack = useMemo(() => {
+    const tracks = Array.isArray(siteData.music) ? siteData.music : [];
+    return tracks.find((track) => track.activa !== false && track.audioUrl) || null;
+  }, [siteData.music]);
+  const canPlayInlineTrack = activeTrack?.audioUrl && !isYouTubeUrl(activeTrack.audioUrl);
+  const musicVolume = Math.max(0, Math.min(1, Number(siteData.general?.backgroundMusicVolume ?? 35) / 100));
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = musicVolume;
+    }
+  }, [musicVolume, activeTrack?.audioUrl]);
 
   const commandItems = useMemo(() => {
     const actionItems = [
@@ -596,6 +620,45 @@ export function AppShell() {
           <span>{isAdmin ? "Admin" : "Centro"}</span>
         </button>
       </nav>
+
+      {activeTrack?.audioUrl && (
+        <aside className="music-player" aria-label="Reproductor de musica ambiental">
+          <div className="music-player__meta">
+            <strong>{activeTrack.titulo || "Musica ambiental"}</strong>
+            <small>{activeTrack.artista || "Gray C Shop"}</small>
+          </div>
+          {canPlayInlineTrack ? (
+            <>
+              <audio
+                ref={audioRef}
+                src={activeTrack.audioUrl}
+                loop
+                onPlay={() => setMusicPlaying(true)}
+                onPause={() => setMusicPlaying(false)}
+              />
+              <button
+                type="button"
+                className="button button--ghost"
+                onClick={() => {
+                  const player = audioRef.current;
+                  if (!player) return;
+                  if (player.paused) {
+                    player.play().catch(() => setMusicPlaying(false));
+                  } else {
+                    player.pause();
+                  }
+                }}
+              >
+                {musicPlaying ? "Pausar" : "Reproducir"}
+              </button>
+            </>
+          ) : (
+            <a className="button button--ghost" href={activeTrack.audioUrl} target="_blank" rel="noreferrer">
+              Abrir musica
+            </a>
+          )}
+        </aside>
+      )}
 
       <div className="magic-dock" aria-label="Accesibilidad visual">
         <a
