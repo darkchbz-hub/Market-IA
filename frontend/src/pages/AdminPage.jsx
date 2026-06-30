@@ -33,6 +33,17 @@ const initialVideo = { titulo: "", descripcion: "", videoUrl: "", posterUrl: "",
 const initialMusic = { titulo: "", artista: "", audioUrl: "", portadaUrl: "", activa: true, orden: 1 };
 const initialPartner = { name: "", logoUrl: "" };
 const initialReview = { id: null, productId: "", reviewerName: "", rating: "5", comentario: "" };
+const initialCategory = {
+  id: null,
+  nombre: "",
+  slug: "",
+  descripcion: "",
+  icono: "",
+  color: "#1d4ed8",
+  destacada: false,
+  activa: true,
+  orden: "0"
+};
 const defaultStoreStatusCards = [
   {
     title: "Productos eliminados",
@@ -188,6 +199,7 @@ export function AdminPage() {
   const [musicForm, setMusicForm] = useState(initialMusic);
   const [partnerForm, setPartnerForm] = useState(initialPartner);
   const [reviewForm, setReviewForm] = useState(initialReview);
+  const [categoryForm, setCategoryForm] = useState(initialCategory);
   const [generatorForm, setGeneratorForm] = useState(initialCatalogGenerator);
   const [importJson, setImportJson] = useState("");
   const [runningBulkTask, setRunningBulkTask] = useState(false);
@@ -414,6 +426,58 @@ export function AdminPage() {
       resetProductForm();
     }
     setMessage("Producto eliminado.");
+  };
+
+  const resetCategoryForm = () => setCategoryForm(initialCategory);
+
+  const fillCategoryForm = (category) => {
+    setCategoryForm({
+      id: category.id,
+      nombre: category.nombre || "",
+      slug: category.slug || "",
+      descripcion: category.descripcion || "",
+      icono: category.icono || "",
+      color: category.color || "#1d4ed8",
+      destacada: Boolean(category.destacada),
+      activa: Boolean(category.activa),
+      orden: String(category.orden || 0)
+    });
+  };
+
+  const saveCategory = async (event) => {
+    event.preventDefault();
+    if (!categoryForm.nombre.trim() || !categoryForm.slug.trim()) {
+      setMessage("La categoria necesita nombre y slug.");
+      return;
+    }
+
+    const payload = {
+      ...categoryForm,
+      orden: Number(categoryForm.orden || 0)
+    };
+    const path = categoryForm.id ? `/admin/categories/${categoryForm.id}` : "/admin/categories";
+    const method = categoryForm.id ? "PATCH" : "POST";
+
+    await apiFetch(path, { method, token, body: payload });
+    resetCategoryForm();
+    await loadAdmin();
+    setMessage(categoryForm.id ? "Categoria actualizada." : "Categoria creada.");
+  };
+
+  const deleteCategoryItem = async (categoryId) => {
+    if (!window.confirm("Se eliminara esta categoria y dejara de aparecer en el inicio. Deseas continuar?")) {
+      return;
+    }
+
+    await apiFetch(`/admin/categories/${categoryId}`, {
+      method: "DELETE",
+      token
+    });
+    if (categoryForm.id === categoryId) {
+      resetCategoryForm();
+    }
+    await loadAdmin();
+    setMessage("Categoria eliminada.");
   };
 
   const updateOrderStatus = async (orderId, estado) => {
@@ -1366,23 +1430,125 @@ export function AdminPage() {
       )}
 
       {tab === "categories" && (
-        <section className="section-card">
-          <div className="section-heading section-heading--compact">
-            <div>
-              <p className="section-label">Categorias</p>
-              <h2>Secciones visibles en la tienda</h2>
+        <div className="admin-grid">
+          <section className="section-card">
+            <div className="section-heading section-heading--compact">
+              <div>
+                <p className="section-label">Categorias</p>
+                <h2>{categoryForm.id ? "Editar seccion del inicio" : "Crear nueva seccion"}</h2>
+              </div>
             </div>
-          </div>
-          <div className="list-stack">
-            {categories.map((category) => (
-              <article key={category.id} className="mini-item">
-                <strong>{category.nombre}</strong>
-                <span>{category.slug}</span>
-                <small>{category.descripcion}</small>
-              </article>
-            ))}
-          </div>
-        </section>
+            <form className="list-stack" onSubmit={saveCategory}>
+              <div className="form-grid form-grid--wide">
+                <label>
+                  Nombre visible
+                  <input
+                    value={categoryForm.nombre}
+                    onChange={(event) => setCategoryForm((current) => ({ ...current, nombre: event.target.value }))}
+                    placeholder="Ej. Tecnologia"
+                  />
+                </label>
+                <label>
+                  Slug / clave
+                  <input
+                    value={categoryForm.slug}
+                    onChange={(event) => setCategoryForm((current) => ({ ...current, slug: event.target.value.toLowerCase().replace(/\s+/g, "-") }))}
+                    placeholder="tecnologia"
+                  />
+                </label>
+                <label>
+                  Icono
+                  <input
+                    value={categoryForm.icono}
+                    onChange={(event) => setCategoryForm((current) => ({ ...current, icono: event.target.value }))}
+                    placeholder="Opcional"
+                  />
+                </label>
+                <label>
+                  Color
+                  <input
+                    type="color"
+                    value={categoryForm.color || "#1d4ed8"}
+                    onChange={(event) => setCategoryForm((current) => ({ ...current, color: event.target.value }))}
+                  />
+                </label>
+                <label>
+                  Orden
+                  <input
+                    type="number"
+                    value={categoryForm.orden}
+                    onChange={(event) => setCategoryForm((current) => ({ ...current, orden: event.target.value }))}
+                  />
+                </label>
+              </div>
+              <label>
+                Descripcion
+                <textarea
+                  rows="4"
+                  value={categoryForm.descripcion}
+                  onChange={(event) => setCategoryForm((current) => ({ ...current, descripcion: event.target.value }))}
+                  placeholder="Texto que aparece en el banner del inicio."
+                />
+              </label>
+              <div className="action-row">
+                <label className="checkbox-chip">
+                  <input
+                    type="checkbox"
+                    checked={categoryForm.destacada}
+                    onChange={(event) => setCategoryForm((current) => ({ ...current, destacada: event.target.checked }))}
+                  />
+                  Destacada
+                </label>
+                <label className="checkbox-chip">
+                  <input
+                    type="checkbox"
+                    checked={categoryForm.activa}
+                    onChange={(event) => setCategoryForm((current) => ({ ...current, activa: event.target.checked }))}
+                  />
+                  Visible en tienda e inicio
+                </label>
+              </div>
+              <div className="action-row">
+                <button type="submit" className="button button--primary">
+                  {categoryForm.id ? "Guardar cambios" : "Crear categoria"}
+                </button>
+                {categoryForm.id && (
+                  <button type="button" className="button button--ghost" onClick={resetCategoryForm}>
+                    Cancelar edicion
+                  </button>
+                )}
+              </div>
+            </form>
+          </section>
+
+          <section className="section-card">
+            <div className="section-heading section-heading--compact">
+              <div>
+                <p className="section-label">Banners por categoria</p>
+                <h2>Jardin, Tecnologia y demas</h2>
+              </div>
+            </div>
+            <p className="muted-text">Estas secciones alimentan el carrusel del inicio cuando no hay banners personalizados suficientes.</p>
+            <div className="list-stack">
+              {categories.map((category) => (
+                <article key={category.id} className="mini-item">
+                  <div>
+                    <strong>{category.nombre}</strong>
+                    <span>{category.slug} | orden {category.orden}</span>
+                    <small>{category.descripcion}</small>
+                    <small>{category.activa ? "Visible" : "Oculta"} | {category.destacada ? "Destacada" : "Normal"}</small>
+                  </div>
+                  <button type="button" className="button button--ghost" onClick={() => fillCategoryForm(category)}>
+                    Editar
+                  </button>
+                  <button type="button" className="button button--danger" onClick={() => deleteCategoryItem(category.id)}>
+                    Eliminar
+                  </button>
+                </article>
+              ))}
+            </div>
+          </section>
+        </div>
       )}
 
       {(tab === "home" || tab === "content") && (
