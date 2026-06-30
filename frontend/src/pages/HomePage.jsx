@@ -131,8 +131,7 @@ export function HomePage() {
 
   const promoItems = useMemo(() => {
     const banners = (home.banners || []).slice(0, 5).map((banner) => banner.titulo).filter(Boolean);
-    const categories = (home.categories || []).slice(0, 6).map((category) => category.nombre).filter(Boolean);
-    const base = [...banners, ...categories];
+    const base = [...banners];
     return base.length
       ? [...base, ...base]
       : [
@@ -145,7 +144,7 @@ export function HomePage() {
           "Ofertas destacadas",
           "Tecnologia premium"
         ];
-  }, [home.banners, home.categories]);
+  }, [home.banners]);
 
   const spotlightSlides = useMemo(() => {
     const bannerSlides =
@@ -159,17 +158,7 @@ export function HomePage() {
         action: () => navigate("/catalogo")
       })) || [];
 
-    const fallbackSlides = (home.categories || []).slice(0, 3).map((category, index) => ({
-      id: `category-${category.id}`,
-      eyebrow: "Explora por tipo de compra",
-      title: category.nombre,
-      description: category.descripcion || "Abre esta seccion para ver una experiencia mas ordenada.",
-      cta: "Explorar categoria",
-      image: "",
-      action: () => navigate(`/catalogo?category=${category.slug}`)
-    }));
-
-    const combined = [...bannerSlides, ...fallbackSlides];
+    const combined = [...bannerSlides];
     return combined.length ? combined : [
       {
         id: "default-1",
@@ -181,7 +170,7 @@ export function HomePage() {
         action: () => navigate("/catalogo")
       }
     ];
-  }, [home.banners, home.categories, navigate]);
+  }, [home.banners, navigate]);
 
   useEffect(() => {
     if (spotlightSlides.length <= 1) {
@@ -197,7 +186,7 @@ export function HomePage() {
 
   useEffect(() => {
     setSpotlightIndex(0);
-  }, [home.banners, home.categories]);
+  }, [home.banners]);
 
   return (
     <div className="page-stack">
