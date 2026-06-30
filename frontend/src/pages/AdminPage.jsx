@@ -1638,6 +1638,9 @@ export function AdminPage() {
                 }
               />
             </label>
+            <button type="button" className="button button--ghost" onClick={saveHomepage}>
+              Guardar volumen de musica
+            </button>
             <button type="button" className="button button--primary" onClick={saveHomepage}>
               Guardar textos y portada
             </button>

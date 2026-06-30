@@ -319,19 +319,44 @@ export function AppShell() {
     }
 
     player.volume = musicVolume;
-    const startMusic = () => {
-      player.play().catch(() => {});
+    player.muted = false;
+
+    let unlocked = false;
+    const startMusic = async () => {
+      if (unlocked || !audioRef.current) {
+        return;
+      }
+
+      try {
+        audioRef.current.volume = musicVolume;
+        audioRef.current.muted = false;
+        await audioRef.current.play();
+        unlocked = true;
+      } catch {
+        unlocked = false;
+      }
     };
 
     startMusic();
-    window.addEventListener("pointerdown", startMusic, { once: true });
-    window.addEventListener("keydown", startMusic, { once: true });
+    window.addEventListener("pointerdown", startMusic, { capture: true });
+    window.addEventListener("click", startMusic, { capture: true });
+    window.addEventListener("touchstart", startMusic, { capture: true });
+    window.addEventListener("keydown", startMusic, { capture: true });
 
     return () => {
-      window.removeEventListener("pointerdown", startMusic);
-      window.removeEventListener("keydown", startMusic);
+      window.removeEventListener("pointerdown", startMusic, { capture: true });
+      window.removeEventListener("click", startMusic, { capture: true });
+      window.removeEventListener("touchstart", startMusic, { capture: true });
+      window.removeEventListener("keydown", startMusic, { capture: true });
     };
   }, [musicVolume, activeTrack?.audioUrl, canPlayInlineTrack]);
+
+  useEffect(() => {
+    const player = audioRef.current;
+    if (player) {
+      player.volume = musicVolume;
+    }
+  }, [musicVolume]);
 
   const commandItems = useMemo(() => {
     const actionItems = [
@@ -643,6 +668,8 @@ export function AppShell() {
           autoPlay
           loop
           preload="auto"
+          controls={false}
+          playsInline
           aria-hidden="true"
         />
       )}
