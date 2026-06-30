@@ -582,7 +582,7 @@ const defaultSiteContent = {
   general: {
     siteName: "Gray C Shop",
     tagline: "Marketplace elegante para categorias premium y compras confiables.",
-    supportEmail: "graycshop26@gmail.com",
+    supportEmail: "graycshop.26@gmail.com",
     supportPhone: "+52 5512345678",
     signupInviteCode: "123456",
     allowedEmailDomains: ["gmail.com", "outlook.com", "hotmail.com", "live.com", "icloud.com", "yahoo.com"],
@@ -2685,7 +2685,7 @@ export async function getSiteContent(db) {
         };
   }
 
-  if (!content.general?.supportEmail || ["ventas@graycshop.com", "soporte@graycshop.trade"].includes(String(content.general.supportEmail).trim().toLowerCase())) {
+  if (!content.general?.supportEmail || ["ventas@graycshop.com", "soporte@graycshop.trade", "graycshop26@gmail.com"].includes(String(content.general.supportEmail).trim().toLowerCase())) {
     content.general = {
       ...(content.general || {}),
       supportEmail: defaultSiteContent.general.supportEmail
