@@ -1380,6 +1380,10 @@ export function AdminPage() {
               <input value={content.general.tagline || ""} onChange={(event) => setContent((current) => ({ ...current, general: { ...current.general, tagline: event.target.value } }))} />
             </label>
             <label>
+              Correo oficial de la web
+              <input value={content.general.supportEmail || ""} onChange={(event) => setContent((current) => ({ ...current, general: { ...current.general, supportEmail: event.target.value } }))} />
+            </label>
+            <label>
               Codigo de invitacion (6 digitos)
               <input
                 value={content.general.signupInviteCode || ""}

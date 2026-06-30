@@ -293,7 +293,7 @@ export function AppShell() {
   const whatsappLink = siteData.general?.paymentLinks?.whatsapp || siteData.general?.whatsapp || "";
   const supportHref = whatsappLink || "/chat";
   const supportIsExternal = /^https?:\/\//i.test(supportHref);
-  const supportEmail = siteData.general?.supportEmail || "soporte@graycshop.trade";
+  const supportEmail = siteData.general?.supportEmail || "graycshop26@gmail.com";
 
   const commandItems = useMemo(() => {
     const actionItems = [
