@@ -8,7 +8,8 @@ const fallbackHome = {
   categories: [],
   banners: [],
   videos: [],
-  partnerLogos: []
+  partnerLogos: [],
+  offerProducts: []
 };
 
 function getYouTubeEmbedUrl(url) {
@@ -32,7 +33,7 @@ function getYouTubeEmbedUrl(url) {
       }
     }
 
-    return id ? `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1` : "";
+    return id ? `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1&autoplay=1&mute=1&playsinline=1&loop=1&playlist=${id}` : "";
   } catch {
     return "";
   }
@@ -40,6 +41,34 @@ function getYouTubeEmbedUrl(url) {
 
 function isVideoUrl(url) {
   return /\.(mp4|webm|ogg)(\?.*)?$/i.test(String(url || "")) || String(url || "").startsWith("data:video/");
+}
+
+const defaultStatusCards = [
+  {
+    title: "Productos eliminados",
+    text: "El inventario visible fue retirado para crear una nueva coleccion con estandar mas alto."
+  },
+  {
+    title: "Ventas restauradas",
+    text: "La seccion comercial se mantiene limpia para iniciar un nuevo ciclo de ventas desde base renovada."
+  },
+  {
+    title: "Experiencia mejorada",
+    text: "Navegacion renovada, botones de accion rapida y un look mucho mas profesional."
+  }
+];
+
+function getDailyOfferProducts(products) {
+  const offers = Array.isArray(products) ? products.filter((product) => product?.oferta) : [];
+  const daySeed = Math.floor(Date.now() / 86400000);
+
+  return [...offers]
+    .sort((a, b) => {
+      const left = `${a.id || a.slug || a.nombre}-${daySeed}`;
+      const right = `${b.id || b.slug || b.nombre}-${daySeed}`;
+      return left.localeCompare(right);
+    })
+    .slice(0, 6);
 }
 
 export function HomePage() {
@@ -87,6 +116,18 @@ export function HomePage() {
     return videos.find((video) => video.activa !== false && video.videoUrl) || videos.find((video) => video.videoUrl) || null;
   }, [home.videos]);
   const activeVideoEmbed = getYouTubeEmbedUrl(activeVideo?.videoUrl);
+  const statusCards = useMemo(() => {
+    const configured = Array.isArray(home.settings?.storeStatusCards) ? home.settings.storeStatusCards : [];
+    const normalized = configured
+      .map((card, index) => ({
+        title: String(card?.title || defaultStatusCards[index]?.title || "").trim(),
+        text: String(card?.text || defaultStatusCards[index]?.text || "").trim()
+      }))
+      .filter((card) => card.title || card.text);
+
+    return normalized.length ? normalized.slice(0, 3) : defaultStatusCards;
+  }, [home.settings]);
+  const dailyOfferProducts = useMemo(() => getDailyOfferProducts(home.offerProducts), [home.offerProducts]);
 
   const promoItems = useMemo(() => {
     const banners = (home.banners || []).slice(0, 5).map((banner) => banner.titulo).filter(Boolean);
@@ -221,7 +262,7 @@ export function HomePage() {
                     allowFullScreen
                   />
                 ) : isVideoUrl(activeVideo.videoUrl) ? (
-                  <video src={activeVideo.videoUrl} controls playsInline poster={activeVideo.posterUrl || ""} />
+                  <video src={activeVideo.videoUrl} autoPlay muted loop playsInline poster={activeVideo.posterUrl || ""} />
                 ) : (
                   <a className="button button--primary" href={activeVideo.videoUrl} target="_blank" rel="noreferrer">
                     Ver anuncio
@@ -274,37 +315,41 @@ export function HomePage() {
           </div>
         </div>
         <div className="detail-columns detail-columns--status">
-          <article className="detail-card">
-            <h3>Productos eliminados</h3>
-            <p>El inventario visible fue retirado para crear una nueva coleccion con estandar mas alto.</p>
-          </article>
-          <article className="detail-card">
-            <h3>Ventas restauradas</h3>
-            <p>La seccion comercial se mantiene limpia para iniciar un nuevo ciclo de ventas desde base renovada.</p>
-          </article>
-          <article className="detail-card">
-            <h3>Experiencia mejorada</h3>
-            <p>Navegacion renovada, botones de accion rapida y un look mucho mas profesional.</p>
-          </article>
+          {statusCards.map((card, index) => (
+            <article key={`${card.title}-${index}`} className="detail-card">
+              <h3>{card.title}</h3>
+              <p>{card.text}</p>
+            </article>
+          ))}
         </div>
       </section>
 
-      {!!home.banners?.length && (
+      {!!dailyOfferProducts.length && (
         <section className="section-card">
           <div className="section-heading">
             <div>
-              <p className="section-label">Identidad visual</p>
-              <h2>Nueva direccion grafica</h2>
+              <p className="section-label">Ofertas del dia</p>
+              <h2>Anuncios compactos con productos en promocion</h2>
             </div>
           </div>
-          <div className="video-grid">
-            {home.banners.slice(0, 2).map((banner) => (
-              <article key={banner.id} className="video-card">
-                <img src={banner.mediaUrl} alt={banner.titulo} className="media-thumb media-thumb--wide" />
-                <strong>{banner.titulo}</strong>
-                <p>{banner.subtitulo}</p>
+          <div className="daily-offer-grid">
+            {dailyOfferProducts.map((product) => {
+              const hasOffer = Number(product.precioAnterior || 0) > Number(product.precio || 0);
+              return (
+              <article key={product.id} className="daily-offer-card">
+                <img src={product.imagenes?.[0] || "/assets/gray-c-shop-logo.png?v=20260514-2"} alt={product.nombre} />
+                <div>
+                  <strong>{product.nombre}</strong>
+                  <span>{product.categoria}</span>
+                  <p>
+                    {hasOffer && <small>${Number(product.precioAnterior || 0).toFixed(2)}</small>}
+                    <b>${Number(product.precio || 0).toFixed(2)}</b>
+                    {Number(product.descuento || 0) > 0 && <em>{product.descuento}% off</em>}
+                  </p>
+                </div>
               </article>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}

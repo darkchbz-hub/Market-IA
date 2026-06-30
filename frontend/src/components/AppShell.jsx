@@ -129,7 +129,6 @@ export function AppShell() {
   const [routeLog, setRouteLog] = useState([]);
   const [theme, setTheme] = useState(getInitialTheme);
   const audioRef = useRef(null);
-  const [musicPlaying, setMusicPlaying] = useState(false);
   const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
   const isDarkTheme = theme === DARK_THEME;
   const toggleTheme = () => {
@@ -314,10 +313,25 @@ export function AppShell() {
   const musicVolume = Math.max(0, Math.min(1, Number(siteData.general?.backgroundMusicVolume ?? 35) / 100));
 
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = musicVolume;
+    const player = audioRef.current;
+    if (!player || !canPlayInlineTrack) {
+      return undefined;
     }
-  }, [musicVolume, activeTrack?.audioUrl]);
+
+    player.volume = musicVolume;
+    const startMusic = () => {
+      player.play().catch(() => {});
+    };
+
+    startMusic();
+    window.addEventListener("pointerdown", startMusic, { once: true });
+    window.addEventListener("keydown", startMusic, { once: true });
+
+    return () => {
+      window.removeEventListener("pointerdown", startMusic);
+      window.removeEventListener("keydown", startMusic);
+    };
+  }, [musicVolume, activeTrack?.audioUrl, canPlayInlineTrack]);
 
   const commandItems = useMemo(() => {
     const actionItems = [
@@ -621,43 +635,16 @@ export function AppShell() {
         </button>
       </nav>
 
-      {activeTrack?.audioUrl && (
-        <aside className="music-player" aria-label="Reproductor de musica ambiental">
-          <div className="music-player__meta">
-            <strong>{activeTrack.titulo || "Musica ambiental"}</strong>
-            <small>{activeTrack.artista || "Gray C Shop"}</small>
-          </div>
-          {canPlayInlineTrack ? (
-            <>
-              <audio
-                ref={audioRef}
-                src={activeTrack.audioUrl}
-                loop
-                onPlay={() => setMusicPlaying(true)}
-                onPause={() => setMusicPlaying(false)}
-              />
-              <button
-                type="button"
-                className="button button--ghost"
-                onClick={() => {
-                  const player = audioRef.current;
-                  if (!player) return;
-                  if (player.paused) {
-                    player.play().catch(() => setMusicPlaying(false));
-                  } else {
-                    player.pause();
-                  }
-                }}
-              >
-                {musicPlaying ? "Pausar" : "Reproducir"}
-              </button>
-            </>
-          ) : (
-            <a className="button button--ghost" href={activeTrack.audioUrl} target="_blank" rel="noreferrer">
-              Abrir musica
-            </a>
-          )}
-        </aside>
+      {canPlayInlineTrack && (
+        <audio
+          ref={audioRef}
+          className="ambient-audio"
+          src={activeTrack.audioUrl}
+          autoPlay
+          loop
+          preload="auto"
+          aria-hidden="true"
+        />
       )}
 
       <div className="magic-dock" aria-label="Accesibilidad visual">

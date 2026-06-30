@@ -33,6 +33,20 @@ const initialVideo = { titulo: "", descripcion: "", videoUrl: "", posterUrl: "",
 const initialMusic = { titulo: "", artista: "", audioUrl: "", portadaUrl: "", activa: true, orden: 1 };
 const initialPartner = { name: "", logoUrl: "" };
 const initialReview = { id: null, productId: "", reviewerName: "", rating: "5", comentario: "" };
+const defaultStoreStatusCards = [
+  {
+    title: "Productos eliminados",
+    text: "El inventario visible fue retirado para crear una nueva coleccion con estandar mas alto."
+  },
+  {
+    title: "Ventas restauradas",
+    text: "La seccion comercial se mantiene limpia para iniciar un nuevo ciclo de ventas desde base renovada."
+  },
+  {
+    title: "Experiencia mejorada",
+    text: "Navegacion renovada, botones de accion rapida y un look mucho mas profesional."
+  }
+];
 const shippingIconOptions = [
   { id: "avion", label: "Avion", icon: "✈" },
   { id: "barco", label: "Barco", icon: "🚢" },
@@ -88,6 +102,14 @@ function formatAddress(address) {
     .filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== "")
     .map(([key, value]) => `${key}: ${value}`)
     .join(" | ") || "Sin direccion";
+}
+
+function getStoreStatusCard(homepage, index) {
+  const cards = Array.isArray(homepage?.storeStatusCards) ? homepage.storeStatusCards : [];
+  return {
+    title: cards[index]?.title ?? defaultStoreStatusCards[index]?.title ?? "",
+    text: cards[index]?.text ?? defaultStoreStatusCards[index]?.text ?? ""
+  };
 }
 
 function normalizeAdminUserDetail(detail) {
@@ -1457,6 +1479,50 @@ export function AdminPage() {
               Descripcion principal
               <textarea rows="4" value={content.homepage.heroDescription || ""} onChange={(event) => setContent((current) => ({ ...current, homepage: { ...current.homepage, heroDescription: event.target.value } }))} />
             </label>
+            <article className="detail-card">
+              <h3>Panorama comercial del inicio</h3>
+              <p className="muted-text">Edita las tres tarjetas que aparecen en "Estado actual de la tienda".</p>
+              <div className="list-stack">
+                {defaultStoreStatusCards.map((_, index) => {
+                  const card = getStoreStatusCard(content.homepage, index);
+                  return (
+                    <div key={`store-status-${index}`} className="mini-item mini-item--stacked">
+                      <label>
+                        Titulo tarjeta {index + 1}
+                        <input
+                          value={card.title}
+                          onChange={(event) =>
+                            setContent((current) => {
+                              const cards = Array.isArray(current.homepage.storeStatusCards)
+                                ? [...current.homepage.storeStatusCards]
+                                : [...defaultStoreStatusCards];
+                              cards[index] = { ...(cards[index] || {}), title: event.target.value };
+                              return { ...current, homepage: { ...current.homepage, storeStatusCards: cards } };
+                            })
+                          }
+                        />
+                      </label>
+                      <label>
+                        Descripcion tarjeta {index + 1}
+                        <textarea
+                          rows="3"
+                          value={card.text}
+                          onChange={(event) =>
+                            setContent((current) => {
+                              const cards = Array.isArray(current.homepage.storeStatusCards)
+                                ? [...current.homepage.storeStatusCards]
+                                : [...defaultStoreStatusCards];
+                              cards[index] = { ...(cards[index] || {}), text: event.target.value };
+                              return { ...current, homepage: { ...current.homepage, storeStatusCards: cards } };
+                            })
+                          }
+                        />
+                      </label>
+                    </div>
+                  );
+                })}
+              </div>
+            </article>
             <label>
               Titulo empresas asociadas
               <input value={content.general.partnerTitle || ""} onChange={(event) => setContent((current) => ({ ...current, general: { ...current.general, partnerTitle: event.target.value } }))} />
@@ -1718,10 +1784,10 @@ export function AdminPage() {
                   <input value={musicForm.artista} onChange={(event) => setMusicForm((current) => ({ ...current, artista: event.target.value }))} />
                 </label>
                 <label>
-                  Audio o video musical
+                  Audio ambiental
                   <input
                     type="file"
-                    accept="audio/*,video/mp4,video/webm"
+                    accept="audio/*"
                     onChange={async (event) => {
                       const [file] = Array.from(event.target.files || []);
                       if (!file) return;
@@ -1731,10 +1797,10 @@ export function AdminPage() {
                   />
                 </label>
                 <label>
-                  O pega link directo (.mp3, .m4a, .ogg, .wav, .mp4, .webm)
+                  O pega link directo de audio (.mp3, .m4a, .ogg, .wav)
                   <input value={musicForm.audioUrl} onChange={(event) => setMusicForm((current) => ({ ...current, audioUrl: event.target.value }))} />
                 </label>
-                <small className="muted-text">Acepta links directos de audio/video y tambien YouTube (youtube.com o youtu.be).</small>
+                <small className="muted-text">La musica se reproduce como ambiente y no muestra controles al cliente. Usa archivo o link directo de audio; YouTube no funciona como audio de fondo.</small>
                 <label className="checkbox-chip">
                   <input
                     type="checkbox"
