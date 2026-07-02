@@ -6,6 +6,9 @@ const FALLBACK_IMAGE = "/assets/gray-c-shop-logo.png?v=20260514-2";
 export function ProductCard({ product, onAddToCart, onBuyNow, busy }) {
   const hasOffer = Number(product.precioOriginal || 0) > Number(product.precio || 0);
   const rating = Number(product.ratingPromedio || 0);
+  const requiresColor = (Array.isArray(product.variantes) ? product.variantes : []).some(
+    (variant) => variant?.tipo === "color" && Array.isArray(variant.opciones) && variant.opciones.length
+  );
 
   return (
     <article className="product-card">
@@ -50,12 +53,20 @@ export function ProductCard({ product, onAddToCart, onBuyNow, busy }) {
       <div className="product-card__footer">
         <small>{product.stock} disponibles | {product.vendidos || 0} vendidos</small>
         <div className="product-card__actions">
-          <button type="button" className="button button--ghost" onClick={() => onBuyNow?.(product)}>
-            Comprar ahora
-          </button>
-          <button type="button" className="button button--primary" disabled={busy} onClick={() => onAddToCart?.(product)}>
-            {busy ? "Agregando..." : "Agregar al carrito"}
-          </button>
+          {requiresColor ? (
+            <Link to={`/producto/${product.slug || product.id}`} className="button button--primary">
+              Elegir color
+            </Link>
+          ) : (
+            <>
+              <button type="button" className="button button--ghost" onClick={() => onBuyNow?.(product)}>
+                Comprar ahora
+              </button>
+              <button type="button" className="button button--primary" disabled={busy} onClick={() => onAddToCart?.(product)}>
+                {busy ? "Agregando..." : "Agregar al carrito"}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </article>

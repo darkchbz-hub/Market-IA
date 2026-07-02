@@ -18,6 +18,7 @@ function mapCartItem(row) {
     imagenes: row.imagenes || [],
     cantidad,
     stock: row.stock,
+    variante: typeof row.variante === "string" ? JSON.parse(row.variante || "{}") : row.variante || {},
     precio: precioCents / 100,
     precioCents,
     subtotal: subtotalCents / 100,
@@ -33,6 +34,7 @@ export async function getCart(userId, db) {
       SELECT
         c.product_id,
         c.cantidad,
+        c.variante,
         p.nombre,
         p.descripcion,
         p.categoria,
@@ -59,7 +61,24 @@ export async function getCart(userId, db) {
   };
 }
 
-export async function upsertCartItem(userId, { productId, cantidad }, db) {
+function normalizeCartVariant(productRow, variante = {}) {
+  const variants = typeof productRow.variantes === "string" ? JSON.parse(productRow.variantes || "[]") : productRow.variantes || [];
+  const colorVariant = Array.isArray(variants) ? variants.find((item) => item?.tipo === "color") : null;
+  const colors = Array.isArray(colorVariant?.opciones) ? colorVariant.opciones : [];
+
+  if (!colors.length) return {};
+
+  const requestedName = String(variante?.color?.nombre || variante?.color || "").trim().toLowerCase();
+  const selected = colors.find((color) => String(color?.nombre || "").trim().toLowerCase() === requestedName);
+
+  if (!selected) {
+    throw new HttpError(400, "Debes escoger un color disponible para este producto.");
+  }
+
+  return { color: { nombre: selected.nombre, hex: selected.hex || "#cbd5e1" } };
+}
+
+export async function upsertCartItem(userId, { productId, cantidad, variante = {} }, db) {
   const executor = getExecutor(db);
   const quantity = Number(cantidad);
 
@@ -78,7 +97,7 @@ export async function upsertCartItem(userId, { productId, cantidad }, db) {
 
   const { rows } = await executor.query(
     `
-      SELECT id, stock, is_active
+      SELECT id, stock, is_active, variantes
       FROM products
       WHERE id = $1
     `,
@@ -93,14 +112,16 @@ export async function upsertCartItem(userId, { productId, cantidad }, db) {
     throw new HttpError(400, "No hay suficiente stock para esa cantidad.");
   }
 
+  const normalizedVariant = normalizeCartVariant(rows[0], variante);
+
   await executor.query(
     `
-      INSERT INTO cart_items (user_id, product_id, cantidad)
-      VALUES ($1, $2, $3)
+      INSERT INTO cart_items (user_id, product_id, cantidad, variante)
+      VALUES ($1, $2, $3, $4::jsonb)
       ON CONFLICT (user_id, product_id)
-      DO UPDATE SET cantidad = EXCLUDED.cantidad, updated_at = NOW()
+      DO UPDATE SET cantidad = EXCLUDED.cantidad, variante = EXCLUDED.variante, updated_at = NOW()
     `,
-    [userId, productId, quantity]
+    [userId, productId, quantity, JSON.stringify(normalizedVariant)]
   );
 
   return getCart(userId, db);

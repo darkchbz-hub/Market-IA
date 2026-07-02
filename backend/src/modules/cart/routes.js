@@ -28,7 +28,8 @@ cartRouter.patch(
   asyncHandler(async (req, res) => {
     const cart = await upsertCartItem(req.auth.sub, {
       productId: req.params.productId,
-      cantidad: req.body?.cantidad
+      cantidad: req.body?.cantidad,
+      variante: req.body?.variante || {}
     });
 
     res.json(cart);

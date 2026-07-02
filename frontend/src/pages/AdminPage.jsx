@@ -25,8 +25,25 @@ const initialProduct = {
   vendedorOficial: "",
   mostrarSelloOficial: false,
   envioGratis: false,
-  mostrarEnvioGratis: false
+  mostrarEnvioGratis: false,
+  variantes: []
 };
+
+const productColorOptions = [
+  { nombre: "Cafe", hex: "#7c4a2d" },
+  { nombre: "Amarillo", hex: "#facc15" },
+  { nombre: "Azul", hex: "#2563eb" },
+  { nombre: "Blanco", hex: "#ffffff" },
+  { nombre: "Rojo", hex: "#dc2626" },
+  { nombre: "Negro", hex: "#111827" },
+  { nombre: "Gris", hex: "#6b7280" },
+  { nombre: "Verde", hex: "#16a34a" },
+  { nombre: "Rosa", hex: "#ec4899" },
+  { nombre: "Morado", hex: "#7c3aed" },
+  { nombre: "Naranja", hex: "#f97316" },
+  { nombre: "Plata", hex: "#cbd5e1" },
+  { nombre: "Dorado", hex: "#d4af37" }
+];
 
 const initialBanner = { titulo: "", subtitulo: "", mediaUrl: "", linkUrl: "/catalogo", activa: true, orden: 1 };
 const initialVideo = { titulo: "", descripcion: "", videoUrl: "", posterUrl: "", activa: true, orden: 1 };
@@ -121,6 +138,14 @@ function getStoreStatusCard(homepage, index) {
     title: cards[index]?.title ?? defaultStoreStatusCards[index]?.title ?? "",
     text: cards[index]?.text ?? defaultStoreStatusCards[index]?.text ?? ""
   };
+}
+
+function getProductColorVariant(product) {
+  return (Array.isArray(product?.variantes) ? product.variantes : []).find((variant) => variant?.tipo === "color") || null;
+}
+
+function getSelectedProductColors(product) {
+  return new Set((getProductColorVariant(product)?.opciones || []).map((color) => color.nombre));
 }
 
 function normalizeAdminUserDetail(detail) {
@@ -282,7 +307,8 @@ export function AdminPage() {
       vendedorOficial: product.vendedorOficial || "",
       mostrarSelloOficial: Boolean(product.mostrarSelloOficial),
       envioGratis: Boolean(product.envioGratis),
-      mostrarEnvioGratis: Boolean(product.mostrarEnvioGratis)
+      mostrarEnvioGratis: Boolean(product.mostrarEnvioGratis),
+      variantes: Array.isArray(product.variantes) ? product.variantes : []
     });
     setTab("products");
   };
@@ -305,7 +331,8 @@ export function AdminPage() {
         stock: Number(productForm.stock || 0),
         vendidos: Number(productForm.vendidos || 0),
         tags: productForm.tags,
-        caracteristicas: productForm.caracteristicas
+        caracteristicas: productForm.caracteristicas,
+        variantes: productForm.variantes
       };
       const path = productForm.id ? `/admin/products/${productForm.id}` : "/admin/products";
       const method = productForm.id ? "PUT" : "POST";
@@ -936,6 +963,60 @@ export function AdminPage() {
                 <img key={index} className="media-thumb" src={image} alt={`preview-${index}`} />
               ))}
             </div>
+            <article className="detail-card">
+              <h3>Opciones de color</h3>
+              <p className="muted-text">Activa esta opcion solo si el cliente debe escoger color antes de comprar.</p>
+              <label className="checkbox-chip">
+                <input
+                  type="checkbox"
+                  checked={Boolean(getProductColorVariant(productForm))}
+                  onChange={(event) =>
+                    setProductForm((current) => {
+                      const otherVariants = (current.variantes || []).filter((variant) => variant?.tipo !== "color");
+                      return {
+                        ...current,
+                        variantes: event.target.checked
+                          ? [...otherVariants, { tipo: "color", nombre: "Color", requerido: true, opciones: [] }]
+                          : otherVariants
+                      };
+                    })
+                  }
+                />
+                Este producto tiene colores disponibles
+              </label>
+              {getProductColorVariant(productForm) && (
+                <div className="admin-color-grid">
+                  {productColorOptions.map((color) => {
+                    const selectedColors = getSelectedProductColors(productForm);
+                    const isSelected = selectedColors.has(color.nombre);
+                    return (
+                      <button
+                        key={color.nombre}
+                        type="button"
+                        className={`admin-color-option${isSelected ? " is-selected" : ""}`}
+                        onClick={() =>
+                          setProductForm((current) => {
+                            const variants = (current.variantes || []).filter((variant) => variant?.tipo !== "color");
+                            const currentColorVariant = getProductColorVariant(current) || { tipo: "color", nombre: "Color", requerido: true, opciones: [] };
+                            const currentOptions = Array.isArray(currentColorVariant.opciones) ? currentColorVariant.opciones : [];
+                            const nextOptions = currentOptions.some((option) => option.nombre === color.nombre)
+                              ? currentOptions.filter((option) => option.nombre !== color.nombre)
+                              : [...currentOptions, color];
+                            return {
+                              ...current,
+                              variantes: [...variants, { ...currentColorVariant, opciones: nextOptions }]
+                            };
+                          })
+                        }
+                      >
+                        <span style={{ background: color.hex }} />
+                        {color.nombre}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </article>
             <div className="checkbox-row">
               <label className="checkbox-chip">
                 <input type="checkbox" checked={productForm.envioGratis} onChange={(event) => setProductForm((current) => ({ ...current, envioGratis: event.target.checked }))} />

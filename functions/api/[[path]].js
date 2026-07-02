@@ -1254,7 +1254,7 @@ export async function onRequest(context) {
         throw httpError(400, "La cantidad solicitada no esta disponible.");
       }
 
-      await setCartItem(db, user.id, productId, cantidad, { increment: true });
+      await setCartItem(db, user.id, productId, cantidad, { increment: true, product, variante: body.variante || {} });
       await recordProductView(db, user.id, productId);
       return json(await getCartState(db, user.id), 201);
     }
@@ -1279,7 +1279,7 @@ export async function onRequest(context) {
         throw httpError(400, "La cantidad solicitada supera el stock disponible.");
       }
 
-      await setCartItem(db, user.id, productId, cantidad);
+      await setCartItem(db, user.id, productId, cantidad, { product, variante: body.variante || {} });
       return json(await getCartState(db, user.id));
     }
 

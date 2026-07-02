@@ -623,6 +623,7 @@ const schemaStatements = [
       categoria TEXT NOT NULL,
       tags TEXT NOT NULL DEFAULT '[]',
       imagenes TEXT NOT NULL DEFAULT '[]',
+      variantes TEXT NOT NULL DEFAULT '[]',
       vendedor_oficial TEXT NOT NULL DEFAULT '',
       mostrar_sello_oficial INTEGER NOT NULL DEFAULT 0,
       envio_gratis INTEGER NOT NULL DEFAULT 0,
@@ -637,6 +638,7 @@ const schemaStatements = [
       user_id INTEGER NOT NULL,
       product_id INTEGER NOT NULL,
       cantidad INTEGER NOT NULL DEFAULT 1,
+      variante TEXT NOT NULL DEFAULT '{}',
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(user_id, product_id)
@@ -663,7 +665,8 @@ const schemaStatements = [
       product_id INTEGER NOT NULL,
       nombre TEXT NOT NULL,
       precio REAL NOT NULL,
-      cantidad INTEGER NOT NULL
+      cantidad INTEGER NOT NULL,
+      variante TEXT NOT NULL DEFAULT '{}'
     )
   `,
   `
@@ -920,6 +923,7 @@ export function serializeProduct(row) {
     tags: parseJson(row.tags, []),
     imagenes: parseJson(row.imagenes, []),
     caracteristicas: parseJson(row.caracteristicas, []),
+    variantes: parseJson(row.variantes, []),
     vendedorOficial: row.vendedor_oficial || "",
     mostrarSelloOficial: Boolean(Number(row.mostrar_sello_oficial || 0)),
     envioGratis: Boolean(Number(row.envio_gratis || 0)),
@@ -1069,6 +1073,7 @@ function serializeOrderItem(item) {
     nombre: item.nombre,
     precio: Number(item.precio),
     cantidad: Number(item.cantidad),
+    variante: parseJson(item.variante, {}),
     folio: item.folio || buildOrderItemFolioFromId(item.id),
     estado: item.estado || "pendiente",
     entregaEstimada: item.entrega_estimada || "",
@@ -1134,6 +1139,7 @@ export async function ensureDatabase(env) {
       }
 
       await ensureColumn(env.DB, "products", "caracteristicas", "TEXT NOT NULL DEFAULT '[]'");
+      await ensureColumn(env.DB, "products", "variantes", "TEXT NOT NULL DEFAULT '[]'");
       await ensureColumn(env.DB, "products", "descripcion_corta", "TEXT NOT NULL DEFAULT ''");
       await ensureColumn(env.DB, "products", "marca", "TEXT NOT NULL DEFAULT ''");
       await ensureColumn(env.DB, "products", "disponibilidad", "TEXT NOT NULL DEFAULT 'Disponible'");
@@ -1153,6 +1159,8 @@ export async function ensureDatabase(env) {
       await ensureColumn(env.DB, "order_items", "entrega_estimada", "TEXT NOT NULL DEFAULT ''");
       await ensureColumn(env.DB, "order_items", "detalle_envio", "TEXT NOT NULL DEFAULT ''");
       await ensureColumn(env.DB, "order_items", "icono_envio", "TEXT NOT NULL DEFAULT 'coche'");
+      await ensureColumn(env.DB, "cart_items", "variante", "TEXT NOT NULL DEFAULT '{}'");
+      await ensureColumn(env.DB, "order_items", "variante", "TEXT NOT NULL DEFAULT '{}'");
       await ensureColumn(env.DB, "orders", "tracking", "TEXT NOT NULL DEFAULT '[]'");
       await ensureColumn(env.DB, "users", "telefono", "TEXT NOT NULL DEFAULT ''");
       await ensureColumn(env.DB, "users", "is_active", "INTEGER NOT NULL DEFAULT 1");
@@ -1498,6 +1506,7 @@ export async function createProduct(db, input) {
         .split(/\r?\n|,/)
         .map((item) => item.trim())
         .filter(Boolean);
+  const variantes = Array.isArray(input.variantes) ? input.variantes : [];
   const envioGratis = input.envioGratis === true || input.envioGratis === "true" || input.envioGratis === "on" || Number(input.envioGratis) === 1;
   const mostrarEnvioGratis =
     input.mostrarEnvioGratis === true ||
@@ -1549,10 +1558,10 @@ export async function createProduct(db, input) {
     .prepare(
       `
       INSERT INTO products (
-        slug, nombre, descripcion, descripcion_corta, marca, precio, stock, vendidos, categoria, tags, imagenes, caracteristicas,
+        slug, nombre, descripcion, descripcion_corta, marca, precio, stock, vendidos, categoria, tags, imagenes, caracteristicas, variantes,
         disponibilidad, info_envio, fecha_estimada, garantia, devolucion, vendedor_oficial, mostrar_sello_oficial, envio_gratis, mostrar_envio_gratis, precio_descuento
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
     )
     .bind(
@@ -1568,6 +1577,7 @@ export async function createProduct(db, input) {
       JSON.stringify(tags),
       JSON.stringify(imagenes),
       JSON.stringify(caracteristicas),
+      JSON.stringify(variantes),
       disponibilidad,
       infoEnvio,
       fechaEstimada,
@@ -1677,6 +1687,7 @@ export async function updateProduct(db, productId, input) {
           .map((item) => item.trim())
           .filter(Boolean)
       : existing.caracteristicas;
+  const variantes = Array.isArray(input.variantes) ? input.variantes : existing.variantes || [];
   const envioGratis =
     input.envioGratis !== undefined
       ? input.envioGratis === true || input.envioGratis === "true" || input.envioGratis === "on" || Number(input.envioGratis) === 1
@@ -1741,7 +1752,7 @@ export async function updateProduct(db, productId, input) {
     .prepare(
       `
       UPDATE products
-      SET slug = ?, nombre = ?, descripcion = ?, descripcion_corta = ?, marca = ?, precio = ?, stock = ?, vendidos = ?, categoria = ?, tags = ?, imagenes = ?, caracteristicas = ?, disponibilidad = ?, info_envio = ?, fecha_estimada = ?, garantia = ?, devolucion = ?, vendedor_oficial = ?, mostrar_sello_oficial = ?, envio_gratis = ?, mostrar_envio_gratis = ?, precio_descuento = ?
+      SET slug = ?, nombre = ?, descripcion = ?, descripcion_corta = ?, marca = ?, precio = ?, stock = ?, vendidos = ?, categoria = ?, tags = ?, imagenes = ?, caracteristicas = ?, variantes = ?, disponibilidad = ?, info_envio = ?, fecha_estimada = ?, garantia = ?, devolucion = ?, vendedor_oficial = ?, mostrar_sello_oficial = ?, envio_gratis = ?, mostrar_envio_gratis = ?, precio_descuento = ?
       WHERE id = ?
     `
     )
@@ -1758,6 +1769,7 @@ export async function updateProduct(db, productId, input) {
       JSON.stringify(tags),
       JSON.stringify(imagenes),
       JSON.stringify(caracteristicas),
+      JSON.stringify(variantes),
       disponibilidad,
       infoEnvio,
       fechaEstimada,
@@ -1787,9 +1799,35 @@ export async function clearAllProducts(db) {
   await db.prepare("DELETE FROM products").run();
 }
 
+function normalizeCartVariant(product, variante = {}) {
+  const colorVariant = (Array.isArray(product?.variantes) ? product.variantes : []).find((item) => item?.tipo === "color");
+  const colors = Array.isArray(colorVariant?.opciones) ? colorVariant.opciones : [];
+
+  if (!colors.length) {
+    return {};
+  }
+
+  const requestedName = String(variante?.color?.nombre || variante?.color || "").trim().toLowerCase();
+  const selected = colors.find((color) => String(color?.nombre || "").trim().toLowerCase() === requestedName);
+
+  if (!selected) {
+    throw new Error("Debes escoger un color disponible para este producto.");
+  }
+
+  return {
+    color: {
+      nombre: selected.nombre,
+      hex: selected.hex || "#cbd5e1"
+    }
+  };
+}
+
 export async function setCartItem(db, userId, productId, cantidad, options = {}) {
   const nextQuantity = Number(cantidad || 0);
   const increment = Boolean(options.increment);
+  const product = options.product || (await getProductById(db, productId));
+  const variant = normalizeCartVariant(product, options.variante || {});
+  const variantJson = JSON.stringify(variant);
 
   if (nextQuantity <= 0) {
     await db.prepare("DELETE FROM cart_items WHERE user_id = ? AND product_id = ?").bind(userId, productId).run();
@@ -1801,20 +1839,20 @@ export async function setCartItem(db, userId, productId, cantidad, options = {})
   if (existing) {
     if (increment) {
       await db
-        .prepare("UPDATE cart_items SET cantidad = cantidad + ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND product_id = ?")
-        .bind(nextQuantity, userId, productId)
+        .prepare("UPDATE cart_items SET cantidad = cantidad + ?, variante = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND product_id = ?")
+        .bind(nextQuantity, variantJson, userId, productId)
         .run();
       return;
     }
 
     await db
-      .prepare("UPDATE cart_items SET cantidad = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND product_id = ?")
-      .bind(nextQuantity, userId, productId)
+      .prepare("UPDATE cart_items SET cantidad = ?, variante = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND product_id = ?")
+      .bind(nextQuantity, variantJson, userId, productId)
       .run();
     return;
   }
 
-  await db.prepare("INSERT INTO cart_items (user_id, product_id, cantidad) VALUES (?, ?, ?)").bind(userId, productId, nextQuantity).run();
+  await db.prepare("INSERT INTO cart_items (user_id, product_id, cantidad, variante) VALUES (?, ?, ?, ?)").bind(userId, productId, nextQuantity, variantJson).run();
 }
 
 export async function getCartState(db, userId) {
@@ -1824,6 +1862,7 @@ export async function getCartState(db, userId) {
       SELECT
         c.product_id AS productoId,
         c.cantidad,
+        c.variante,
         p.nombre,
         p.descripcion,
         p.categoria,
@@ -1855,6 +1894,7 @@ export async function getCartState(db, userId) {
       nombre: row.nombre,
       descripcion: row.descripcion,
       categoria: row.categoria,
+      variante: parseJson(row.variante, {}),
       precio,
       precioOriginal: precio !== precioNormal ? precioNormal : 0,
       subtotal: precio * cantidad,
@@ -1878,6 +1918,7 @@ export async function buildCheckoutSummary(db, userId) {
       nombre: item.nombre,
       cantidad: item.cantidad,
       precio: item.precio,
+      variante: item.variante || {},
       subtotal: item.subtotal
     })),
     total: cart.total
@@ -1926,11 +1967,11 @@ export async function createOrderFromCart(db, userId, { direccion, proveedorPago
     await db
       .prepare(
         `
-        INSERT INTO order_items (order_id, product_id, nombre, precio, cantidad, estado, folio, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        INSERT INTO order_items (order_id, product_id, nombre, precio, cantidad, variante, estado, folio, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       `
       )
-      .bind(orderId, item.productoId, item.nombre, item.precio, item.cantidad, "pendiente", folio)
+      .bind(orderId, item.productoId, item.nombre, item.precio, item.cantidad, JSON.stringify(item.variante || {}), "pendiente", folio)
       .run();
   }
 
@@ -2093,7 +2134,7 @@ export async function getUserDashboard(db, userId) {
     ? await db
         .prepare(
           `
-          SELECT id, order_id, product_id, nombre, precio, cantidad, estado, folio, entrega_estimada, detalle_envio, icono_envio
+          SELECT id, order_id, product_id, nombre, precio, cantidad, variante, estado, folio, entrega_estimada, detalle_envio, icono_envio
           FROM order_items
           WHERE order_id IN (${orderRows.map(() => "?").join(",")})
           ORDER BY id ASC

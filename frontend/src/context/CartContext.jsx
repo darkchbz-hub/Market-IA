@@ -36,7 +36,7 @@ export function CartProvider({ children }) {
     }
   }, [isAuthenticated, token]);
 
-  const addToCart = async (productId, cantidad = 1) => {
+  const addToCart = async (productId, cantidad = 1, variante = {}) => {
     if (!token) {
       throw new Error("Inicia sesion para usar el carrito.");
     }
@@ -47,7 +47,8 @@ export function CartProvider({ children }) {
       token,
       body: {
         productId,
-        cantidad: (currentItem?.cantidad || 0) + cantidad
+        cantidad: (currentItem?.cantidad || 0) + cantidad,
+        variante
       }
     });
 
@@ -56,10 +57,11 @@ export function CartProvider({ children }) {
   };
 
   const updateQuantity = async (productId, cantidad) => {
+    const currentItem = cart.items.find((item) => item.productoId === productId);
     const payload = await apiFetch(`/cart/items/${productId}`, {
       method: "PATCH",
       token,
-      body: { cantidad }
+      body: { cantidad, variante: currentItem?.variante || {} }
     });
 
     setCart(payload);

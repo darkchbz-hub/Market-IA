@@ -20,6 +20,10 @@ function safeList(value) {
   return Array.isArray(value) ? value.filter(Boolean) : [];
 }
 
+function getColorVariant(product) {
+  return (Array.isArray(product?.variantes) ? product.variantes : []).find((variant) => variant?.tipo === "color") || null;
+}
+
 export function ProductPage() {
   const { productId } = useParams();
   const navigate = useNavigate();
@@ -30,6 +34,7 @@ export function ProductPage() {
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [selectedColor, setSelectedColor] = useState(null);
   const [showAllTags, setShowAllTags] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -51,6 +56,7 @@ export function ProductPage() {
         setRelatedProducts(payload.relatedProducts || []);
         setSelectedImage(0);
         setQuantity(1);
+        setSelectedColor(null);
         setShowAllTags(false);
       })
       .catch((requestError) => {
@@ -79,6 +85,8 @@ export function ProductPage() {
   const tags = useMemo(() => safeList(product?.tags), [product]);
   const visibleTags = showAllTags ? tags : tags.slice(0, 3);
   const features = useMemo(() => safeList(product?.caracteristicas), [product]);
+  const colorOptions = useMemo(() => safeList(getColorVariant(product)?.opciones), [product]);
+  const requiresColor = colorOptions.length > 0;
   const reviewAverage = useMemo(() => {
     const ratedComments = comments.map((comment) => clampRating(comment.rating)).filter((rating) => rating > 0);
 
@@ -94,11 +102,15 @@ export function ProductPage() {
 
   const addProductToCart = async () => {
     if (!product) return;
+    if (requiresColor && !selectedColor) {
+      setMessage("Debes escoger un color antes de agregar este producto.");
+      return;
+    }
 
     setBusy(true);
     setMessage("");
     try {
-      await addToCart(product.id, quantity);
+      await addToCart(product.id, quantity, selectedColor ? { color: selectedColor } : {});
       setMessage(`${product.nombre} se agrego al carrito.`);
     } catch (cartError) {
       setMessage(cartError.message || "No se pudo agregar al carrito.");
@@ -109,11 +121,15 @@ export function ProductPage() {
 
   const buyProductNow = async () => {
     if (!product) return;
+    if (requiresColor && !selectedColor) {
+      setMessage("Debes escoger un color antes de continuar con la compra.");
+      return;
+    }
 
     setBusy(true);
     setMessage("");
     try {
-      await addToCart(product.id, quantity);
+      await addToCart(product.id, quantity, selectedColor ? { color: selectedColor } : {});
       navigate("/checkout");
     } catch (cartError) {
       setMessage(cartError.message || "No se pudo iniciar la compra.");
@@ -251,6 +267,34 @@ export function ProductPage() {
             <span>Pago seguro</span>
             <span>Garantia segun producto</span>
           </div>
+
+          {requiresColor && (
+            <div className={`product-color-picker${message.includes("color") && !selectedColor ? " needs-attention" : ""}`}>
+              <strong>Selecciona un color</strong>
+              <div className="product-color-grid">
+                {colorOptions.map((color) => (
+                  <button
+                    key={color.nombre}
+                    type="button"
+                    className={`product-color-swatch${selectedColor?.nombre === color.nombre ? " is-selected" : ""}`}
+                    onClick={() => {
+                      setSelectedColor(color);
+                      setMessage("");
+                    }}
+                    aria-label={`Color ${color.nombre}`}
+                  >
+                    <span style={{ background: color.hex || "#cbd5e1" }} />
+                    <small>{color.nombre}</small>
+                  </button>
+                ))}
+              </div>
+              {selectedColor ? (
+                <p className="selected-color-name">Color elegido: {selectedColor.nombre}</p>
+              ) : (
+                <p className="selected-color-name selected-color-name--warning">Debes escoger un color para continuar.</p>
+              )}
+            </div>
+          )}
 
           <label className="quantity-picker">
             Cantidad

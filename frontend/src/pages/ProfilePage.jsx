@@ -394,6 +394,11 @@ export function ProfilePage() {
                             <div key={reviewKey} className="order-review-box">
                               <div className="order-review-box__head">
                                 <span>{item.nombre} {item.folio ? `| Folio ${item.folio}` : ""}</span>
+                                {item.variante?.color?.nombre && (
+                                  <span className="cart-item__variant">
+                                    Color: <span style={{ background: item.variante.color.hex || "#cbd5e1" }} /> {item.variante.color.nombre}
+                                  </span>
+                                )}
                                 {alreadyReviewed && <span className="order-review-box__done">Ya has hecho una reseña de este producto</span>}
                                 <button type="button" className={`button button--ghost${!canWriteReview || alreadyReviewed ? " order-review-box__hidden-action" : ""}`} disabled={!canWriteReview || alreadyReviewed} onClick={() => setActiveReviewKey(isOpen ? "" : reviewKey)}>
                                   {isOpen ? "Cerrar reseña" : "Escribir reseña"}

@@ -29,6 +29,11 @@ export function CartPage() {
                   <img src={item.imagenes?.[0] || FALLBACK_IMAGE} alt={item.nombre} />
                   <div className="cart-item__body">
                     <strong>{item.nombre}</strong>
+                    {item.variante?.color?.nombre && (
+                      <small className="cart-item__variant">
+                        Color: <span style={{ background: item.variante.color.hex || "#cbd5e1" }} /> {item.variante.color.nombre}
+                      </small>
+                    )}
                   </div>
                   <div className="cart-item__pricing">
                     <strong>${item.precio.toFixed(2)}</strong>
