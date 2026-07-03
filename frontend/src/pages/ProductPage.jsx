@@ -388,6 +388,13 @@ export function ProductPage() {
                   </span>
                 </div>
                 <p>{comment.comentario}</p>
+                {comment.imagenes?.length > 0 && (
+                  <div className="review-image-grid">
+                    {comment.imagenes.map((image, index) => (
+                      <img key={`${comment.id}-${index}`} src={image} alt={`Imagen reseña ${index + 1}`} />
+                    ))}
+                  </div>
+                )}
               </article>
             ))}
           </div>

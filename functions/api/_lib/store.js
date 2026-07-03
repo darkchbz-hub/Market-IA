@@ -733,6 +733,7 @@ const schemaStatements = [
       reviewer_name TEXT NOT NULL DEFAULT '',
       rating INTEGER NOT NULL,
       comentario TEXT NOT NULL,
+      imagenes TEXT NOT NULL DEFAULT '[]',
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `
@@ -1168,6 +1169,7 @@ export async function ensureDatabase(env) {
       await ensureColumn(env.DB, "users", "avatar_url", "TEXT NOT NULL DEFAULT ''");
       await ensureColumn(env.DB, "users", "geo_meta", "TEXT NOT NULL DEFAULT '{}'");
       await ensureColumn(env.DB, "product_comments", "reviewer_name", "TEXT NOT NULL DEFAULT ''");
+      await ensureColumn(env.DB, "product_comments", "imagenes", "TEXT NOT NULL DEFAULT '[]'");
       await backfillOrderItemFolios(env.DB);
       await seedDatabase(env.DB, env);
     })().catch((error) => {
@@ -2607,6 +2609,7 @@ export async function listProductComments(db, productId) {
     avatarUrl: comment.avatar_url || "",
     rating: Number(comment.rating),
     comentario: comment.comentario,
+    imagenes: parseJson(comment.imagenes, []),
     fecha: comment.created_at
   }));
 }
@@ -2614,6 +2617,7 @@ export async function listProductComments(db, productId) {
 export async function createProductComment(db, userId, productId, input) {
   const rating = Number(input.rating);
   const comentario = String(input.comentario || "").trim();
+  const imagenes = Array.isArray(input.imagenes) ? input.imagenes.map((image) => String(image).trim()).filter(Boolean).slice(0, 6) : [];
 
   if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
     throw new Error("Selecciona una calificacion de 1 a 5 estrellas.");
@@ -2637,8 +2641,8 @@ export async function createProductComment(db, userId, productId, input) {
   }
 
   await db
-    .prepare("INSERT INTO product_comments (product_id, user_id, rating, comentario) VALUES (?, ?, ?, ?)")
-    .bind(Number(productId), Number(userId), rating, comentario)
+    .prepare("INSERT INTO product_comments (product_id, user_id, rating, comentario, imagenes) VALUES (?, ?, ?, ?, ?)")
+    .bind(Number(productId), Number(userId), rating, comentario, JSON.stringify(imagenes))
     .run();
 
   return listProductComments(db, productId);
@@ -2649,6 +2653,7 @@ export async function createAdminProductComment(db, adminUserId, input) {
   const rating = Number(input.rating);
   const comentario = String(input.comentario || "").trim();
   const reviewerName = String(input.reviewerName || input.nombre || "").trim();
+  const imagenes = Array.isArray(input.imagenes) ? input.imagenes.map((image) => String(image).trim()).filter(Boolean).slice(0, 6) : [];
 
   if (!Number.isFinite(productId)) {
     throw new Error("Selecciona un producto valido.");
@@ -2668,8 +2673,8 @@ export async function createAdminProductComment(db, adminUserId, input) {
   }
 
   await db
-    .prepare("INSERT INTO product_comments (product_id, user_id, reviewer_name, rating, comentario) VALUES (?, ?, ?, ?, ?)")
-    .bind(productId, Number(adminUserId), reviewerName, rating, comentario)
+    .prepare("INSERT INTO product_comments (product_id, user_id, reviewer_name, rating, comentario, imagenes) VALUES (?, ?, ?, ?, ?, ?)")
+    .bind(productId, Number(adminUserId), reviewerName, rating, comentario, JSON.stringify(imagenes))
     .run();
 
   return listProductComments(db, productId);
@@ -2680,6 +2685,7 @@ export async function updateAdminProductComment(db, commentId, input) {
   const rating = Number(input.rating);
   const comentario = String(input.comentario || "").trim();
   const reviewerName = String(input.reviewerName || input.nombre || "").trim();
+  const imagenes = Array.isArray(input.imagenes) ? input.imagenes.map((image) => String(image).trim()).filter(Boolean).slice(0, 6) : [];
 
   if (!Number.isFinite(id)) {
     throw new Error("Comentario invalido.");
@@ -2694,8 +2700,8 @@ export async function updateAdminProductComment(db, commentId, input) {
   }
 
   await db
-    .prepare("UPDATE product_comments SET reviewer_name = ?, rating = ?, comentario = ? WHERE id = ?")
-    .bind(reviewerName, rating, comentario, id)
+    .prepare("UPDATE product_comments SET reviewer_name = ?, rating = ?, comentario = ?, imagenes = ? WHERE id = ?")
+    .bind(reviewerName, rating, comentario, JSON.stringify(imagenes), id)
     .run();
 
   return { ok: true };

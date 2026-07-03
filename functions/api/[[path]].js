@@ -829,6 +829,7 @@ async function listAdminReviewItems(db) {
     nickname: row.nickname || "",
     rating: Number(row.rating || 0),
     comentario: row.comentario,
+    imagenes: parseJson(row.imagenes, []),
     fecha: row.created_at
   }));
 }

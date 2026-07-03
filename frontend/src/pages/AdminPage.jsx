@@ -49,7 +49,7 @@ const initialBanner = { titulo: "", subtitulo: "", mediaUrl: "", linkUrl: "/cata
 const initialVideo = { titulo: "", descripcion: "", videoUrl: "", posterUrl: "", activa: true, orden: 1 };
 const initialMusic = { titulo: "", artista: "", audioUrl: "", portadaUrl: "", activa: true, orden: 1 };
 const initialPartner = { name: "", logoUrl: "" };
-const initialReview = { id: null, productId: "", reviewerName: "", rating: "5", comentario: "" };
+const initialReview = { id: null, productId: "", reviewerName: "", rating: "5", comentario: "", imagenes: [] };
 const initialCategory = {
   id: null,
   nombre: "",
@@ -748,7 +748,8 @@ export function AdminPage() {
       productId: String(review.productoId || ""),
       reviewerName: review.reviewerName || review.usuarioNombre || "",
       rating: String(review.rating || 5),
-      comentario: review.comentario || ""
+      comentario: review.comentario || "",
+      imagenes: Array.isArray(review.imagenes) ? review.imagenes : []
     });
   };
 
@@ -763,7 +764,8 @@ export function AdminPage() {
         productId: reviewForm.productId,
         reviewerName: reviewForm.reviewerName,
         rating: reviewForm.rating,
-        comentario: reviewForm.comentario
+        comentario: reviewForm.comentario,
+        imagenes: reviewForm.imagenes || []
       }
     });
     setReviews(payload.items || []);
@@ -1483,6 +1485,36 @@ export function AdminPage() {
                 required
               />
             </label>
+            <label>
+              Imagenes de la reseña
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={async (event) => {
+                  const uploadedImages = await uploadMultiple(event.target.files);
+                  setReviewForm((current) => ({ ...current, imagenes: [...(current.imagenes || []), ...uploadedImages].slice(0, 6) }));
+                  event.target.value = "";
+                }}
+              />
+            </label>
+            {reviewForm.imagenes?.length > 0 && (
+              <div className="review-image-grid review-image-grid--editable">
+                {reviewForm.imagenes.map((image, index) => (
+                  <div key={`${image}-${index}`} className="admin-image-preview">
+                    <img src={image} alt={`Imagen reseña ${index + 1}`} />
+                    <button
+                      type="button"
+                      className="admin-image-preview__remove"
+                      onClick={() => setReviewForm((current) => ({ ...current, imagenes: (current.imagenes || []).filter((_, imageIndex) => imageIndex !== index) }))}
+                      aria-label="Quitar imagen"
+                    >
+                      x
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             <button type="submit" className="button button--primary">
               {reviewForm.id ? "Guardar resena" : "Crear resena"}
             </button>
@@ -1550,6 +1582,13 @@ export function AdminPage() {
                 <strong>{review.productoNombre} · {review.usuarioNombre}</strong>
                 <small>{review.rating} estrellas</small>
                 <p>{review.comentario}</p>
+                {review.imagenes?.length > 0 && (
+                  <div className="review-image-grid">
+                    {review.imagenes.map((image, index) => (
+                      <img key={`${review.id}-${index}`} src={image} alt={`Imagen reseña ${index + 1}`} />
+                    ))}
+                  </div>
+                )}
                 <button type="button" className="button button--ghost" onClick={() => deleteReview(review.id)}>
                   Eliminar reseña
                 </button>

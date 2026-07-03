@@ -166,17 +166,34 @@ export function ProfilePage() {
   };
 
   const getReviewForm = (key) => {
-    return reviewForms[key] || { rating: "5", comentario: "" };
+    return reviewForms[key] || { rating: "5", comentario: "", imagenes: [] };
   };
 
   const updateReviewForm = (key, nextValues) => {
     setReviewForms((current) => ({
       ...current,
       [key]: {
-        ...(current[key] || { rating: "5", comentario: "" }),
+        ...(current[key] || { rating: "5", comentario: "", imagenes: [] }),
         ...nextValues
       }
     }));
+  };
+
+  const appendReviewImages = async (key, files) => {
+    const images = await Promise.all(
+      Array.from(files || [])
+        .filter((file) => file.type?.startsWith("image/"))
+        .slice(0, 6)
+        .map(fileToDataUrl)
+    );
+
+    if (!images.length) {
+      setMessage("Selecciona imagenes validas para tu reseña.");
+      return;
+    }
+
+    const currentReview = getReviewForm(key);
+    updateReviewForm(key, { imagenes: [...(currentReview.imagenes || []), ...images].slice(0, 6) });
   };
 
   const submitProductReview = async (event, order, item) => {
@@ -193,13 +210,14 @@ export function ProfilePage() {
         token,
         body: {
           rating: review.rating,
-          comentario: review.comentario
+          comentario: review.comentario,
+          imagenes: review.imagenes || []
         }
       });
 
       setReviewForms((current) => ({
         ...current,
-        [key]: { rating: "5", comentario: "" }
+        [key]: { rating: "5", comentario: "", imagenes: [] }
       }));
       setDashboard((current) => ({
         ...current,
@@ -435,6 +453,35 @@ export function ProfilePage() {
                                       placeholder="Escribe tu experiencia con este producto"
                                     />
                                   </label>
+                                  <label>
+                                    Fotos del producto recibido
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      multiple
+                                      onChange={async (event) => {
+                                        await appendReviewImages(reviewKey, event.target.files);
+                                        event.target.value = "";
+                                      }}
+                                    />
+                                  </label>
+                                  {review.imagenes?.length > 0 && (
+                                    <div className="review-image-grid review-image-grid--editable">
+                                      {review.imagenes.map((image, index) => (
+                                        <div key={`${image}-${index}`} className="admin-image-preview">
+                                          <img src={image} alt={`Foto reseña ${index + 1}`} />
+                                          <button
+                                            type="button"
+                                            className="admin-image-preview__remove"
+                                            onClick={() => updateReviewForm(reviewKey, { imagenes: (review.imagenes || []).filter((_, imageIndex) => imageIndex !== index) })}
+                                            aria-label="Quitar imagen"
+                                          >
+                                            x
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
                                   <button type="submit" className="button button--primary" disabled={saving}>
                                     {saving ? "Publicando..." : "Publicar reseña"}
                                   </button>

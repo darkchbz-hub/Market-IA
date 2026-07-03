@@ -1499,6 +1499,28 @@ textarea {
   transform: scale(1.08);
 }
 
+.review-image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 120px));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.review-image-grid img,
+.review-image-grid .admin-image-preview img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel-strong);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+}
+
+.review-image-grid--editable {
+  grid-template-columns: repeat(auto-fit, minmax(96px, 120px));
+}
+
 .hero-stat-grid,
 .metrics-row {
   grid-template-columns: repeat(3, minmax(0, 1fr));
