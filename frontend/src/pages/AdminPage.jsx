@@ -960,7 +960,22 @@ export function AdminPage() {
             </label>
             <div className="admin-product-preview-grid">
               {productForm.imagenes.map((image, index) => (
-                <img key={index} className="media-thumb" src={image} alt={`preview-${index}`} />
+                <div key={`${image}-${index}`} className="admin-image-preview">
+                  <img className="media-thumb" src={image} alt={`preview-${index}`} />
+                  <button
+                    type="button"
+                    className="admin-image-preview__remove"
+                    aria-label={`Eliminar imagen ${index + 1}`}
+                    onClick={() =>
+                      setProductForm((current) => ({
+                        ...current,
+                        imagenes: current.imagenes.filter((_, imageIndex) => imageIndex !== index)
+                      }))
+                    }
+                  >
+                    x
+                  </button>
+                </div>
               ))}
             </div>
             <article className="detail-card">
