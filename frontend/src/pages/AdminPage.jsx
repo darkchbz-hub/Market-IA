@@ -228,6 +228,7 @@ export function AdminPage() {
   const [generatorForm, setGeneratorForm] = useState(initialCatalogGenerator);
   const [importJson, setImportJson] = useState("");
   const [runningBulkTask, setRunningBulkTask] = useState(false);
+  const [imageDropActive, setImageDropActive] = useState(false);
   const [message, setMessage] = useState("");
   const [userSearch, setUserSearch] = useState("");
   const [folioSearch, setFolioSearch] = useState("");
@@ -315,10 +316,20 @@ export function AdminPage() {
 
   const uploadMultiple = async (files) => {
     const results = [];
-    for (const file of Array.from(files || [])) {
+    for (const file of Array.from(files || []).filter((item) => item.type?.startsWith("image/"))) {
       results.push(await fileToDataUrl(file));
     }
     return results;
+  };
+
+  const appendProductImages = async (files) => {
+    const uploadedImages = await uploadMultiple(files);
+    if (!uploadedImages.length) {
+      setMessage("Arrastra o selecciona archivos de imagen validos.");
+      return;
+    }
+
+    setProductForm((current) => ({ ...current, imagenes: [...current.imagenes, ...uploadedImages] }));
   };
 
   const saveProduct = async (event) => {
@@ -945,19 +956,42 @@ export function AdminPage() {
                 <input value={productForm.devolucion} onChange={(event) => setProductForm((current) => ({ ...current, devolucion: event.target.value }))} />
               </label>
             </div>
-            <label>
-              Subir imagenes
-              <small className="field-help">Puedes subir varias fotos. La primera sera la imagen principal del producto.</small>
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={async (event) => {
-                  const files = await uploadMultiple(event.target.files);
-                  setProductForm((current) => ({ ...current, imagenes: [...current.imagenes, ...files] }));
-                }}
-              />
-            </label>
+            <div
+              className={`admin-image-dropzone${imageDropActive ? " is-active" : ""}`}
+              onDragEnter={(event) => {
+                event.preventDefault();
+                setImageDropActive(true);
+              }}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setImageDropActive(true);
+              }}
+              onDragLeave={(event) => {
+                event.preventDefault();
+                setImageDropActive(false);
+              }}
+              onDrop={async (event) => {
+                event.preventDefault();
+                setImageDropActive(false);
+                await appendProductImages(event.dataTransfer.files);
+              }}
+            >
+              <label>
+                Subir imagenes
+                <small className="field-help">Selecciona fotos o arrastralas aqui. La primera sera la imagen principal del producto.</small>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={async (event) => {
+                    await appendProductImages(event.target.files);
+                    event.target.value = "";
+                  }}
+                />
+              </label>
+              <strong>Arrastra y suelta imagenes aqui</strong>
+              <span>Formatos comunes: PNG, JPG, WEBP.</span>
+            </div>
             <div className="admin-product-preview-grid">
               {productForm.imagenes.map((image, index) => (
                 <div key={`${image}-${index}`} className="admin-image-preview">
