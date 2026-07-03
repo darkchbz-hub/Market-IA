@@ -90,6 +90,14 @@ function normalizeEmailDomains(input) {
     .filter(Boolean);
 }
 
+function parseJson(value, fallback) {
+  try {
+    return value ? JSON.parse(value) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 function generateSixDigitCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }

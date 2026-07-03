@@ -1521,6 +1521,31 @@ textarea {
   grid-template-columns: repeat(auto-fit, minmax(96px, 120px));
 }
 
+.review-upload-zone {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 16px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 55%, var(--line));
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--accent-soft) 45%, var(--panel-strong));
+  cursor: pointer;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+
+.review-upload-zone:hover,
+.review-upload-zone:focus {
+  border-color: var(--accent);
+  box-shadow: 0 14px 28px rgba(15, 118, 110, 0.12);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.review-upload-zone span {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
 .hero-stat-grid,
 .metrics-row {
   grid-template-columns: repeat(3, minmax(0, 1fr));

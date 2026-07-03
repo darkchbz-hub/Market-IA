@@ -332,6 +332,16 @@ export function AdminPage() {
     setProductForm((current) => ({ ...current, imagenes: [...current.imagenes, ...uploadedImages] }));
   };
 
+  const appendReviewImages = async (files) => {
+    const uploadedImages = await uploadMultiple(files);
+    if (!uploadedImages.length) {
+      setMessage("Sube, arrastra o pega imagenes validas para la reseña.");
+      return;
+    }
+
+    setReviewForm((current) => ({ ...current, imagenes: [...(current.imagenes || []), ...uploadedImages].slice(0, 6) }));
+  };
+
   const saveProduct = async (event) => {
     event.preventDefault();
     try {
@@ -1487,16 +1497,31 @@ export function AdminPage() {
             </label>
             <label>
               Imagenes de la reseña
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={async (event) => {
-                  const uploadedImages = await uploadMultiple(event.target.files);
-                  setReviewForm((current) => ({ ...current, imagenes: [...(current.imagenes || []), ...uploadedImages].slice(0, 6) }));
-                  event.target.value = "";
+              <div
+                className="review-upload-zone"
+                role="button"
+                tabIndex={0}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={async (event) => {
+                  event.preventDefault();
+                  await appendReviewImages(event.dataTransfer.files);
                 }}
-              />
+                onPaste={async (event) => {
+                  await appendReviewImages(event.clipboardData.files);
+                }}
+              >
+                <strong>Subir, arrastrar o pegar imagenes</strong>
+                <span>Puedes agregar hasta 6 fotos por reseña.</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={async (event) => {
+                    await appendReviewImages(event.target.files);
+                    event.target.value = "";
+                  }}
+                />
+              </div>
             </label>
             {reviewForm.imagenes?.length > 0 && (
               <div className="review-image-grid review-image-grid--editable">
