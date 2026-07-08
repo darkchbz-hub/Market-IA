@@ -1364,7 +1364,7 @@ export async function createUser(db, { nombre, email, passwordHash, telefono = "
 
 export async function updateUserPassword(db, userId, passwordHash) {
   await db
-    .prepare("UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+    .prepare("UPDATE users SET password_hash = ? WHERE id = ?")
     .bind(String(passwordHash || ""), Number(userId))
     .run();
 
