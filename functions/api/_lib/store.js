@@ -719,6 +719,15 @@ const schemaStatements = [
     )
   `,
   `
+    CREATE TABLE IF NOT EXISTS password_reset_codes (
+      email TEXT PRIMARY KEY,
+      code TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `,
+  `
     CREATE TABLE IF NOT EXISTS site_content (
       clave TEXT PRIMARY KEY,
       valor TEXT NOT NULL,
@@ -1271,6 +1280,44 @@ export async function deleteRegistrationCode(db, email) {
     .run();
 }
 
+export async function savePasswordResetCode(db, email, code, expiresAtIso) {
+  await db
+    .prepare(
+      `
+      INSERT INTO password_reset_codes (email, code, expires_at, attempts, created_at)
+      VALUES (?, ?, ?, 0, CURRENT_TIMESTAMP)
+      ON CONFLICT(email) DO UPDATE SET
+        code = excluded.code,
+        expires_at = excluded.expires_at,
+        attempts = 0,
+        created_at = CURRENT_TIMESTAMP
+    `
+    )
+    .bind(String(email || "").trim().toLowerCase(), String(code || ""), String(expiresAtIso || ""))
+    .run();
+}
+
+export async function getPasswordResetCode(db, email) {
+  return db
+    .prepare("SELECT * FROM password_reset_codes WHERE email = ?")
+    .bind(String(email || "").trim().toLowerCase())
+    .first();
+}
+
+export async function bumpPasswordResetAttempt(db, email) {
+  await db
+    .prepare("UPDATE password_reset_codes SET attempts = attempts + 1 WHERE email = ?")
+    .bind(String(email || "").trim().toLowerCase())
+    .run();
+}
+
+export async function deletePasswordResetCode(db, email) {
+  await db
+    .prepare("DELETE FROM password_reset_codes WHERE email = ?")
+    .bind(String(email || "").trim().toLowerCase())
+    .run();
+}
+
 async function findUserByNickname(db, nickname) {
   const value = String(nickname || "").trim().toLowerCase();
 
@@ -1313,6 +1360,15 @@ export async function createUser(db, { nombre, email, passwordHash, telefono = "
     .run();
 
   return getUserById(db, response.meta.last_row_id);
+}
+
+export async function updateUserPassword(db, userId, passwordHash) {
+  await db
+    .prepare("UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+    .bind(String(passwordHash || ""), Number(userId))
+    .run();
+
+  return getUserById(db, userId);
 }
 
 export async function updateUserAddress(db, userId, direccion, telefono, extras = {}) {

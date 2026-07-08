@@ -2896,6 +2896,36 @@ textarea {
   gap: 10px;
 }
 
+.reset-password-form {
+  display: grid;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.password-field {
+  position: relative;
+  display: block;
+}
+
+.password-field input {
+  width: 100%;
+  padding-right: 48px;
+}
+
+.password-eye {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
 .checkbox-chip {
   display: flex !important;
   gap: 8px !important;

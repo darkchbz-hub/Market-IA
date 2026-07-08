@@ -20,6 +20,7 @@ import {
   createProductComment,
   createProduct,
   createUser,
+  deletePasswordResetCode,
   deleteOrder,
   decrementStockForOrder,
   deleteRegistrationCode,
@@ -30,6 +31,7 @@ import {
   getCartState,
   getOrderById,
   getOrderWithItems,
+  getPasswordResetCode,
   findUserOrderItemByFolio,
   getProductById,
   getRegistrationCode,
@@ -54,6 +56,7 @@ import {
   recordSearch,
   restoreAdminUser,
   savePaymentRecord,
+  savePasswordResetCode,
   saveRegistrationCode,
   serializeUser,
   setCartItem,
@@ -65,7 +68,9 @@ import {
   updateOrderStatus,
   updateOrderTracking,
   updateProduct,
+  updateUserPassword,
   updateUserAddress,
+  bumpPasswordResetAttempt,
   bumpRegistrationCodeAttempt
 } from "./_lib/store.js";
 
@@ -149,11 +154,14 @@ async function validateRegisterPayloadOrThrow(db, payload) {
   }
 }
 
-async function sendVerificationEmail(env, toEmail, code) {
+async function sendCodeEmail(env, toEmail, code, options = {}) {
   const apiKey = String(env.RESEND_API_KEY || "").trim();
   const fromEmail = String(env.RESEND_FROM_EMAIL || "").trim();
   const allowMailchannelsFallback = String(env.ENABLE_MAILCHANNELS_FALLBACK || "true").toLowerCase() === "true";
   const fallbackFrom = String(env.MAIL_FROM_EMAIL || fromEmail || "noreply@graycshop.trade").trim();
+  const subject = options.subject || "Codigo de verificacion Gray C Shop";
+  const intro = options.intro || "Tu codigo de verificacion es:";
+  const html = `<p>${intro} <strong>${code}</strong></p><p>Este codigo expira en 10 minutos.</p>`;
 
   if (!apiKey || !fromEmail) {
     if (!allowMailchannelsFallback) {
@@ -170,8 +178,8 @@ async function sendVerificationEmail(env, toEmail, code) {
         body: JSON.stringify({
           from: fromEmail,
           to: [toEmail],
-          subject: "Codigo de verificacion Gray C Shop",
-          html: `<p>Tu codigo de verificacion es: <strong>${code}</strong></p><p>Este codigo expira en 10 minutos.</p>`
+          subject,
+          html
         })
       });
 
@@ -202,11 +210,11 @@ async function sendVerificationEmail(env, toEmail, code) {
           email: fallbackFrom,
           name: "Gray C Shop"
         },
-        subject: "Codigo de verificacion Gray C Shop",
+        subject,
         content: [
           {
             type: "text/html",
-            value: `<p>Tu codigo de verificacion es: <strong>${code}</strong></p><p>Este codigo expira en 10 minutos.</p>`
+            value: html
           }
         ]
       })
@@ -219,6 +227,20 @@ async function sendVerificationEmail(env, toEmail, code) {
   } catch {
     return { sent: false, provider: "mailchannels" };
   }
+}
+
+async function sendVerificationEmail(env, toEmail, code) {
+  return sendCodeEmail(env, toEmail, code, {
+    subject: "Codigo de verificacion Gray C Shop",
+    intro: "Tu codigo de verificacion es:"
+  });
+}
+
+async function sendPasswordResetEmail(env, toEmail, code) {
+  return sendCodeEmail(env, toEmail, code, {
+    subject: "Codigo para cambiar tu contrasena Gray C Shop",
+    intro: "Tu codigo para cambiar la contrasena es:"
+  });
 }
 
 function normalizeAddress(value) {
@@ -1122,9 +1144,80 @@ export async function onRequest(context) {
     }
 
     if (first === "auth" && second === "forgot-password" && request.method === "POST") {
+      const body = await readJson(request);
+      const email = String(body.email || "").trim().toLowerCase();
+
+      if (!validateEmail(email)) {
+        throw httpError(400, "Ingresa un correo valido.");
+      }
+
+      const user = await getUserByEmail(db, email);
+      if (!user) {
+        return json({
+          ok: true,
+          message: "Si el correo existe, enviaremos un codigo de recuperacion."
+        });
+      }
+
+      const code = generateSixDigitCode();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+      await savePasswordResetCode(db, email, code, expiresAt);
+      const emailResult = await sendPasswordResetEmail(env, email, code);
+      const showFallbackCode = !emailResult.sent && String(env.SHOW_REGISTRATION_CODE_FALLBACK || "true").toLowerCase() === "true";
+
       return json({
         ok: true,
-        message: "Recuperacion preparada. Integra correo real cuando actives el proveedor."
+        emailSent: emailResult.sent,
+        resetCode: showFallbackCode ? code : "",
+        message: emailResult.sent
+          ? "Te enviamos un codigo para cambiar tu contrasena."
+          : "No se pudo enviar el correo automaticamente. Usa el codigo mostrado para cambiar tu contrasena."
+      });
+    }
+
+    if (first === "auth" && second === "reset-password" && request.method === "POST") {
+      const body = await readJson(request);
+      const email = String(body.email || "").trim().toLowerCase();
+      const code = String(body.code || "").trim();
+      const password = String(body.password || "");
+
+      if (!validateEmail(email) || !/^\d{6}$/.test(code)) {
+        throw httpError(400, "Completa correo y codigo valido de 6 digitos.");
+      }
+      if (password.length < 8) {
+        throw httpError(400, "La nueva contrasena debe tener al menos 8 caracteres.");
+      }
+
+      const record = await getPasswordResetCode(db, email);
+      if (!record) {
+        throw httpError(400, "No hay un codigo pendiente para este correo.");
+      }
+      if (new Date(record.expires_at).getTime() < Date.now()) {
+        await deletePasswordResetCode(db, email);
+        throw httpError(400, "El codigo expiro. Solicita uno nuevo.");
+      }
+      if (Number(record.attempts || 0) >= 5) {
+        await deletePasswordResetCode(db, email);
+        throw httpError(400, "Superaste el limite de intentos. Solicita un nuevo codigo.");
+      }
+      if (String(record.code) !== code) {
+        await bumpPasswordResetAttempt(db, email);
+        throw httpError(400, "El codigo ingresado no es correcto.");
+      }
+
+      const user = await getUserByEmail(db, email);
+      if (!user) {
+        await deletePasswordResetCode(db, email);
+        throw httpError(404, "No encontramos una cuenta con ese correo.");
+      }
+
+      const passwordHash = await hashPassword(password);
+      await updateUserPassword(db, user.id, passwordHash);
+      await deletePasswordResetCode(db, email);
+
+      return json({
+        ok: true,
+        message: "Tu contrasena fue actualizada. Ya puedes iniciar sesion."
       });
     }
 
