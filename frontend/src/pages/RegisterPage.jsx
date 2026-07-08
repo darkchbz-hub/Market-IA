@@ -5,6 +5,10 @@ import { apiFetch } from "../lib/api.js";
 
 const GMAIL_REGEX = /^[^\s@]+@gmail\.com$/i;
 
+function EyeIcon({ visible }) {
+  return <span aria-hidden="true">{visible ? "\u{1F648}" : "\u{1F441}\uFE0F"}</span>;
+}
+
 function getCountryOptions() {
   const fallback = [
     { code: "MX", name: "Mexico" },
@@ -64,6 +68,7 @@ export function RegisterPage() {
   const [countryCode, setCountryCode] = useState("MX");
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [verificationDigits, setVerificationDigits] = useState(["", "", "", "", "", ""]);
   const [verificationState, setVerificationState] = useState("idle");
   const [postalLocalities, setPostalLocalities] = useState([]);
@@ -290,13 +295,18 @@ export function RegisterPage() {
 
         <label>
           Contrasena
-          <input
-            type="password"
-            value={form.password}
-            onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-            minLength={8}
-            required
-          />
+          <span className="password-field">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={form.password}
+              onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+              minLength={8}
+              required
+            />
+            <button type="button" className="password-eye" onClick={() => setShowPassword((current) => !current)} aria-label={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}>
+              <EyeIcon visible={showPassword} />
+            </button>
+          </span>
         </label>
 
         <label>

@@ -1175,6 +1175,38 @@ export async function onRequest(context) {
       });
     }
 
+    if (first === "auth" && second === "verify-reset-code" && request.method === "POST") {
+      const body = await readJson(request);
+      const email = String(body.email || "").trim().toLowerCase();
+      const code = String(body.code || "").trim();
+
+      if (!validateEmail(email) || !/^\d{6}$/.test(code)) {
+        throw httpError(400, "Completa correo y codigo valido de 6 digitos.");
+      }
+
+      const record = await getPasswordResetCode(db, email);
+      if (!record) {
+        throw httpError(400, "No hay un codigo pendiente para este correo.");
+      }
+      if (new Date(record.expires_at).getTime() < Date.now()) {
+        await deletePasswordResetCode(db, email);
+        throw httpError(400, "El codigo expiro. Solicita uno nuevo.");
+      }
+      if (Number(record.attempts || 0) >= 5) {
+        await deletePasswordResetCode(db, email);
+        throw httpError(400, "Superaste el limite de intentos. Solicita un nuevo codigo.");
+      }
+      if (String(record.code) !== code) {
+        await bumpPasswordResetAttempt(db, email);
+        throw httpError(400, "El codigo ingresado no es correcto.");
+      }
+
+      return json({
+        ok: true,
+        message: "Codigo validado. Ahora ingresa tu nueva contrasena."
+      });
+    }
+
     if (first === "auth" && second === "reset-password" && request.method === "POST") {
       const body = await readJson(request);
       const email = String(body.email || "").trim().toLowerCase();

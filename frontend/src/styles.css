@@ -2924,6 +2924,8 @@ textarea {
   background: color-mix(in srgb, var(--primary) 10%, transparent);
   cursor: pointer;
   transform: translateY(-50%);
+  font-size: 1rem;
+  line-height: 1;
 }
 
 .checkbox-chip {
