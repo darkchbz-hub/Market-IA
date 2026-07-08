@@ -157,7 +157,7 @@ async function sendVerificationEmail(env, toEmail, code) {
 
   if (!apiKey || !fromEmail) {
     if (!allowMailchannelsFallback) {
-      throw httpError(503, "No se pudo enviar el correo. Configura RESEND_API_KEY y RESEND_FROM_EMAIL.");
+      return { sent: false, provider: "none" };
     }
   } else {
     try {
@@ -176,11 +176,11 @@ async function sendVerificationEmail(env, toEmail, code) {
       });
 
       if (response.ok) {
-        return;
+        return { sent: true, provider: "resend" };
       }
     } catch {
       if (!allowMailchannelsFallback) {
-        throw httpError(502, "No se pudo enviar el correo de verificacion en este momento.");
+        return { sent: false, provider: "resend" };
       }
     }
   }
@@ -215,8 +215,9 @@ async function sendVerificationEmail(env, toEmail, code) {
     if (!fallbackResponse.ok) {
       throw new Error("fallback_not_ok");
     }
+    return { sent: true, provider: "mailchannels" };
   } catch {
-    throw httpError(503, "No se pudo enviar el correo de verificacion. Contacta a soporte.");
+    return { sent: false, provider: "mailchannels" };
   }
 }
 
@@ -899,11 +900,16 @@ export async function onRequest(context) {
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
       await saveRegistrationCode(db, payload.email, payload, code, expiresAt);
-      await sendVerificationEmail(env, payload.email, code);
+      const emailResult = await sendVerificationEmail(env, payload.email, code);
+      const showFallbackCode = !emailResult.sent && String(env.SHOW_REGISTRATION_CODE_FALLBACK || "true").toLowerCase() === "true";
 
       return json({
         ok: true,
-        message: "Te enviamos un codigo de verificacion a tu correo."
+        emailSent: emailResult.sent,
+        verificationCode: showFallbackCode ? code : "",
+        message: emailResult.sent
+          ? "Te enviamos un codigo de verificacion a tu correo."
+          : "No se pudo enviar el correo automaticamente. Usa el codigo mostrado para terminar tu registro."
       });
     }
 

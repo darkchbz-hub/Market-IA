@@ -183,13 +183,14 @@ export function RegisterPage() {
     setVerificationState("idle");
 
     try {
-      await apiFetch("/auth/register/send-code", {
+      const response = await apiFetch("/auth/register/send-code", {
         method: "POST",
         body: form
       });
       setShowVerifyModal(true);
-      setVerificationDigits(["", "", "", "", "", ""]);
-      setMessage("Te enviamos un codigo de verificacion a tu correo.");
+      const fallbackCode = String(response.verificationCode || "");
+      setVerificationDigits(/^\d{6}$/.test(fallbackCode) ? fallbackCode.split("") : ["", "", "", "", "", ""]);
+      setMessage(response.emailSent ? "Te enviamos un codigo de verificacion a tu correo." : `No se pudo enviar el correo automaticamente. Tu codigo es ${fallbackCode}.`);
     } catch (submitError) {
       setMessage(submitError.message);
     } finally {
@@ -203,12 +204,13 @@ export function RegisterPage() {
     setVerificationState("idle");
 
     try {
-      await apiFetch("/auth/register/send-code", {
+      const response = await apiFetch("/auth/register/send-code", {
         method: "POST",
         body: form
       });
-      setMessage("Te enviamos un nuevo codigo a tu correo.");
-      setVerificationDigits(["", "", "", "", "", ""]);
+      const fallbackCode = String(response.verificationCode || "");
+      setMessage(response.emailSent ? "Te enviamos un nuevo codigo a tu correo." : `No se pudo enviar el correo automaticamente. Tu codigo es ${fallbackCode}.`);
+      setVerificationDigits(/^\d{6}$/.test(fallbackCode) ? fallbackCode.split("") : ["", "", "", "", "", ""]);
     } catch (submitError) {
       setMessage(submitError.message);
     } finally {
