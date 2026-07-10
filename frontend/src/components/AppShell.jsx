@@ -304,6 +304,7 @@ export function AppShell() {
   const whatsappLink = siteData.general?.paymentLinks?.whatsapp || siteData.general?.whatsapp || "";
   const supportHref = whatsappLink || "/chat";
   const supportIsExternal = /^https?:\/\//i.test(supportHref);
+  const footerWhatsappHref = "https://wa.me/529616205707";
   const supportEmail = siteData.general?.supportEmail || "graycshop.26@gmail.com";
   const activeTrack = useMemo(() => {
     const tracks = Array.isArray(siteData.music) ? siteData.music : [];
@@ -742,9 +743,11 @@ export function AppShell() {
           <p>Productos digitales, tecnologia, hogar y suscripciones IA.</p>
         </div>
         <div className="market-footer__links">
+          <Link to="/sobre-nosotros"><AppIcon name="about" />Sobre nosotros</Link>
+          <Link to="/terminos"><AppIcon name="about" />Terminos</Link>
+          <a href={footerWhatsappHref} target="_blank" rel="noreferrer"><AppIcon name="support" />Soporte</a>
           <Link to="/"><AppIcon name="home" />Inicio</Link>
           <Link to="/catalogo"><AppIcon name="catalog" />Catalogo</Link>
-          <Link to="/chat"><AppIcon name="support" />Soporte</Link>
           <Link to="/terminos"><AppIcon name="about" />Terminos y condiciones</Link>
           <Link to="/terminos"><AppIcon name="about" />Politica de privacidad</Link>
           <Link to="/terminos"><AppIcon name="about" />Reembolsos</Link>
