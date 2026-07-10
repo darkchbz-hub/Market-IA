@@ -286,7 +286,6 @@ export function AppShell() {
     const core = [
       { label: "Inicio", path: "/", hint: "Portada", icon: "home" },
       { label: "Catalogo", path: "/catalogo", hint: "Vistas comerciales", icon: "catalog" },
-      { label: "Centro de Control", path: "/centro-control", hint: "Productividad", icon: "control" },
       { label: "Perfil", path: "/perfil", hint: "Tu cuenta", icon: "profile" },
       { label: "Carrito", path: "/carrito", hint: "Tu pedido", icon: "cart" },
       { label: "Soporte", path: "/chat", hint: "Atencion", icon: "support" },
@@ -294,6 +293,7 @@ export function AppShell() {
     ];
 
     if (isAdmin) {
+      core.splice(2, 0, { label: "Centro de Control", path: "/centro-control", hint: "Productividad", icon: "control" });
       core.push({ label: "Panel Admin", path: "/admin", hint: "Gestion", icon: "admin" });
     }
 
@@ -654,9 +654,9 @@ export function AppShell() {
         <button type="button" onClick={() => navigate("/")}><AppIcon name="home" /><span>Inicio</span></button>
         <button type="button" onClick={() => navigate("/catalogo")}><AppIcon name="catalog" /><span>Catalogo</span></button>
         <button type="button" onClick={() => setCommandOpen(true)}><AppIcon name="shortcuts" /><span>Atajos</span></button>
-        <button type="button" onClick={() => navigate(isAdmin ? "/admin" : "/centro-control")}>
-          <AppIcon name={isAdmin ? "admin" : "control"} />
-          <span>{isAdmin ? "Admin" : "Centro"}</span>
+        <button type="button" onClick={() => navigate(isAdmin ? "/admin" : "/perfil")}>
+          <AppIcon name={isAdmin ? "admin" : "profile"} />
+          <span>{isAdmin ? "Admin" : "Perfil"}</span>
         </button>
       </nav>
 

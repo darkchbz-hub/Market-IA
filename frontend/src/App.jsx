@@ -81,7 +81,7 @@ export default function App() {
         <Route
           path="/centro-control"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute adminOnly>
               <ControlCenterPage />
             </ProtectedRoute>
           }
