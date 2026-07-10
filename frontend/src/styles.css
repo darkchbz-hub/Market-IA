@@ -599,6 +599,33 @@ textarea {
   grid-template-columns: 1.2fr 0.8fr;
 }
 
+.app-download-strip {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 0 2px -6px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.app-download-strip__link {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: color-mix(in srgb, var(--panel-strong) 92%, transparent);
+  color: var(--text);
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+
+.app-download-strip__link--disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .hero-shell--revamp .hero-panel--primary {
   background:
     linear-gradient(180deg, var(--feature-wash-start), var(--feature-wash-end)),

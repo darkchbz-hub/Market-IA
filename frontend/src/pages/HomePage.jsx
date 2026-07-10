@@ -190,6 +190,16 @@ export function HomePage() {
 
   return (
     <div className="page-stack">
+      <div className="app-download-strip">
+        <span>Descarga nuestra app</span>
+        <a className="app-download-strip__link" href="https://graycshop-app-download.pages.dev/GrayCShop.apk" target="_blank" rel="noreferrer">
+          Android
+        </a>
+        <a className="app-download-strip__link" href="https://graycshop-app-download.pages.dev/ios" target="_blank" rel="noreferrer">
+          iOS
+        </a>
+      </div>
+
       <section className="hero-shell hero-shell--revamp">
         <article className="hero-panel hero-panel--primary hero-panel--slider">
           <div className="hero-slider">
