@@ -38,7 +38,6 @@ const AMERICA_AND_EUROPE_COUNTRIES = [
   ["PA", "Panama"],
   ["PY", "Paraguay"],
   ["PE", "Peru"],
-  ["PR", "Puerto Rico"],
   ["KN", "San Cristobal y Nieves"],
   ["LC", "Santa Lucia"],
   ["VC", "San Vicente y las Granadinas"],
@@ -47,7 +46,6 @@ const AMERICA_AND_EUROPE_COUNTRIES = [
   ["UY", "Uruguay"],
   ["VE", "Venezuela"],
   ["AL", "Albania"],
-  ["AD", "Andorra"],
   ["AT", "Austria"],
   ["BY", "Bielorrusia"],
   ["BE", "Belgica"],
@@ -61,19 +59,16 @@ const AMERICA_AND_EUROPE_COUNTRIES = [
   ["FI", "Finlandia"],
   ["FR", "Francia"],
   ["DE", "Alemania"],
-  ["GE", "Georgia"],
   ["GR", "Grecia"],
   ["HU", "Hungria"],
   ["IS", "Islandia"],
   ["IE", "Irlanda"],
   ["IT", "Italia"],
   ["LV", "Letonia"],
-  ["LI", "Liechtenstein"],
   ["LT", "Lituania"],
   ["LU", "Luxemburgo"],
   ["MT", "Malta"],
   ["MD", "Moldavia"],
-  ["MC", "Monaco"],
   ["ME", "Montenegro"],
   ["NL", "Paises Bajos"],
   ["MK", "Macedonia del Norte"],
@@ -82,7 +77,6 @@ const AMERICA_AND_EUROPE_COUNTRIES = [
   ["PT", "Portugal"],
   ["RO", "Rumania"],
   ["RU", "Rusia"],
-  ["SM", "San Marino"],
   ["RS", "Serbia"],
   ["SK", "Eslovaquia"],
   ["SI", "Eslovenia"],
@@ -91,8 +85,7 @@ const AMERICA_AND_EUROPE_COUNTRIES = [
   ["CH", "Suiza"],
   ["TR", "Turquia"],
   ["UA", "Ucrania"],
-  ["GB", "Reino Unido"],
-  ["VA", "Ciudad del Vaticano"]
+  ["GB", "Reino Unido"]
 ];
 
 function getCountryOptions() {
