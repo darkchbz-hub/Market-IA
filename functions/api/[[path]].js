@@ -812,7 +812,15 @@ async function lookupPostalLocations(countryInput, postalInput) {
   }
 
   if (!response.ok) {
-    throw httpError(404, "No encontramos coincidencias para ese codigo postal.");
+    return {
+      countryCode,
+      country: "",
+      postalCode,
+      state: "",
+      localities: [],
+      found: false,
+      message: "No tenemos coincidencias automaticas para ese codigo postal. Puedes completar la direccion manualmente."
+    };
   }
 
   const payload = await response.json();
@@ -833,7 +841,8 @@ async function lookupPostalLocations(countryInput, postalInput) {
     country: String(payload.country || "").trim(),
     postalCode: String(payload["post code"] || postalCode).trim(),
     state,
-    localities
+    localities,
+    found: true
   };
 }
 

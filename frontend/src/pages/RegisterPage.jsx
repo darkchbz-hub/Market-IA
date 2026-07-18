@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { apiFetch } from "../lib/api.js";
+import { isPostalCodeFormatValid, postalCodeExample } from "../lib/postal-codes.js";
 
 const GMAIL_REGEX = /^[^\s@]+@gmail\.com$/i;
 
@@ -133,6 +134,12 @@ export function RegisterPage() {
       return;
     }
 
+    if (!isPostalCodeFormatValid(country, cleanPostalCode)) {
+      setPostalLocalities([]);
+      setPostalMessage(`Formato postal para este pais: ${postalCodeExample(country)}. Puedes corregirlo o completar la direccion manualmente.`);
+      return;
+    }
+
     const requestId = postalLookupRequestIdRef.current + 1;
     postalLookupRequestIdRef.current = requestId;
     setPostalLoading(true);
@@ -164,13 +171,20 @@ export function RegisterPage() {
           ciudad: firstLocality || current.direccion.ciudad || ""
         }
       }));
-      setPostalMessage(localities.length ? "Codigo postal validado." : "Codigo postal validado sin colonias listadas.");
+      setPostalMessage(
+        localities.length
+          ? "Codigo postal validado."
+          : "Codigo postal aceptado. Completa estado, localidad y ciudad manualmente."
+      );
     } catch (postalError) {
       if (requestId !== postalLookupRequestIdRef.current) {
         return;
       }
       setPostalLocalities([]);
-      setPostalMessage(postalError.message || "No se pudo consultar el codigo postal.");
+      setPostalMessage(
+        postalError.message ||
+          `No tenemos coincidencias automaticas para ese codigo. Si el formato es correcto (${postalCodeExample(country)}), completa la direccion manualmente.`
+      );
     } finally {
       if (requestId === postalLookupRequestIdRef.current) {
         setPostalLoading(false);
@@ -374,7 +388,8 @@ export function RegisterPage() {
           <label>
             Codigo postal
             <input
-              inputMode="numeric"
+              inputMode="text"
+              placeholder={`Ejemplo: ${postalCodeExample(countryCode)}`}
               value={form.direccion.cp}
               onChange={(event) => {
                 setPostalMessage("");
