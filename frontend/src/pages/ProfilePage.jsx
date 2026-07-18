@@ -2,6 +2,12 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { apiFetch } from "../lib/api.js";
+import {
+  INTERNATIONAL_CHECKOUT_MESSAGE,
+  INTERNATIONAL_SHIPPING_MESSAGE,
+  buildOrderSupportWhatsappUrl,
+  isMexicoCountry
+} from "../lib/shipping.js";
 
 const PAYPAL_QR_URL = "/assets/paypal-payment-qr.png";
 
@@ -393,6 +399,15 @@ export function ProfilePage() {
                   </div>
                   <small>{new Date(order.fecha).toLocaleString()}</small>
                   <p>Metodo: {order.metodoPago || "Por definir"} · Total: ${order.total.toFixed(2)}</p>
+                  {!isMexicoCountry(order.direccionEnvio?.pais || order.direccion?.pais) && (
+                    <div className="shipping-support-card">
+                      <strong>{INTERNATIONAL_SHIPPING_MESSAGE}</strong>
+                      <span>{INTERNATIONAL_CHECKOUT_MESSAGE}</span>
+                      <a className="button button--primary" href={buildOrderSupportWhatsappUrl(order)} target="_blank" rel="noreferrer">
+                        Soporte
+                      </a>
+                    </div>
+                  )}
                   {order.items?.length > 0 && (
                     <div className="order-review-list">
                       <p>

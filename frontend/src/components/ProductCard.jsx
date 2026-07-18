@@ -1,11 +1,15 @@
 import { Link } from "react-router-dom";
 import { RatingStars } from "./RatingStars.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
+import { getShippingVisibilityText, getUserCountry } from "../lib/shipping.js";
 
 const FALLBACK_IMAGE = "/assets/gray-c-shop-logo.png?v=20260514-2";
 
 export function ProductCard({ product, onAddToCart, onBuyNow, busy }) {
+  const { user } = useAuth();
   const hasOffer = Number(product.precioOriginal || 0) > Number(product.precio || 0);
   const rating = Number(product.ratingPromedio || 0);
+  const shippingText = getShippingVisibilityText(getUserCountry(user), product);
   const requiresColor = (Array.isArray(product.variantes) ? product.variantes : []).some(
     (variant) => variant?.tipo === "color" && Array.isArray(variant.opciones) && variant.opciones.length
   );
@@ -45,7 +49,7 @@ export function ProductCard({ product, onAddToCart, onBuyNow, busy }) {
         </div>
 
         <div className="product-card__shipping">
-          <span><strong>Envio:</strong> {product.infoEnvio || "Envio nacional con seguimiento"}</span>
+          <span><strong>Envio:</strong> {shippingText}</span>
           <small><strong>Fecha estimada:</strong> {product.fechaEstimada || "Entrega estimada variable"}</small>
         </div>
       </div>

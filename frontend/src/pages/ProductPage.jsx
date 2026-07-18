@@ -6,6 +6,7 @@ import { RatingStars, clampRating } from "../components/RatingStars.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCart } from "../context/CartContext.jsx";
 import { apiFetch } from "../lib/api.js";
+import { getShippingVisibilityText, getUserCountry } from "../lib/shipping.js";
 
 const FALLBACK_IMAGE = "/assets/gray-c-shop-logo.png?v=20260514-2";
 
@@ -27,7 +28,7 @@ function getColorVariant(product) {
 export function ProductPage() {
   const { productId } = useParams();
   const navigate = useNavigate();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { addToCart } = useCart();
   const [product, setProduct] = useState(null);
   const [comments, setComments] = useState([]);
@@ -99,6 +100,7 @@ export function ProductPage() {
   const reviewCount = comments.length || Number(product?.ratingTotal || 0);
   const maxQuantity = Math.max(1, Math.min(Number(product?.stock || 1), 10));
   const canBuy = product && Number(product.stock || 0) > 0;
+  const shippingText = getShippingVisibilityText(getUserCountry(user), product);
 
   const addProductToCart = async () => {
     if (!product) return;
@@ -258,7 +260,7 @@ export function ProductPage() {
           </div>
           <div className="purchase-panel__info">
             <span>{product.stock} disponibles</span>
-            <span>{product.infoEnvio || "Envio nacional con seguimiento"}</span>
+            <span>{shippingText}</span>
             <span>{product.fechaEstimada || "Entrega estimada variable"}</span>
           </div>
           <div className="trust-badge-grid trust-badge-grid--compact">

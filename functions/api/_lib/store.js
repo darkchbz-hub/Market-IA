@@ -2020,6 +2020,8 @@ export async function createOrderFromCart(db, userId, { direccion, proveedorPago
     )
     .run();
 
+  const createdItems = [];
+
   for (const item of summary.items) {
     const folio = await createUniqueOrderItemFolio(db);
     await db
@@ -2031,6 +2033,11 @@ export async function createOrderFromCart(db, userId, { direccion, proveedorPago
       )
       .bind(orderId, item.productoId, item.nombre, item.precio, item.cantidad, JSON.stringify(item.variante || {}), "pendiente", folio)
       .run();
+
+    createdItems.push({
+      ...item,
+      folio
+    });
   }
 
   await updateUserAddress(db, userId, direccion, telefono);
@@ -2043,7 +2050,8 @@ export async function createOrderFromCart(db, userId, { direccion, proveedorPago
         estado: "pending_payment",
         proveedorPago,
         tracking: initialTracking,
-        items: summary.items
+        direccionEnvio: direccion || {},
+        items: createdItems
       }
   };
 }

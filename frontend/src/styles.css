@@ -1129,6 +1129,24 @@ textarea {
   background: rgba(33, 146, 114, 0.1);
 }
 
+.shipping-support-card {
+  display: grid;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--line));
+  border-radius: 16px;
+  padding: 12px;
+  background: color-mix(in srgb, var(--accent-soft) 72%, var(--panel-strong));
+  color: var(--text);
+}
+
+.shipping-support-card span {
+  color: var(--muted);
+}
+
+.shipping-support-card .button {
+  width: fit-content;
+}
+
 .category-grid,
 .product-grid,
 .video-grid,

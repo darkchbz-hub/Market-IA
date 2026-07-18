@@ -3,6 +3,12 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCart } from "../context/CartContext.jsx";
 import { apiFetch } from "../lib/api.js";
+import {
+  INTERNATIONAL_CHECKOUT_MESSAGE,
+  INTERNATIONAL_SHIPPING_MESSAGE,
+  buildOrderSupportWhatsappUrl,
+  isMexicoCountry
+} from "../lib/shipping.js";
 
 const PAYPAL_QR_URL = "/assets/paypal-payment-qr.png";
 
@@ -44,6 +50,7 @@ export function CheckoutPage() {
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [order, setOrder] = useState(null);
+  const isMexicoShipping = isMexicoCountry(address.pais);
 
   useEffect(() => {
     apiFetch("/checkout/summary", { token })
@@ -113,6 +120,10 @@ export function CheckoutPage() {
 
       setOrder(payload.order);
       await refreshCart();
+      if (!isMexicoCountry(address.pais)) {
+        setMessage(INTERNATIONAL_CHECKOUT_MESSAGE);
+        return;
+      }
       await continueWithProvider(payload.order);
     } catch (error) {
       setMessage(error.message);
@@ -214,6 +225,13 @@ export function CheckoutPage() {
           ))}
         </div>
 
+        {!isMexicoShipping && (
+          <div className="shipping-support-card">
+            <strong>{INTERNATIONAL_SHIPPING_MESSAGE}</strong>
+            <span>{INTERNATIONAL_CHECKOUT_MESSAGE}</span>
+          </div>
+        )}
+
         {message && <p className="inline-message">{message}</p>}
 
         <div className="checkout-actions">
@@ -241,7 +259,7 @@ export function CheckoutPage() {
         </div>
         <div className="summary-row">
           <span>Envio</span>
-          <strong>$0.00</strong>
+          <strong>{isMexicoShipping ? "$0.00" : "Variable"}</strong>
         </div>
         <div className="summary-row summary-row--total">
           <span>Total</span>
@@ -253,6 +271,19 @@ export function CheckoutPage() {
             <strong>Pedido creado</strong>
             <span>{order.id}</span>
             <span className={statusClass(order.estado)}>{statusLabel(order.estado)}</span>
+            {!isMexicoCountry(order.direccionEnvio?.pais || order.direccion?.pais || address.pais) && (
+              <>
+                <span>{INTERNATIONAL_CHECKOUT_MESSAGE}</span>
+                <a
+                  className="button button--primary"
+                  href={buildOrderSupportWhatsappUrl(order, { address })}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Soporte
+                </a>
+              </>
+            )}
           </div>
         )}
       </aside>
