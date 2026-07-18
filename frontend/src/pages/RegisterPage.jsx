@@ -9,37 +9,94 @@ function EyeIcon({ visible }) {
   return <span aria-hidden="true">{visible ? "\u{1F648}" : "\u{1F441}\uFE0F"}</span>;
 }
 
+const AMERICA_AND_EUROPE_COUNTRIES = [
+  ["MX", "Mexico"],
+  ["US", "Estados Unidos"],
+  ["CA", "Canada"],
+  ["AR", "Argentina"],
+  ["AG", "Antigua y Barbuda"],
+  ["BS", "Bahamas"],
+  ["BB", "Barbados"],
+  ["BZ", "Belice"],
+  ["BO", "Bolivia"],
+  ["BR", "Brasil"],
+  ["CL", "Chile"],
+  ["CO", "Colombia"],
+  ["CR", "Costa Rica"],
+  ["CU", "Cuba"],
+  ["DM", "Dominica"],
+  ["DO", "Republica Dominicana"],
+  ["EC", "Ecuador"],
+  ["SV", "El Salvador"],
+  ["GD", "Granada"],
+  ["GT", "Guatemala"],
+  ["GY", "Guyana"],
+  ["HT", "Haiti"],
+  ["HN", "Honduras"],
+  ["JM", "Jamaica"],
+  ["NI", "Nicaragua"],
+  ["PA", "Panama"],
+  ["PY", "Paraguay"],
+  ["PE", "Peru"],
+  ["PR", "Puerto Rico"],
+  ["KN", "San Cristobal y Nieves"],
+  ["LC", "Santa Lucia"],
+  ["VC", "San Vicente y las Granadinas"],
+  ["SR", "Surinam"],
+  ["TT", "Trinidad y Tobago"],
+  ["UY", "Uruguay"],
+  ["VE", "Venezuela"],
+  ["AL", "Albania"],
+  ["AD", "Andorra"],
+  ["AT", "Austria"],
+  ["BY", "Bielorrusia"],
+  ["BE", "Belgica"],
+  ["BA", "Bosnia y Herzegovina"],
+  ["BG", "Bulgaria"],
+  ["HR", "Croacia"],
+  ["CY", "Chipre"],
+  ["CZ", "Chequia"],
+  ["DK", "Dinamarca"],
+  ["EE", "Estonia"],
+  ["FI", "Finlandia"],
+  ["FR", "Francia"],
+  ["DE", "Alemania"],
+  ["GE", "Georgia"],
+  ["GR", "Grecia"],
+  ["HU", "Hungria"],
+  ["IS", "Islandia"],
+  ["IE", "Irlanda"],
+  ["IT", "Italia"],
+  ["LV", "Letonia"],
+  ["LI", "Liechtenstein"],
+  ["LT", "Lituania"],
+  ["LU", "Luxemburgo"],
+  ["MT", "Malta"],
+  ["MD", "Moldavia"],
+  ["MC", "Monaco"],
+  ["ME", "Montenegro"],
+  ["NL", "Paises Bajos"],
+  ["MK", "Macedonia del Norte"],
+  ["NO", "Noruega"],
+  ["PL", "Polonia"],
+  ["PT", "Portugal"],
+  ["RO", "Rumania"],
+  ["RU", "Rusia"],
+  ["SM", "San Marino"],
+  ["RS", "Serbia"],
+  ["SK", "Eslovaquia"],
+  ["SI", "Eslovenia"],
+  ["ES", "Espana"],
+  ["SE", "Suecia"],
+  ["CH", "Suiza"],
+  ["TR", "Turquia"],
+  ["UA", "Ucrania"],
+  ["GB", "Reino Unido"],
+  ["VA", "Ciudad del Vaticano"]
+];
+
 function getCountryOptions() {
-  const fallback = [
-    { code: "MX", name: "Mexico" },
-    { code: "US", name: "United States" },
-    { code: "CA", name: "Canada" },
-    { code: "ES", name: "Spain" },
-    { code: "CO", name: "Colombia" },
-    { code: "AR", name: "Argentina" },
-    { code: "CL", name: "Chile" },
-    { code: "PE", name: "Peru" }
-  ];
-
-  if (!Intl?.DisplayNames || !Intl?.supportedValuesOf) {
-    return fallback;
-  }
-
-  try {
-    const formatter = new Intl.DisplayNames(["es"], { type: "region" });
-    const regions = Intl.supportedValuesOf("region")
-      .filter((code) => /^[A-Z]{2}$/.test(code))
-      .map((code) => ({
-        code,
-        name: formatter.of(code) || code
-      }))
-      .filter((item) => item.name && item.name !== item.code)
-      .sort((a, b) => a.name.localeCompare(b.name, "es"));
-
-    return regions.length ? regions : fallback;
-  } catch {
-    return fallback;
-  }
+  return AMERICA_AND_EUROPE_COUNTRIES.map(([code, name]) => ({ code, name }));
 }
 
 export function RegisterPage() {
