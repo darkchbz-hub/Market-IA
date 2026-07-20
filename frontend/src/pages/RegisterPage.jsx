@@ -10,87 +10,42 @@ function EyeIcon({ visible }) {
   return <span aria-hidden="true">{visible ? "\u{1F648}" : "\u{1F441}\uFE0F"}</span>;
 }
 
-const AMERICA_AND_EUROPE_COUNTRIES = [
-  ["MX", "Mexico"],
-  ["US", "Estados Unidos"],
-  ["CA", "Canada"],
-  ["AR", "Argentina"],
-  ["AG", "Antigua y Barbuda"],
-  ["BS", "Bahamas"],
-  ["BB", "Barbados"],
-  ["BZ", "Belice"],
-  ["BO", "Bolivia"],
-  ["BR", "Brasil"],
-  ["CL", "Chile"],
-  ["CO", "Colombia"],
-  ["CR", "Costa Rica"],
-  ["CU", "Cuba"],
-  ["DM", "Dominica"],
-  ["DO", "Republica Dominicana"],
-  ["EC", "Ecuador"],
-  ["SV", "El Salvador"],
-  ["GD", "Granada"],
-  ["GT", "Guatemala"],
-  ["GY", "Guyana"],
-  ["HT", "Haiti"],
-  ["HN", "Honduras"],
-  ["JM", "Jamaica"],
-  ["NI", "Nicaragua"],
-  ["PA", "Panama"],
-  ["PY", "Paraguay"],
-  ["PE", "Peru"],
-  ["KN", "San Cristobal y Nieves"],
-  ["LC", "Santa Lucia"],
-  ["VC", "San Vicente y las Granadinas"],
-  ["SR", "Surinam"],
-  ["TT", "Trinidad y Tobago"],
-  ["UY", "Uruguay"],
-  ["VE", "Venezuela"],
-  ["AL", "Albania"],
-  ["AT", "Austria"],
-  ["BY", "Bielorrusia"],
-  ["BE", "Belgica"],
-  ["BA", "Bosnia y Herzegovina"],
-  ["BG", "Bulgaria"],
-  ["HR", "Croacia"],
-  ["CY", "Chipre"],
-  ["CZ", "Chequia"],
-  ["DK", "Dinamarca"],
-  ["EE", "Estonia"],
-  ["FI", "Finlandia"],
-  ["FR", "Francia"],
-  ["DE", "Alemania"],
-  ["GR", "Grecia"],
-  ["HU", "Hungria"],
-  ["IS", "Islandia"],
-  ["IE", "Irlanda"],
-  ["IT", "Italia"],
-  ["LV", "Letonia"],
-  ["LT", "Lituania"],
-  ["LU", "Luxemburgo"],
-  ["MT", "Malta"],
-  ["MD", "Moldavia"],
-  ["ME", "Montenegro"],
-  ["NL", "Paises Bajos"],
-  ["MK", "Macedonia del Norte"],
-  ["NO", "Noruega"],
-  ["PL", "Polonia"],
-  ["PT", "Portugal"],
-  ["RO", "Rumania"],
-  ["RU", "Rusia"],
-  ["RS", "Serbia"],
-  ["SK", "Eslovaquia"],
-  ["SI", "Eslovenia"],
-  ["ES", "Espana"],
-  ["SE", "Suecia"],
-  ["CH", "Suiza"],
-  ["TR", "Turquia"],
-  ["UA", "Ucrania"],
-  ["GB", "Reino Unido"]
+const COUNTRY_CODES = [
+  "AF", "AX", "AL", "DZ", "AS", "AD", "AO", "AI", "AQ", "AG", "AR", "AM", "AW", "AU", "AT", "AZ",
+  "BS", "BH", "BD", "BB", "BY", "BE", "BZ", "BJ", "BM", "BT", "BO", "BQ", "BA", "BW", "BV", "BR",
+  "IO", "BN", "BG", "BF", "BI", "CV", "KH", "CM", "CA", "KY", "CF", "TD", "CL", "CN", "CX", "CC",
+  "CO", "KM", "CG", "CD", "CK", "CR", "CI", "HR", "CU", "CW", "CY", "CZ", "DK", "DJ", "DM", "DO",
+  "EC", "EG", "SV", "GQ", "ER", "EE", "SZ", "ET", "FK", "FO", "FJ", "FI", "FR", "GF", "PF", "TF",
+  "GA", "GM", "GE", "DE", "GH", "GI", "GR", "GL", "GD", "GP", "GU", "GT", "GG", "GN", "GW", "GY",
+  "HT", "HM", "VA", "HN", "HK", "HU", "IS", "IN", "ID", "IR", "IQ", "IE", "IM", "IL", "IT", "JM",
+  "JP", "JE", "JO", "KZ", "KE", "KI", "KP", "KR", "KW", "KG", "LA", "LV", "LB", "LS", "LR", "LY",
+  "LI", "LT", "LU", "MO", "MG", "MW", "MY", "MV", "ML", "MT", "MH", "MQ", "MR", "MU", "YT", "MX",
+  "FM", "MD", "MC", "MN", "ME", "MS", "MA", "MZ", "MM", "NA", "NR", "NP", "NL", "NC", "NZ", "NI",
+  "NE", "NG", "NU", "NF", "MK", "MP", "NO", "OM", "PK", "PW", "PS", "PA", "PG", "PY", "PE", "PH",
+  "PN", "PL", "PT", "PR", "QA", "RE", "RO", "RU", "RW", "BL", "SH", "KN", "LC", "MF", "PM", "VC",
+  "WS", "SM", "ST", "SA", "SN", "RS", "SC", "SL", "SG", "SX", "SK", "SI", "SB", "SO", "ZA", "GS",
+  "SS", "ES", "LK", "SD", "SR", "SJ", "SE", "CH", "SY", "TW", "TJ", "TZ", "TH", "TL", "TG", "TK",
+  "TO", "TT", "TN", "TR", "TM", "TC", "TV", "UG", "UA", "AE", "GB", "US", "UM", "UY", "UZ", "VU",
+  "VE", "VN", "VG", "VI", "WF", "EH", "YE", "ZM", "ZW"
 ];
 
 function getCountryOptions() {
-  return AMERICA_AND_EUROPE_COUNTRIES.map(([code, name]) => ({ code, name }));
+  const formatter = typeof Intl !== "undefined" && Intl.DisplayNames
+    ? new Intl.DisplayNames(["es"], { type: "region" })
+    : null;
+
+  const countries = COUNTRY_CODES.map((code) => ({
+    code,
+    name: formatter?.of(code) || code
+  })).sort((a, b) => a.name.localeCompare(b.name, "es"));
+
+  const mexicoIndex = countries.findIndex((item) => item.code === "MX");
+  if (mexicoIndex > 0) {
+    const [mexico] = countries.splice(mexicoIndex, 1);
+    countries.unshift(mexico);
+  }
+
+  return countries;
 }
 
 export function RegisterPage() {
@@ -123,10 +78,25 @@ export function RegisterPage() {
   const [verificationDigits, setVerificationDigits] = useState(["", "", "", "", "", ""]);
   const [verificationState, setVerificationState] = useState("idle");
   const [postalLocalities, setPostalLocalities] = useState([]);
+  const [postalVerified, setPostalVerified] = useState(false);
   const [postalLoading, setPostalLoading] = useState(false);
   const [postalMessage, setPostalMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+
+  const clearResolvedAddress = () => {
+    setPostalLocalities([]);
+    setPostalVerified(false);
+    setForm((current) => ({
+      ...current,
+      direccion: {
+        ...current.direccion,
+        estado: "",
+        localidad: "",
+        ciudad: ""
+      }
+    }));
+  };
 
   const runPostalLookup = async (postalCode, country = countryCode) => {
     const cleanPostalCode = String(postalCode || "").trim();
@@ -135,8 +105,8 @@ export function RegisterPage() {
     }
 
     if (!isPostalCodeFormatValid(country, cleanPostalCode)) {
-      setPostalLocalities([]);
-      setPostalMessage(`Formato postal para este pais: ${postalCodeExample(country)}. Puedes corregirlo o completar la direccion manualmente.`);
+      clearResolvedAddress();
+      setPostalMessage(`Codigo Postal Incorrecto. Formato esperado: ${postalCodeExample(country)}.`);
       return;
     }
 
@@ -151,40 +121,40 @@ export function RegisterPage() {
         return;
       }
       const localities = Array.isArray(result.localities) ? result.localities : [];
+      if (!result.found || !localities.length || !result.state || !(result.city || localities[0])) {
+        clearResolvedAddress();
+        setPostalMessage("Codigo Postal Incorrecto.");
+        return;
+      }
       const countryName =
         countries.find((item) => item.code === String(result.countryCode || "").toUpperCase())?.name ||
         String(result.country || "").trim() ||
         form.direccion.pais ||
         "Mexico";
       const firstLocality = localities[0] || "";
+      const city = String(result.city || firstLocality || "").trim();
 
       setCountryCode(String(result.countryCode || country).toUpperCase());
       setPostalLocalities(localities);
+      setPostalVerified(true);
       setForm((current) => ({
         ...current,
         direccion: {
           ...current.direccion,
           cp: String(result.postalCode || cleanPostalCode),
           pais: countryName,
-          estado: String(result.state || current.direccion.estado || ""),
-          localidad: firstLocality || current.direccion.localidad || "",
-          ciudad: firstLocality || current.direccion.ciudad || ""
+          estado: String(result.state || ""),
+          localidad: firstLocality,
+          ciudad: city
         }
       }));
-      setPostalMessage(
-        localities.length
-          ? "Codigo postal validado."
-          : "Codigo postal aceptado. Completa estado, localidad y ciudad manualmente."
-      );
+      setPostalMessage("Codigo postal validado.");
     } catch (postalError) {
       if (requestId !== postalLookupRequestIdRef.current) {
         return;
       }
-      setPostalLocalities([]);
-      setPostalMessage(
-        postalError.message ||
-          `No tenemos coincidencias automaticas para ese codigo. Si el formato es correcto (${postalCodeExample(country)}), completa la direccion manualmente.`
-      );
+      clearResolvedAddress();
+      setPostalMessage(postalError.message || "Codigo Postal Incorrecto.");
     } finally {
       if (requestId === postalLookupRequestIdRef.current) {
         setPostalLoading(false);
@@ -244,6 +214,11 @@ export function RegisterPage() {
 
     if (!GMAIL_REGEX.test(form.email)) {
       setMessage("Solo se aceptan correos @gmail.com");
+      return;
+    }
+
+    if (!postalVerified) {
+      setMessage("Codigo Postal Incorrecto.");
       return;
     }
 
@@ -393,7 +368,18 @@ export function RegisterPage() {
               value={form.direccion.cp}
               onChange={(event) => {
                 setPostalMessage("");
-                setForm((current) => ({ ...current, direccion: { ...current.direccion, cp: event.target.value } }));
+                setPostalLocalities([]);
+                setPostalVerified(false);
+                setForm((current) => ({
+                  ...current,
+                  direccion: {
+                    ...current.direccion,
+                    cp: event.target.value,
+                    estado: "",
+                    localidad: "",
+                    ciudad: ""
+                  }
+                }));
               }}
               onBlur={(event) => runPostalLookup(event.target.value, countryCode)}
               required
@@ -407,11 +393,17 @@ export function RegisterPage() {
                 const nextCode = event.target.value;
                 const selectedCountry = countries.find((item) => item.code === nextCode);
                 setCountryCode(nextCode);
+                setPostalLocalities([]);
+                setPostalVerified(false);
+                setPostalMessage("");
                 setForm((current) => ({
                   ...current,
                   direccion: {
                     ...current.direccion,
-                    pais: selectedCountry?.name || current.direccion.pais
+                    pais: selectedCountry?.name || current.direccion.pais,
+                    estado: "",
+                    localidad: "",
+                    ciudad: ""
                   }
                 }));
                 if (form.direccion.cp.trim().length >= 3) {
@@ -431,15 +423,14 @@ export function RegisterPage() {
             Estado
             <input
               value={form.direccion.estado}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, direccion: { ...current.direccion, estado: event.target.value } }))
-              }
+              readOnly
+              placeholder="Se rellena con el codigo postal"
               required
             />
           </label>
           <label>
             Localidad
-            {postalLocalities.length ? (
+            {postalLocalities.length > 1 ? (
               <select
                 value={form.direccion.localidad}
                 onChange={(event) => {
@@ -448,8 +439,7 @@ export function RegisterPage() {
                     ...current,
                     direccion: {
                       ...current.direccion,
-                      localidad: locality,
-                      ciudad: locality
+                      localidad: locality
                     }
                   }));
                 }}
@@ -465,39 +455,20 @@ export function RegisterPage() {
             ) : (
               <input
                 value={form.direccion.localidad}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, direccion: { ...current.direccion, localidad: event.target.value } }))
-                }
+                readOnly
+                placeholder="Se rellena con el codigo postal"
                 required
               />
             )}
           </label>
           <label>
             Ciudad
-            {postalLocalities.length ? (
-              <select
-                value={form.direccion.ciudad}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, direccion: { ...current.direccion, ciudad: event.target.value } }))
-                }
-                required
-              >
-                <option value="">Selecciona una ciudad</option>
-                {postalLocalities.map((locality) => (
-                  <option key={locality} value={locality}>
-                    {locality}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                value={form.direccion.ciudad}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, direccion: { ...current.direccion, ciudad: event.target.value } }))
-                }
-                required
-              />
-            )}
+            <input
+              value={form.direccion.ciudad}
+              readOnly
+              placeholder="Se rellena con el codigo postal"
+              required
+            />
           </label>
           <label>
             Calle

@@ -802,6 +802,10 @@ async function lookupPostalLocations(countryInput, postalInput) {
   }
 
   const countryCode = normalizeCountryCode(countryInput);
+  if (countryCode === "BR") {
+    return lookupBrazilPostalLocations(postalCode);
+  }
+
   const endpoint = `https://api.zippopotam.us/${countryCode.toLowerCase()}/${encodeURIComponent(postalCode)}`;
 
   let response;
@@ -842,7 +846,70 @@ async function lookupPostalLocations(countryInput, postalInput) {
     postalCode: String(payload["post code"] || postalCode).trim(),
     state,
     localities,
+    city: localities[0] || "",
     found: true
+  };
+}
+
+async function lookupBrazilPostalLocations(postalInput) {
+  const cleanCep = String(postalInput || "").replace(/\D/g, "");
+
+  if (!/^\d{8}$/.test(cleanCep)) {
+    return {
+      countryCode: "BR",
+      country: "Brasil",
+      postalCode: postalInput,
+      state: "",
+      localities: [],
+      city: "",
+      found: false
+    };
+  }
+
+  let response;
+  try {
+    response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`, { method: "GET" });
+  } catch {
+    throw httpError(502, "No se pudo consultar el servicio de codigos postales.");
+  }
+
+  if (!response.ok) {
+    return {
+      countryCode: "BR",
+      country: "Brasil",
+      postalCode: postalInput,
+      state: "",
+      localities: [],
+      city: "",
+      found: false
+    };
+  }
+
+  const payload = await response.json();
+  if (payload?.erro) {
+    return {
+      countryCode: "BR",
+      country: "Brasil",
+      postalCode: postalInput,
+      state: "",
+      localities: [],
+      city: "",
+      found: false
+    };
+  }
+
+  const city = String(payload.localidade || "").trim();
+  const locality = String(payload.bairro || city || "").trim();
+  const state = String(payload.uf || "").trim();
+
+  return {
+    countryCode: "BR",
+    country: "Brasil",
+    postalCode: String(payload.cep || postalInput).trim(),
+    state,
+    localities: locality ? [locality] : [],
+    city,
+    found: Boolean(state && city && locality)
   };
 }
 
