@@ -116,13 +116,13 @@ export function CatalogPage() {
     return () => observer.disconnect();
   }, [products.length, visibleDesktopProducts]);
 
-  const desktopProductColumns = useMemo(() => {
-    const columns = [];
+  const desktopProductRows = useMemo(() => {
+    const rows = [];
     const visibleProducts = products.slice(0, visibleDesktopProducts);
     for (let index = 0; index < visibleProducts.length; index += 10) {
-      columns.push(visibleProducts.slice(index, index + 10));
+      rows.push(visibleProducts.slice(index, index + 10));
     }
-    return columns;
+    return rows;
   }, [products, visibleDesktopProducts]);
 
   const updateCategory = (slug) => {
@@ -269,17 +269,19 @@ export function CatalogPage() {
           <>
             <div className="catalog-desktop-product-scroll">
               <div className="catalog-desktop-product-grid" aria-label="Productos del catalogo">
-                {desktopProductColumns.map((column, columnIndex) => (
-                  <div className="catalog-desktop-product-column" key={`desktop-column-${columnIndex}`}>
-                    {column.map((product) => (
-                      <ProductCard
-                        key={product.id}
-                        product={product}
-                        busy={busyProductId === product.id}
-                        onAddToCart={addProductToCart}
-                        onBuyNow={buyProductNow}
-                      />
-                    ))}
+                {desktopProductRows.map((row, rowIndex) => (
+                  <div className="catalog-desktop-product-row" key={`desktop-row-${rowIndex}`}>
+                    <div className="catalog-desktop-product-row__track">
+                      {row.map((product) => (
+                        <ProductCard
+                          key={product.id}
+                          product={product}
+                          busy={busyProductId === product.id}
+                          onAddToCart={addProductToCart}
+                          onBuyNow={buyProductNow}
+                        />
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>

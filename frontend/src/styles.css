@@ -2129,19 +2129,23 @@ textarea {
   }
 
   .catalog-desktop-product-grid {
-    display: flex;
-    align-items: flex-start;
-    width: max-content;
-    min-width: 100%;
-    gap: 16px;
+    display: grid;
+    gap: 24px;
   }
 
-  .catalog-desktop-product-column {
+  .catalog-desktop-product-row {
+    width: 100%;
+    overflow-x: auto;
+    padding: 2px 2px 14px;
+    scrollbar-color: rgba(255, 154, 62, 0.72) rgba(255, 255, 255, 0.08);
+    scrollbar-width: thin;
+  }
+
+  .catalog-desktop-product-row__track {
     display: grid;
-    flex: 0 0 min(285px, 24vw);
-    grid-template-rows: repeat(10, auto);
+    grid-template-columns: repeat(10, minmax(240px, 285px));
     gap: 16px;
-    min-width: 240px;
+    width: max-content;
   }
 
   .catalog-desktop-load-more {
