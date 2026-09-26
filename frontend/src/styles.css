@@ -2009,6 +2009,11 @@ textarea {
   display: none;
 }
 
+.catalog-desktop-product-grid,
+.catalog-desktop-load-more {
+  display: none;
+}
+
 @media (min-width: 801px) {
   .catalog-shell {
     position: relative;
@@ -2111,17 +2116,25 @@ textarea {
   .catalog-shell .section-card--spotlight > .pill-row { display: none; }
   .catalog-shell .section-card--spotlight > .muted-text { padding-left: 132px; }
 
-  /* En escritorio se ven cuatro productos completos y se desliza para ver más. */
-  .catalog-shell .section-card--spotlight .product-carousel__track {
-    grid-auto-flow: column;
-    grid-auto-columns: calc((100% - 48px) / 4);
-    grid-template-columns: none;
-    overflow-x: auto;
+  .catalog-mobile-products { display: none; }
+
+  .catalog-desktop-product-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 16px;
-    padding: 4px 2px 14px;
   }
 
-  .catalog-shell .section-card--spotlight .product-carousel__arrow { display: grid; }
+  .catalog-desktop-load-more {
+    display: grid;
+    place-items: center;
+    min-height: 76px;
+    margin-top: 16px;
+    border: 1px dashed rgba(255, 177, 91, 0.35);
+    border-radius: 16px;
+    color: #ffc281;
+    font-size: 0.86rem;
+    font-weight: 800;
+  }
 
   .catalog-offers-showcase {
     overflow: hidden;
@@ -3797,6 +3810,11 @@ textarea {
   .catalog-shell .section-card--spotlight > .muted-text {
     display: none;
   }
+
+  .catalog-desktop-product-grid,
+  .catalog-desktop-load-more { display: none; }
+
+  .catalog-mobile-products { display: block; }
 
   .catalog-category-toggle {
     position: fixed;

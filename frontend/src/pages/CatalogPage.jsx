@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ProductCard } from "../components/ProductCard.jsx";
 import { ProductCarousel } from "../components/ProductCarousel.jsx";
@@ -23,6 +23,8 @@ export function CatalogPage() {
   const [message, setMessage] = useState("");
   const [busyProductId, setBusyProductId] = useState(null);
   const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
+  const [visibleDesktopProducts, setVisibleDesktopProducts] = useState(4);
+  const desktopLoadMoreRef = useRef(null);
 
   const activeCategory = useMemo(() => searchParams.get("category") || "", [searchParams]);
   const activeSearch = useMemo(() => searchParams.get("search") || "", [searchParams]);
@@ -90,6 +92,29 @@ export function CatalogPage() {
       active = false;
     };
   }, [activeCategory, activeSearch]);
+
+  useEffect(() => {
+    setVisibleDesktopProducts(4);
+  }, [activeCategory, activeSearch, products.length]);
+
+  useEffect(() => {
+    const target = desktopLoadMoreRef.current;
+    if (!target || visibleDesktopProducts >= products.length || typeof IntersectionObserver === "undefined") {
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisibleDesktopProducts((current) => Math.min(current + 6, products.length));
+        }
+      },
+      { rootMargin: "0px 0px 180px" }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [products.length, visibleDesktopProducts]);
 
   const updateCategory = (slug) => {
     const params = new URLSearchParams(searchParams);
@@ -232,17 +257,37 @@ export function CatalogPage() {
             {Array.from({ length: 6 }, (_, index) => <div key={index} className="skeleton-card" />)}
           </div>
         ) : products.length ? (
-          <ProductCarousel label="Productos del catalogo">
-            {products.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                busy={busyProductId === product.id}
-                onAddToCart={addProductToCart}
-                onBuyNow={buyProductNow}
-              />
-            ))}
-          </ProductCarousel>
+          <>
+            <div className="catalog-desktop-product-grid" aria-label="Productos del catalogo">
+              {products.slice(0, visibleDesktopProducts).map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  busy={busyProductId === product.id}
+                  onAddToCart={addProductToCart}
+                  onBuyNow={buyProductNow}
+                />
+              ))}
+            </div>
+            {visibleDesktopProducts < products.length && (
+              <div ref={desktopLoadMoreRef} className="catalog-desktop-load-more" aria-live="polite">
+                <span>Desplaza hacia abajo para cargar 6 productos más</span>
+              </div>
+            )}
+            <div className="catalog-mobile-products">
+              <ProductCarousel label="Productos del catalogo">
+                {products.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    busy={busyProductId === product.id}
+                    onAddToCart={addProductToCart}
+                    onBuyNow={buyProductNow}
+                  />
+                ))}
+              </ProductCarousel>
+            </div>
+          </>
         ) : (
           <div className="empty-state empty-state--premium">
             <strong>{emptyTitle}</strong>
