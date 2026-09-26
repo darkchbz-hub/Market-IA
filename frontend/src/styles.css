@@ -1767,10 +1767,11 @@ textarea {
   }
 
   .halloween-desktop-host img { display: block; width: 100%; height: auto; }
-  .market-header,
   .market-main-shell,
   .breadcrumbs,
   .market-footer { position: relative; z-index: 2; }
+
+  .market-header { position: sticky; top: 0; z-index: 40; }
 
   @keyframes desktop-halloween-sway {
     0%, 100% { transform: translateY(0) rotate(-0.5deg); }
@@ -2139,7 +2140,7 @@ textarea {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
-    padding: 2px 30px 14px;
+    padding: 2px 40px 14px;
   }
 
   .catalog-desktop-product-row__viewport {
@@ -2151,8 +2152,8 @@ textarea {
 
   .catalog-desktop-row-arrow {
     position: absolute;
-    top: 42%;
-    z-index: 30;
+    top: 50%;
+    z-index: 50;
     display: grid;
     width: 30px;
     height: 30px;
@@ -2165,6 +2166,7 @@ textarea {
     line-height: 1;
     cursor: pointer;
     box-shadow: 0 5px 16px rgba(0, 0, 0, 0.28);
+    transform: translateY(-50%);
   }
 
   .catalog-desktop-row-arrow:hover {
@@ -2172,8 +2174,8 @@ textarea {
     color: #fff;
   }
 
-  .catalog-desktop-row-arrow--left { left: 2px; }
-  .catalog-desktop-row-arrow--right { right: 2px; }
+  .catalog-desktop-row-arrow--left { left: 6px; }
+  .catalog-desktop-row-arrow--right { right: 6px; }
 
   .catalog-desktop-product-row__viewport::-webkit-scrollbar {
     height: 7px;
@@ -3452,8 +3454,8 @@ textarea {
   }
 
   .market-header {
-    position: static;
-    transform: none !important;
+    position: sticky;
+    top: 0;
     border-radius: 0 0 18px 18px;
   }
 

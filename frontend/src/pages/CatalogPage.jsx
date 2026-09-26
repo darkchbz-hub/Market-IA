@@ -14,7 +14,11 @@ function productCountLabel(total) {
 function DesktopProductRow({ row, busyProductId, onAddToCart, onBuyNow }) {
   const rowRef = useRef(null);
   const moveRow = (distance) => {
-    rowRef.current?.scrollBy({ left: distance, behavior: "smooth" });
+    const viewport = rowRef.current;
+    if (!viewport) return;
+    const maximum = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
+    const destination = Math.min(maximum, Math.max(0, viewport.scrollLeft + distance));
+    viewport.scrollTo({ left: destination, behavior: "smooth" });
   };
 
   return (
