@@ -1677,6 +1677,106 @@ textarea {
   display: none;
 }
 
+.halloween-desktop-host {
+  display: none;
+}
+
+@media (min-width: 801px) {
+  :root[data-theme="day"],
+  :root[data-theme="dark"] {
+    --bg: #120d19;
+    --bg-soft: #21132b;
+    --panel: rgba(35, 21, 47, 0.96);
+    --panel-strong: #291834;
+    --text: #fff4e8;
+    --muted: #d1bfd3;
+    --line: rgba(255, 174, 95, 0.22);
+    --primary: #ef6b1a;
+    --primary-strong: #c94e0d;
+    --accent: #9a65c6;
+    --accent-soft: #3a2248;
+    --shadow: 0 20px 50px rgba(5, 2, 9, 0.3);
+    --page-wash: rgba(18, 11, 25, 0.7);
+    --page-glow-left: rgba(88, 39, 109, 0.32);
+    --page-glow-right: rgba(242, 101, 20, 0.17);
+    --feature-wash-start: rgba(47, 27, 59, 0.98);
+    --feature-wash-end: rgba(27, 17, 39, 0.98);
+    --overlay-bg: rgba(12, 6, 17, 0.78);
+  }
+
+  body {
+    background:
+      radial-gradient(circle at 12% 6%, rgba(137, 66, 179, 0.2), transparent 28%),
+      radial-gradient(circle at 88% 26%, rgba(255, 105, 25, 0.18), transparent 26%),
+      #120d19;
+  }
+
+  .market-header {
+    border-color: rgba(255, 181, 102, 0.24);
+    background: linear-gradient(118deg, rgba(26, 15, 37, 0.96), rgba(54, 25, 51, 0.95));
+  }
+
+  .market-header::after {
+    content: "Noche de Halloween · ofertas que encantan";
+    position: absolute;
+    right: 24px;
+    bottom: -16px;
+    border: 1px solid rgba(255, 176, 97, 0.3);
+    border-radius: 999px;
+    padding: 5px 11px;
+    background: #291732;
+    color: #ffc582;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .section-card,
+  .hero-panel,
+  .detail-card,
+  .category-tile,
+  .product-card,
+  .auth-card,
+  .filter-panel,
+  .order-card,
+  .status-card,
+  .chat-main,
+  .chat-sidebar {
+    border-color: rgba(255, 178, 96, 0.18);
+    background: linear-gradient(145deg, rgba(48, 28, 60, 0.96), rgba(27, 17, 40, 0.97));
+  }
+
+  .section-label,
+  .eyebrow { color: #ffae5c; }
+  .button--primary { background: linear-gradient(135deg, #fa8528, #d94f11); color: #24101e; }
+  .button--ghost { color: #fff1e5; border-color: rgba(255, 178, 99, 0.34); background: rgba(255, 255, 255, 0.06); }
+
+  .halloween-desktop-host {
+    position: fixed;
+    right: -36px;
+    bottom: -30px;
+    z-index: 1;
+    display: block;
+    width: min(31vw, 430px);
+    pointer-events: none;
+    opacity: 0.7;
+    filter: drop-shadow(0 18px 28px rgba(4, 1, 8, 0.45));
+    animation: desktop-halloween-sway 7s ease-in-out infinite;
+  }
+
+  .halloween-desktop-host img { display: block; width: 100%; height: auto; }
+  .market-header,
+  .market-main-shell,
+  .breadcrumbs,
+  .market-footer { position: relative; z-index: 2; }
+
+  @keyframes desktop-halloween-sway {
+    0%, 100% { transform: translateY(0) rotate(-0.5deg); }
+    50% { transform: translateY(-12px) rotate(0.8deg); }
+  }
+}
+
 .product-carousel__arrow:hover {
   background: var(--primary);
   color: #fff;

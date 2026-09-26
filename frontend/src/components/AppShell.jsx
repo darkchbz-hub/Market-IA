@@ -423,6 +423,9 @@ export function AppShell() {
         <div className="halloween-mobile-scene" aria-hidden="true">
           <img src="/assets/halloween-ghost-bats.png" alt="" />
         </div>
+        <div className="halloween-desktop-host" aria-hidden="true">
+          <img src="/assets/halloween-desktop-host.png" alt="" />
+        </div>
         <button
           type="button"
           className="button button--theme app-theme-fab"
@@ -448,6 +451,9 @@ export function AppShell() {
     <div className="marketplace">
       <div className="halloween-mobile-scene" aria-hidden="true">
         <img src="/assets/halloween-ghost-bats.png" alt="" />
+      </div>
+      <div className="halloween-desktop-host" aria-hidden="true">
+        <img src="/assets/halloween-desktop-host.png" alt="" />
       </div>
       <header className={`market-header${headerHidden ? " is-hidden" : ""}`}>
         <div className="market-header__top">
