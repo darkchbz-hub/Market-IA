@@ -2134,11 +2134,51 @@ textarea {
   }
 
   .catalog-desktop-product-row {
+    position: relative;
+    width: 100%;
+    padding: 2px 30px 14px;
+  }
+
+  .catalog-desktop-product-row__viewport {
     width: 100%;
     overflow-x: auto;
-    padding: 2px 2px 14px;
     scrollbar-color: rgba(255, 154, 62, 0.72) rgba(255, 255, 255, 0.08);
     scrollbar-width: thin;
+  }
+
+  .catalog-desktop-row-arrow {
+    position: absolute;
+    top: 42%;
+    z-index: 2;
+    display: grid;
+    width: 30px;
+    height: 30px;
+    place-items: center;
+    border: 1px solid rgba(255, 172, 89, 0.62);
+    border-radius: 999px;
+    background: rgba(32, 17, 43, 0.94);
+    color: #ffd8ae;
+    font-size: 1.55rem;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 5px 16px rgba(0, 0, 0, 0.28);
+  }
+
+  .catalog-desktop-row-arrow:hover {
+    background: #f27627;
+    color: #fff;
+  }
+
+  .catalog-desktop-row-arrow--left { left: 2px; }
+  .catalog-desktop-row-arrow--right { right: 2px; }
+
+  .catalog-desktop-product-row__viewport::-webkit-scrollbar {
+    height: 7px;
+  }
+
+  .catalog-desktop-product-row__viewport::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(255, 154, 62, 0.72);
   }
 
   .catalog-desktop-product-row__track {

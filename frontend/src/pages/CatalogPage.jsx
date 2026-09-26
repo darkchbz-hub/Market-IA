@@ -11,6 +11,37 @@ function productCountLabel(total) {
   return `${count} productos disponibles`;
 }
 
+function DesktopProductRow({ row, busyProductId, onAddToCart, onBuyNow }) {
+  const rowRef = useRef(null);
+  const moveRow = (distance) => {
+    rowRef.current?.scrollBy({ left: distance, behavior: "smooth" });
+  };
+
+  return (
+    <div className="catalog-desktop-product-row">
+      <button type="button" className="catalog-desktop-row-arrow catalog-desktop-row-arrow--left" aria-label="Ver productos anteriores" onClick={() => moveRow(-560)}>
+        ‹
+      </button>
+      <div className="catalog-desktop-product-row__viewport" ref={rowRef}>
+        <div className="catalog-desktop-product-row__track">
+          {row.map((product) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              busy={busyProductId === product.id}
+              onAddToCart={onAddToCart}
+              onBuyNow={onBuyNow}
+            />
+          ))}
+        </div>
+      </div>
+      <button type="button" className="catalog-desktop-row-arrow catalog-desktop-row-arrow--right" aria-label="Ver más productos" onClick={() => moveRow(560)}>
+        ›
+      </button>
+    </div>
+  );
+}
+
 export function CatalogPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -270,19 +301,13 @@ export function CatalogPage() {
             <div className="catalog-desktop-product-scroll">
               <div className="catalog-desktop-product-grid" aria-label="Productos del catalogo">
                 {desktopProductRows.map((row, rowIndex) => (
-                  <div className="catalog-desktop-product-row" key={`desktop-row-${rowIndex}`}>
-                    <div className="catalog-desktop-product-row__track">
-                      {row.map((product) => (
-                        <ProductCard
-                          key={product.id}
-                          product={product}
-                          busy={busyProductId === product.id}
-                          onAddToCart={addProductToCart}
-                          onBuyNow={buyProductNow}
-                        />
-                      ))}
-                    </div>
-                  </div>
+                  <DesktopProductRow
+                    key={`desktop-row-${rowIndex}`}
+                    row={row}
+                    busyProductId={busyProductId}
+                    onAddToCart={addProductToCart}
+                    onBuyNow={buyProductNow}
+                  />
                 ))}
               </div>
             </div>
