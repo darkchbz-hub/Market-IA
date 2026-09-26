@@ -393,29 +393,6 @@ export function AppShell() {
     return all.filter((item) => `${item.label} ${item.hint}`.toLowerCase().includes(query));
   }, [commandQuery, isDarkTheme, navItems, navigate]);
 
-  const breadcrumbs = useMemo(() => {
-    const parts = location.pathname.split("/").filter(Boolean);
-    if (!parts.length) {
-      return ["Inicio"];
-    }
-
-    const map = {
-      catalogo: "Catalogo",
-      producto: "Producto",
-      perfil: "Perfil",
-      carrito: "Carrito",
-      checkout: "Checkout",
-      chat: "Soporte",
-      admin: "Administrador",
-      dashboard: "Dashboard",
-      terminos: "Terminos",
-      "sobre-nosotros": "Sobre nosotros",
-      "centro-control": "Centro de control"
-    };
-
-    return ["Inicio", ...parts.map((part) => map[part] || part)];
-  }, [location.pathname]);
-
   if (isAuthPage) {
     return (
       <div className="marketplace">
@@ -591,14 +568,6 @@ export function AppShell() {
           </div>
         )}
       </header>
-
-      <section className="breadcrumbs">
-        {breadcrumbs.map((crumb, index) => (
-          <span key={`${crumb}-${index}`} className="breadcrumbs__item">
-            {crumb}
-          </span>
-        ))}
-      </section>
 
       <div className="market-main-shell">
         <main className="market-content">
