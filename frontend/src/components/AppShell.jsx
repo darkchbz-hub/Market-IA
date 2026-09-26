@@ -251,7 +251,7 @@ export function AppShell() {
         const currentY = window.scrollY;
         const delta = currentY - lastY;
         const goingDown = delta > 8;
-        const goingUp = delta < -8;
+        const goingUp = delta < -2;
 
         if (currentY < 40 || goingUp) {
           setHeaderHidden(false);
