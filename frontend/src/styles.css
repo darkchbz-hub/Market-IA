@@ -3774,6 +3774,93 @@ textarea {
     display: none;
   }
 
+  .catalog-category-toggle {
+    position: fixed;
+    left: 12px;
+    bottom: calc(78px + env(safe-area-inset-bottom));
+    z-index: 64;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 42px;
+    border: 1px solid rgba(255, 181, 99, 0.42);
+    border-radius: 999px;
+    padding: 8px 13px;
+    background: linear-gradient(135deg, #4a285a, #e46118);
+    color: #fff8ef;
+    box-shadow: 0 11px 25px rgba(5, 2, 10, 0.38);
+    font-size: 0.8rem;
+    font-weight: 900;
+  }
+
+  .catalog-category-toggle span { font-size: 1.15rem; }
+  .catalog-shell--menu-open .catalog-category-toggle { display: none; }
+
+  .catalog-category-drawer {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 120;
+    display: grid;
+    align-content: start;
+    gap: 7px;
+    width: min(82vw, 320px);
+    padding: 18px 14px calc(24px + env(safe-area-inset-bottom));
+    overflow-y: auto;
+    border-right: 1px solid rgba(255, 181, 99, 0.3);
+    background: linear-gradient(160deg, #321d40, #171021);
+    box-shadow: 18px 0 40px rgba(3, 1, 7, 0.45);
+    transform: translateX(-100%);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.22s ease, opacity 0.18s ease;
+  }
+
+  .catalog-shell--menu-open .catalog-category-drawer {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .catalog-category-drawer__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 4px 12px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid rgba(255, 179, 96, 0.2);
+  }
+
+  .catalog-category-drawer__head .section-label { margin: 0 0 2px; }
+  .catalog-category-drawer__head strong { color: #fff5ea; font-family: var(--font-title); }
+  .catalog-category-drawer__close {
+    display: grid;
+    width: 36px;
+    height: 36px;
+    place-items: center;
+    border: 1px solid rgba(255, 181, 99, 0.34);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff5ea;
+    font-size: 1.5rem;
+  }
+
+  .catalog-category-drawer__item {
+    width: 100%;
+    border: 1px solid transparent;
+    border-radius: 13px;
+    padding: 11px 12px;
+    background: transparent;
+    color: #f2e5f3;
+    text-align: left;
+    font-weight: 800;
+  }
+
+  .catalog-category-drawer__item.is-active {
+    border-color: rgba(255, 177, 90, 0.36);
+    background: rgba(255, 121, 26, 0.18);
+    color: #fff7ed;
+  }
+
   /* Catalogo Halloween: una reticula real para que los productos no queden comprimidos. */
   .catalog-shell .section-card--spotlight {
     overflow: visible;
@@ -3832,6 +3919,8 @@ textarea {
   .catalog-shell .pill-row::-webkit-scrollbar {
     display: none;
   }
+
+  .catalog-shell .section-card--spotlight > .pill-row { display: none; }
 
   .catalog-shell .pill {
     width: auto;
