@@ -1669,6 +1669,10 @@ textarea {
   right: -12px;
 }
 
+.halloween-mobile-banner {
+  display: none;
+}
+
 .product-carousel__arrow:hover {
   background: var(--primary);
   color: #fff;
@@ -3558,6 +3562,52 @@ textarea {
     display: none;
   }
 
+  /* Catalogo Halloween: una reticula real para que los productos no queden comprimidos. */
+  .catalog-shell .section-card--spotlight {
+    overflow: visible;
+    border-color: rgba(255, 119, 31, 0.35);
+    background:
+      radial-gradient(circle at 92% 8%, rgba(255, 132, 31, 0.2), transparent 27%),
+      radial-gradient(circle at 8% 96%, rgba(102, 40, 134, 0.16), transparent 30%),
+      linear-gradient(155deg, #171122 0%, #24152c 100%);
+  }
+
+  .catalog-shell .section-card--spotlight .section-label,
+  .catalog-shell .section-card--spotlight h1 {
+    color: #fff7ec;
+  }
+
+  .catalog-shell .section-card--spotlight .section-label {
+    color: #ffad5b;
+  }
+
+  .halloween-mobile-banner {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    margin: 2px 0 14px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 166, 80, 0.42);
+    border-radius: 14px;
+    background: rgba(255, 130, 31, 0.12);
+    color: #fff7ec;
+  }
+
+  .halloween-mobile-banner > span {
+    font-size: 1.35rem;
+  }
+
+  .halloween-mobile-banner p,
+  .halloween-mobile-banner strong,
+  .halloween-mobile-banner small {
+    margin: 0;
+    display: block;
+  }
+
+  .halloween-mobile-banner strong { font-size: 0.82rem; }
+  .halloween-mobile-banner small { margin-top: 2px; color: #f8c99a; font-size: 0.69rem; line-height: 1.25; }
+
   .catalog-shell .pill-row {
     display: flex;
     grid-template-columns: none;
@@ -3577,6 +3627,57 @@ textarea {
     min-height: 42px;
     padding-inline: 16px;
   }
+
+  .catalog-shell .pill-row {
+    margin-inline: -2px;
+  }
+
+  .catalog-shell .pill {
+    border-color: rgba(255, 210, 161, 0.32);
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff7ec;
+  }
+
+  .catalog-shell .pill.is-active {
+    background: #ff7a1a;
+    border-color: #ffb15e;
+    color: #211025;
+  }
+
+  .catalog-shell .product-carousel__track {
+    grid-auto-flow: row;
+    grid-auto-columns: unset;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+    gap: 10px;
+    padding-bottom: 0;
+  }
+
+  .catalog-shell .product-card {
+    border-radius: 15px;
+    box-shadow: 0 10px 22px rgba(4, 2, 12, 0.24);
+  }
+
+  .catalog-shell .product-card__image {
+    aspect-ratio: 1 / 0.88;
+  }
+
+  .catalog-shell .product-card__image img { padding: 8px; }
+  .catalog-shell .product-card__body,
+  .catalog-shell .product-card__footer { padding: 9px; }
+  .catalog-shell .product-card__title { margin: 5px 0 7px; font-size: 0.82rem; line-height: 1.3; }
+  .catalog-shell .product-card__meta,
+  .catalog-shell .rating-row,
+  .catalog-shell .product-card__shipping { font-size: 0.7rem; }
+  .catalog-shell .rating-row strong { font-size: 0.68rem; }
+  .catalog-shell .product-card__price { gap: 4px; }
+  .catalog-shell .product-card__price strong { font-size: 0.94rem; }
+  .catalog-shell .product-card__price-original,
+  .catalog-shell .product-card__discount { font-size: 0.66rem; }
+  .catalog-shell .product-card__actions { gap: 5px; }
+  .catalog-shell .product-card__actions .button { min-height: 36px; padding: 7px 5px; font-size: 0.7rem; }
+
+  .header-login-button { white-space: nowrap; }
 
   .product-detail-shell,
   .product-detail-loading {

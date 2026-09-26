@@ -136,6 +136,12 @@ export function CatalogPage() {
           </div>
         </div>
 
+        <div className="halloween-mobile-banner" aria-label="Temporada de Halloween">
+          <span aria-hidden="true">🎃</span>
+          <p><strong>Temporada Halloween</strong><small>Encuentra tus favoritos antes de que desaparezcan.</small></p>
+          <span aria-hidden="true">🦇</span>
+        </div>
+
         <p className="muted-text">
           {activeSearch
             ? `Resultados para "${activeSearch}". El buscador revisa nombre, marca, categoria, descripcion y tags.`

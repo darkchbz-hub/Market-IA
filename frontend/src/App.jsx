@@ -24,27 +24,15 @@ export default function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route
           index
-          element={
-            <ProtectedRoute>
-              <HomePage />
-            </ProtectedRoute>
-          }
+          element={<HomePage />}
         />
         <Route
           path="/catalogo"
-          element={
-            <ProtectedRoute>
-              <CatalogPage />
-            </ProtectedRoute>
-          }
+          element={<CatalogPage />}
         />
         <Route
           path="/producto/:productId"
-          element={
-            <ProtectedRoute>
-              <ProductPage />
-            </ProtectedRoute>
-          }
+          element={<ProductPage />}
         />
         <Route
           path="/perfil"
@@ -112,19 +100,11 @@ export default function App() {
         />
         <Route
           path="/terminos"
-          element={
-            <ProtectedRoute>
-              <TermsPage />
-            </ProtectedRoute>
-          }
+          element={<TermsPage />}
         />
         <Route
           path="/sobre-nosotros"
-          element={
-            <ProtectedRoute>
-              <AboutPage />
-            </ProtectedRoute>
-          }
+          element={<AboutPage />}
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

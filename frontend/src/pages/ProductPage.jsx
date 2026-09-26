@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ProductCard } from "../components/ProductCard.jsx";
 import { ProductCarousel } from "../components/ProductCarousel.jsx";
 import { RatingStars, clampRating } from "../components/RatingStars.jsx";
@@ -28,7 +28,8 @@ function getColorVariant(product) {
 export function ProductPage() {
   const { productId } = useParams();
   const navigate = useNavigate();
-  const { token, user } = useAuth();
+  const { token, user, isAuthenticated } = useAuth();
+  const location = useLocation();
   const { addToCart } = useCart();
   const [product, setProduct] = useState(null);
   const [comments, setComments] = useState([]);
@@ -104,6 +105,10 @@ export function ProductPage() {
 
   const addProductToCart = async () => {
     if (!product) return;
+    if (!isAuthenticated) {
+      navigate("/login", { state: { from: location } });
+      return;
+    }
     if (requiresColor && !selectedColor) {
       setMessage("Debes escoger un color antes de agregar este producto.");
       return;
@@ -123,6 +128,10 @@ export function ProductPage() {
 
   const buyProductNow = async () => {
     if (!product) return;
+    if (!isAuthenticated) {
+      navigate("/login", { state: { from: location } });
+      return;
+    }
     if (requiresColor && !selectedColor) {
       setMessage("Debes escoger un color antes de continuar con la compra.");
       return;
@@ -141,6 +150,10 @@ export function ProductPage() {
   };
 
   const addRelatedToCart = async (item) => {
+    if (!isAuthenticated) {
+      navigate("/login", { state: { from: location } });
+      return;
+    }
     setBusy(true);
     try {
       await addToCart(item.id, 1);
@@ -153,6 +166,10 @@ export function ProductPage() {
   };
 
   const buyRelatedNow = async (item) => {
+    if (!isAuthenticated) {
+      navigate("/login", { state: { from: location } });
+      return;
+    }
     setBusy(true);
     try {
       await addToCart(item.id, 1);

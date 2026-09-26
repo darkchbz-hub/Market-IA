@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCart } from "../context/CartContext.jsx";
@@ -437,12 +437,8 @@ export function AppShell() {
     );
   }
 
-  if (loading) {
+  if (loading && isAuthenticated) {
     return <div className="page-loader">Cargando sesion...</div>;
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   return (
@@ -517,7 +513,7 @@ export function AppShell() {
                 Panel admin
               </Link>
             )}
-            <Link to="/perfil" className="account-chip">
+            {isAuthenticated ? <Link to="/perfil" className="account-chip">
               <span className="account-chip__avatar" aria-hidden="true">
                 {user?.avatarUrl ? (
                   <img src={user.avatarUrl} alt="" />
@@ -531,17 +527,19 @@ export function AppShell() {
                 <span>{user?.nombre}</span>
                 <small>{isAdmin ? "Panel administrador" : "Cuenta activa"}</small>
               </span>
-            </Link>
-            <Link to="/carrito" className="cart-button">
+            </Link> : <Link to="/login" state={{ from: location }} className="button button--primary header-login-button">
+              Iniciar sesion
+            </Link>}
+            {isAuthenticated && <Link to="/carrito" className="cart-button">
               <svg className="cart-button__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <path d="M7 18.2a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6Zm10 0a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6ZM3.2 3l.4 2h2l2 9.7c.2 1 1.1 1.8 2.1 1.8h7.8c1 0 1.8-.6 2.1-1.5L22 8H8.1L7.6 5.4A3 3 0 0 0 4.7 3H3.2Zm5.3 7h10.8l-1.4 4.3H9.4L8.5 10Z" />
               </svg>
               <span className="cart-button__label">Carrito</span>
               <span className="cart-button__count">{itemCount}</span>
-            </Link>
-            <button type="button" className="button button--ghost" onClick={logout}>
+            </Link>}
+            {isAuthenticated && <button type="button" className="button button--ghost" onClick={logout}>
               Salir
-            </button>
+            </button>}
           </div>
         </div>
 
@@ -655,9 +653,9 @@ export function AppShell() {
         <button type="button" onClick={() => navigate("/")}><AppIcon name="home" /><span>Inicio</span></button>
         <button type="button" onClick={() => navigate("/catalogo")}><AppIcon name="catalog" /><span>Catalogo</span></button>
         <button type="button" onClick={() => setCommandOpen(true)}><AppIcon name="shortcuts" /><span>Atajos</span></button>
-        <button type="button" onClick={() => navigate(isAdmin ? "/admin" : "/perfil")}>
+        <button type="button" onClick={() => navigate(isAuthenticated ? (isAdmin ? "/admin" : "/perfil") : "/login", isAuthenticated ? undefined : { state: { from: location } })}>
           <AppIcon name={isAdmin ? "admin" : "profile"} />
-          <span>{isAdmin ? "Admin" : "Perfil"}</span>
+          <span>{isAdmin ? "Admin" : isAuthenticated ? "Perfil" : "Entrar"}</span>
         </button>
       </nav>
 

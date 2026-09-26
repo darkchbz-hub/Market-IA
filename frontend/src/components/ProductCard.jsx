@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { RatingStars } from "./RatingStars.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { getShippingVisibilityText, getUserCountry } from "../lib/shipping.js";
@@ -6,13 +6,22 @@ import { getShippingVisibilityText, getUserCountry } from "../lib/shipping.js";
 const FALLBACK_IMAGE = "/assets/gray-c-shop-logo.png?v=20260514-2";
 
 export function ProductCard({ product, onAddToCart, onBuyNow, busy }) {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const hasOffer = Number(product.precioOriginal || 0) > Number(product.precio || 0);
   const rating = Number(product.ratingPromedio || 0);
   const shippingText = getShippingVisibilityText(getUserCountry(user), product);
   const requiresColor = (Array.isArray(product.variantes) ? product.variantes : []).some(
     (variant) => variant?.tipo === "color" && Array.isArray(variant.opciones) && variant.opciones.length
   );
+  const requireLogin = (action) => {
+    if (!isAuthenticated) {
+      navigate("/login", { state: { from: location } });
+      return;
+    }
+    action?.(product);
+  };
 
   return (
     <article className="product-card">
@@ -63,10 +72,10 @@ export function ProductCard({ product, onAddToCart, onBuyNow, busy }) {
             </Link>
           ) : (
             <>
-              <button type="button" className="button button--ghost" onClick={() => onBuyNow?.(product)}>
+              <button type="button" className="button button--ghost" onClick={() => requireLogin(onBuyNow)}>
                 Comprar ahora
               </button>
-              <button type="button" className="button button--primary" disabled={busy} onClick={() => onAddToCart?.(product)}>
+              <button type="button" className="button button--primary" disabled={busy} onClick={() => requireLogin(onAddToCart)}>
                 {busy ? "Agregando..." : "Agregar al carrito"}
               </button>
             </>
