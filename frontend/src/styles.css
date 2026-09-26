@@ -2123,7 +2123,7 @@ textarea {
   .catalog-desktop-product-scroll {
     display: block;
     width: 100%;
-    overflow-x: auto;
+    overflow: visible;
     padding: 3px 2px 14px;
     scrollbar-color: rgba(255, 154, 62, 0.72) rgba(255, 255, 255, 0.08);
     scrollbar-width: thin;
@@ -2150,7 +2150,7 @@ textarea {
   .catalog-desktop-row-arrow {
     position: absolute;
     top: 42%;
-    z-index: 2;
+    z-index: 30;
     display: grid;
     width: 30px;
     height: 30px;
