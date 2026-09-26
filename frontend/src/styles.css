@@ -2123,7 +2123,7 @@ textarea {
   .catalog-desktop-product-scroll {
     display: block;
     width: 100%;
-    overflow: visible;
+    overflow: hidden;
     padding: 3px 2px 14px;
     scrollbar-color: rgba(255, 154, 62, 0.72) rgba(255, 255, 255, 0.08);
     scrollbar-width: thin;
@@ -2137,6 +2137,8 @@ textarea {
   .catalog-desktop-product-row {
     position: relative;
     width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
     padding: 2px 30px 14px;
   }
 
@@ -2171,7 +2173,7 @@ textarea {
   }
 
   .catalog-desktop-row-arrow--left { left: 2px; }
-  .catalog-desktop-row-arrow--right { left: 38px; }
+  .catalog-desktop-row-arrow--right { right: 2px; }
 
   .catalog-desktop-product-row__viewport::-webkit-scrollbar {
     height: 7px;
