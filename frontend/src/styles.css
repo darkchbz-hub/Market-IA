@@ -4062,12 +4062,8 @@ textarea {
   }
 
   .app-download-strip {
-    border-color: rgba(255, 170, 88, 0.25);
-    background: rgba(255, 117, 24, 0.12);
-    color: #ffd9ae;
+    display: none;
   }
-
-  .app-download-strip__link { color: #fff1df; }
 
   .halloween-mobile-scene {
     position: fixed;
