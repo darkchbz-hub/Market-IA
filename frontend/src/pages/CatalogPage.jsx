@@ -13,31 +13,16 @@ function productCountLabel(total) {
 
 function DesktopProductRow({ row, busyProductId, onAddToCart, onBuyNow }) {
   const rowRef = useRef(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
-  const updateArrows = () => {
-    const element = rowRef.current;
-    if (!element) return;
-    setCanScrollLeft(element.scrollLeft > 8);
-    setCanScrollRight(element.scrollLeft + element.clientWidth < element.scrollWidth - 8);
-  };
-
-  useEffect(() => {
-    updateArrows();
-    window.addEventListener("resize", updateArrows);
-    return () => window.removeEventListener("resize", updateArrows);
-  }, [row.length]);
-
   const moveRow = (distance) => {
     rowRef.current?.scrollBy({ left: distance, behavior: "smooth" });
   };
 
   return (
     <div className="catalog-desktop-product-row">
-      {canScrollLeft && <button type="button" className="catalog-desktop-row-arrow catalog-desktop-row-arrow--left" aria-label="Ver productos anteriores" onClick={() => moveRow(-560)}>
+      <button type="button" className="catalog-desktop-row-arrow catalog-desktop-row-arrow--left" aria-label="Ver productos anteriores" onClick={() => moveRow(-560)}>
         ‹
-      </button>}
-      <div className="catalog-desktop-product-row__viewport" ref={rowRef} onScroll={updateArrows}>
+      </button>
+      <div className="catalog-desktop-product-row__viewport" ref={rowRef}>
         <div className="catalog-desktop-product-row__track">
           {row.map((product) => (
             <ProductCard
@@ -50,9 +35,9 @@ function DesktopProductRow({ row, busyProductId, onAddToCart, onBuyNow }) {
           ))}
         </div>
       </div>
-      {canScrollRight && <button type="button" className="catalog-desktop-row-arrow catalog-desktop-row-arrow--right" aria-label="Ver más productos" onClick={() => moveRow(560)}>
+      <button type="button" className="catalog-desktop-row-arrow catalog-desktop-row-arrow--right" aria-label="Ver más productos" onClick={() => moveRow(560)}>
         ›
-      </button>}
+      </button>
     </div>
   );
 }

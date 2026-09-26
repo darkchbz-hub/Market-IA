@@ -2171,7 +2171,7 @@ textarea {
   }
 
   .catalog-desktop-row-arrow--left { left: 2px; }
-  .catalog-desktop-row-arrow--right { right: 2px; }
+  .catalog-desktop-row-arrow--right { left: 38px; }
 
   .catalog-desktop-product-row__viewport::-webkit-scrollbar {
     height: 7px;
