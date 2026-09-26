@@ -23,7 +23,7 @@ export function CatalogPage() {
   const [message, setMessage] = useState("");
   const [busyProductId, setBusyProductId] = useState(null);
   const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
-  const [visibleDesktopProducts, setVisibleDesktopProducts] = useState(10);
+  const [visibleDesktopProducts, setVisibleDesktopProducts] = useState(20);
   const desktopLoadMoreRef = useRef(null);
 
   const activeCategory = useMemo(() => searchParams.get("category") || "", [searchParams]);
@@ -94,7 +94,7 @@ export function CatalogPage() {
   }, [activeCategory, activeSearch]);
 
   useEffect(() => {
-    setVisibleDesktopProducts(10);
+    setVisibleDesktopProducts(20);
   }, [activeCategory, activeSearch, products.length]);
 
   useEffect(() => {
@@ -115,6 +115,15 @@ export function CatalogPage() {
     observer.observe(target);
     return () => observer.disconnect();
   }, [products.length, visibleDesktopProducts]);
+
+  const desktopProductColumns = useMemo(() => {
+    const columns = [];
+    const visibleProducts = products.slice(0, visibleDesktopProducts);
+    for (let index = 0; index < visibleProducts.length; index += 10) {
+      columns.push(visibleProducts.slice(index, index + 10));
+    }
+    return columns;
+  }, [products, visibleDesktopProducts]);
 
   const updateCategory = (slug) => {
     const params = new URLSearchParams(searchParams);
@@ -260,14 +269,18 @@ export function CatalogPage() {
           <>
             <div className="catalog-desktop-product-scroll">
               <div className="catalog-desktop-product-grid" aria-label="Productos del catalogo">
-                {products.slice(0, visibleDesktopProducts).map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    busy={busyProductId === product.id}
-                    onAddToCart={addProductToCart}
-                    onBuyNow={buyProductNow}
-                  />
+                {desktopProductColumns.map((column, columnIndex) => (
+                  <div className="catalog-desktop-product-column" key={`desktop-column-${columnIndex}`}>
+                    {column.map((product) => (
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        busy={busyProductId === product.id}
+                        onAddToCart={addProductToCart}
+                        onBuyNow={buyProductNow}
+                      />
+                    ))}
+                  </div>
                 ))}
               </div>
             </div>

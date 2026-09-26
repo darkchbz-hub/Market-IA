@@ -2129,11 +2129,19 @@ textarea {
   }
 
   .catalog-desktop-product-grid {
-    display: grid;
-    grid-template-columns: repeat(10, minmax(240px, 1fr));
+    display: flex;
+    align-items: flex-start;
     width: max-content;
     min-width: 100%;
     gap: 16px;
+  }
+
+  .catalog-desktop-product-column {
+    display: grid;
+    flex: 0 0 min(285px, 24vw);
+    grid-template-rows: repeat(10, auto);
+    gap: 16px;
+    min-width: 240px;
   }
 
   .catalog-desktop-load-more {
