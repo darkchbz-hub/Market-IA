@@ -118,24 +118,38 @@ export function LoginPage() {
   };
 
   return (
-    <section className="auth-layout">
+    <section className="auth-layout auth-layout--halloween auth-layout--login">
       <div className="auth-copy">
-        <p className="section-label">Acceso seguro</p>
-        <h1>Vuelve a tu cuenta y continua comprando sin perder tu historial.</h1>
-        <p>Consulta pedidos, carrito guardado, favoritos y seguimiento desde un acceso seguro.</p>
+        <Link to="/" className="auth-back-home">← Volver a la tienda</Link>
+        <div className="auth-season-badge"><span>✦</span> Temporada Halloween</div>
+        <div className="auth-logo-lockup">
+          <img src="/assets/gray-c-shop-logo.png?v=20260514-2" alt="Gray C Shop" />
+          <span><strong>Gray C Shop</strong><small>Acceso privado a tu experiencia</small></span>
+        </div>
+        <p className="section-label">Tu cuenta te estaba esperando</p>
+        <h1>Regresa a una noche llena de ofertas.</h1>
+        <p>Entra para recuperar tu carrito, consultar pedidos y comprar con toda la seguridad de Gray C Shop.</p>
+        <div className="auth-benefit-list">
+          <span>✓ Compra protegida</span>
+          <span>✓ Historial y seguimiento</span>
+          <span>✓ Beneficios para miembros</span>
+        </div>
+        <div className="auth-night-scene" aria-hidden="true"><span>☾</span><i>🦇</i><b>✦</b></div>
       </div>
 
       <div className="auth-card auth-card--login">
         <form className="login-form" onSubmit={handleSubmit}>
+          <div className="auth-card__eyebrow">Bienvenido de vuelta</div>
           <h2>Iniciar sesion</h2>
+          <p className="auth-card__intro">Ingresa tus datos para continuar con tus compras.</p>
           <label>
             Correo
-            <input type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} required />
+            <input type="email" placeholder="tuusuario@gmail.com" autoComplete="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} required />
           </label>
           <label>
             Contrasena
             <span className="password-field">
-              <input type={showLoginPassword ? "text" : "password"} value={form.password} onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))} required />
+              <input type={showLoginPassword ? "text" : "password"} placeholder="Tu contraseña" autoComplete="current-password" value={form.password} onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))} required />
               <button type="button" className="password-eye" onClick={() => setShowLoginPassword((current) => !current)} aria-label={showLoginPassword ? "Ocultar contrasena" : "Mostrar contrasena"}>
                 <EyeIcon visible={showLoginPassword} />
               </button>
@@ -155,7 +169,7 @@ export function LoginPage() {
         </form>
 
         <details className="password-recovery-panel">
-          <summary>Olvide mi contrasena</summary>
+          <summary><span>¿Olvidaste tu contraseña?</span><small>Recuperar acceso →</small></summary>
           <p className="muted-text">Te enviaremos un codigo a tu correo para validar que la cuenta es tuya.</p>
           <label>
             Correo de recuperacion
@@ -166,8 +180,8 @@ export function LoginPage() {
           </button>
         </details>
 
-        <p className="muted-text">
-          No tienes cuenta? <Link to="/register">Creala aqui</Link>
+        <p className="muted-text auth-switch-link">
+          ¿Aún no tienes cuenta? <Link to="/register">Crear cuenta</Link>
         </p>
       </div>
 

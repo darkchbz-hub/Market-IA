@@ -27,6 +27,347 @@
   --overlay-bg: rgba(236, 242, 248, 0.76);
 }
 
+/* Halloween authentication experience */
+.auth-layout--halloween {
+  position: relative;
+  z-index: 3;
+  width: min(1180px, calc(100% - 32px));
+  margin: 12px auto 40px;
+  grid-template-columns: minmax(360px, 0.9fr) minmax(480px, 1.1fr);
+  gap: 0;
+  align-items: stretch;
+  min-height: min(760px, calc(100vh - 80px));
+  border: 1px solid rgba(255, 170, 82, 0.26);
+  border-radius: 32px;
+  overflow: hidden;
+  background: #1c1027;
+  box-shadow: 0 32px 80px rgba(5, 1, 10, 0.5);
+}
+
+.auth-layout--halloween::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 7% 12%, rgba(255, 143, 47, 0.16), transparent 22%),
+    radial-gradient(circle at 88% 82%, rgba(150, 72, 188, 0.16), transparent 25%);
+}
+
+.auth-layout--halloween .auth-copy {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  padding: clamp(34px, 5vw, 68px);
+  overflow: hidden;
+  flex-direction: column;
+  justify-content: center;
+  border-right: 1px solid rgba(255, 181, 101, 0.2);
+  background:
+    linear-gradient(180deg, rgba(16, 8, 25, 0.18), rgba(14, 7, 23, 0.72)),
+    radial-gradient(circle at 72% 20%, rgba(255, 139, 43, 0.2), transparent 25%),
+    linear-gradient(145deg, #31183f 0%, #1a0e29 57%, #100919 100%);
+}
+
+.auth-layout--halloween .auth-copy::before,
+.auth-layout--halloween .auth-copy::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+.auth-layout--halloween .auth-copy::before {
+  top: -68px;
+  right: -64px;
+  width: 230px;
+  height: 230px;
+  border: 1px solid rgba(255, 201, 135, 0.18);
+  box-shadow: 0 0 80px rgba(255, 123, 31, 0.12) inset;
+}
+
+.auth-layout--halloween .auth-copy::after {
+  right: -75px;
+  bottom: -95px;
+  width: 270px;
+  height: 210px;
+  border: 2px solid rgba(255, 129, 37, 0.18);
+  box-shadow: 0 0 0 24px rgba(255, 129, 37, 0.035), 0 0 0 52px rgba(159, 76, 193, 0.035);
+}
+
+.auth-back-home {
+  position: absolute;
+  top: 26px;
+  left: clamp(28px, 5vw, 68px);
+  color: #dec9e6;
+  font-size: 0.86rem;
+  font-weight: 750;
+}
+
+.auth-back-home:hover { color: #ffbd79; }
+
+.auth-season-badge {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 22px;
+  border: 1px solid rgba(255, 170, 82, 0.36);
+  border-radius: 999px;
+  padding: 7px 12px;
+  background: rgba(255, 129, 34, 0.1);
+  color: #ffc07d;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.auth-season-badge span { color: #ff872d; }
+
+.auth-logo-lockup {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-bottom: 34px;
+}
+
+.auth-logo-lockup img {
+  width: 64px;
+  height: 58px;
+  border: 1px solid rgba(255, 188, 112, 0.22);
+  border-radius: 16px;
+  object-fit: contain;
+  background: #050406;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38);
+}
+
+.auth-logo-lockup span,
+.auth-logo-lockup strong,
+.auth-logo-lockup small { display: block; }
+.auth-logo-lockup strong { color: #fff8f0; font-family: var(--font-title); font-size: 1rem; }
+.auth-logo-lockup small { margin-top: 3px; color: #bda9c5; font-size: 0.75rem; }
+
+.auth-layout--halloween .auth-copy .section-label {
+  margin-bottom: 12px;
+  color: #ff9a45;
+}
+
+.auth-layout--halloween .auth-copy h1 {
+  max-width: 10ch;
+  color: #fff8f0;
+  font-size: clamp(2.7rem, 4.4vw, 4.8rem);
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+
+.auth-layout--halloween .auth-copy > p:not(.section-label) {
+  max-width: 42ch;
+  margin: 20px 0 0;
+  color: #cdbbd3;
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.auth-benefit-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 28px;
+  color: #f4e8f3;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.auth-benefit-list span::first-letter { color: #ff8b36; }
+
+.auth-night-scene {
+  position: absolute;
+  top: 70px;
+  right: 34px;
+  width: 120px;
+  height: 120px;
+  pointer-events: none;
+}
+
+.auth-night-scene span {
+  position: absolute;
+  top: 0;
+  right: 0;
+  color: #ffd59a;
+  font-size: 4.8rem;
+  filter: drop-shadow(0 0 18px rgba(255, 168, 79, 0.28));
+}
+
+.auth-night-scene i {
+  position: absolute;
+  top: 25px;
+  left: 3px;
+  font-size: 1.7rem;
+  font-style: normal;
+  transform: rotate(-16deg);
+}
+
+.auth-night-scene b {
+  position: absolute;
+  right: 48px;
+  bottom: 12px;
+  color: #c58bdf;
+  font-size: 1.2rem;
+}
+
+.auth-layout--halloween > .auth-card {
+  align-content: center;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 0;
+  padding: clamp(30px, 5vw, 70px);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255, 124, 32, 0.09), transparent 30%),
+    linear-gradient(150deg, rgba(42, 23, 53, 0.98), rgba(25, 15, 36, 0.99));
+  box-shadow: none;
+}
+
+.auth-layout--register { align-items: start; }
+.auth-layout--register .auth-copy { min-height: 760px; }
+.auth-layout--register > .auth-card { align-content: start; }
+
+.auth-card__eyebrow {
+  width: fit-content;
+  margin-bottom: 2px;
+  color: #ff9f51;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.auth-layout--halloween > .auth-card h2 {
+  color: #fff8f1;
+  font-size: clamp(1.85rem, 3vw, 2.65rem);
+}
+
+.auth-card__intro {
+  margin: -2px 0 12px;
+  color: #baa9c2;
+  line-height: 1.5;
+}
+
+.auth-layout--halloween .auth-card label {
+  color: #f5eaf4;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.auth-layout--halloween .auth-card input,
+.auth-layout--halloween .auth-card select {
+  min-height: 48px;
+  border: 1px solid rgba(255, 188, 120, 0.23);
+  border-radius: 14px;
+  background: rgba(14, 8, 22, 0.72);
+  color: #fff9f3;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.035);
+}
+
+.auth-layout--halloween .auth-card input:focus,
+.auth-layout--halloween .auth-card select:focus {
+  border-color: #ff9340;
+  box-shadow: 0 0 0 3px rgba(255, 132, 42, 0.12);
+  outline: none;
+}
+
+.auth-layout--halloween .auth-card input::placeholder { color: #7f7188; }
+.auth-layout--halloween .password-eye { color: #ffc17e; }
+
+.auth-layout--halloween .login-submit,
+.auth-layout--halloween .auth-register-actions .button {
+  width: 100%;
+  min-height: 50px;
+  justify-content: center;
+  border-radius: 14px;
+  font-weight: 900;
+  box-shadow: 0 12px 26px rgba(225, 78, 13, 0.24);
+}
+
+.auth-layout--halloween .password-recovery-panel {
+  border: 1px solid rgba(185, 119, 211, 0.24);
+  border-radius: 17px;
+  padding: 14px 16px;
+  background: rgba(141, 70, 168, 0.08);
+}
+
+.auth-layout--halloween .password-recovery-panel summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #f7ebf6;
+  list-style: none;
+}
+
+.auth-layout--halloween .password-recovery-panel summary::-webkit-details-marker { display: none; }
+.auth-layout--halloween .password-recovery-panel summary small { color: #ffad67; font-size: 0.74rem; }
+.auth-layout--halloween .auth-switch-link { margin: 5px 0 0; text-align: center; }
+.auth-layout--halloween .auth-switch-link a { color: #ffab62; font-weight: 850; }
+
+.auth-layout--halloween .checkbox-chip {
+  border: 1px solid rgba(255, 183, 109, 0.16);
+  border-radius: 14px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.auth-layout--halloween .checkbox-chip input { min-height: 18px; }
+
+.auth-layout--halloween .modal-overlay {
+  position: fixed;
+  z-index: 100;
+}
+
+.auth-layout--halloween .auth-card--modal {
+  border-color: rgba(255, 169, 82, 0.3);
+  background:
+    radial-gradient(circle at 90% 6%, rgba(255, 126, 34, 0.15), transparent 30%),
+    linear-gradient(145deg, #321b40, #1a1026);
+  color: #fff8f1;
+  box-shadow: 0 28px 80px rgba(4, 1, 8, 0.62);
+}
+
+@media (max-width: 800px) {
+  .auth-layout--halloween {
+    width: min(100% - 20px, 620px);
+    margin: 2px auto 96px;
+    grid-template-columns: 1fr;
+    min-height: 0;
+    border-radius: 24px;
+  }
+
+  .auth-layout--halloween .auth-copy {
+    min-height: 390px;
+    padding: 64px 24px 40px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(255, 181, 101, 0.2);
+  }
+
+  .auth-layout--register .auth-copy { min-height: 350px; }
+  .auth-back-home { top: 20px; left: 24px; }
+  .auth-logo-lockup { margin-bottom: 22px; }
+  .auth-logo-lockup img { width: 54px; height: 50px; }
+  .auth-layout--halloween .auth-copy h1 { max-width: 12ch; font-size: clamp(2.25rem, 11vw, 3.25rem); }
+  .auth-layout--halloween .auth-copy > p:not(.section-label) { font-size: 0.92rem; line-height: 1.55; }
+  .auth-benefit-list { display: none; }
+  .auth-night-scene { top: 54px; right: 16px; transform: scale(0.72); transform-origin: top right; }
+
+  .auth-layout--halloween > .auth-card {
+    padding: 28px 20px 34px;
+  }
+
+  .auth-layout--halloween .form-grid--wide { grid-template-columns: 1fr; }
+}
+
 :root[data-theme="day"] {
   color-scheme: light;
   --bg: #fffdf7;
@@ -4645,5 +4986,21 @@ textarea {
   .magic-dock__button--theme {
     font-size: 0.74rem;
     padding: 7px 9px;
+  }
+}
+
+/* Keep the seasonal auth composition above the shared layout defaults. */
+section.auth-layout.auth-layout--halloween {
+  grid-template-columns: minmax(360px, 0.9fr) minmax(480px, 1.1fr);
+  gap: 0;
+  align-items: stretch;
+  min-height: min(760px, calc(100vh - 80px));
+}
+
+@media (max-width: 800px) {
+  section.auth-layout.auth-layout--halloween {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    min-height: 0;
   }
 }

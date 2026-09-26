@@ -297,15 +297,29 @@ export function RegisterPage() {
   };
 
   return (
-    <section className="auth-layout">
+    <section className="auth-layout auth-layout--halloween auth-layout--register">
       <div className="auth-copy">
-        <p className="section-label">Crear cuenta</p>
-        <h1>Abre tu perfil para comprar, guardar favoritos y seguir tus pedidos desde un solo lugar.</h1>
-        <p>Tu cuenta queda lista para carrito, historial, reseñas verificadas y administracion segura de datos.</p>
+        <Link to="/" className="auth-back-home">← Volver a la tienda</Link>
+        <div className="auth-season-badge"><span>✦</span> Únete esta temporada</div>
+        <div className="auth-logo-lockup">
+          <img src="/assets/gray-c-shop-logo.png?v=20260514-2" alt="Gray C Shop" />
+          <span><strong>Gray C Shop</strong><small>Tu nueva cuenta comienza aquí</small></span>
+        </div>
+        <p className="section-label">Una invitación especial</p>
+        <h1>Crea tu cuenta y entra al club.</h1>
+        <p>Guarda tus compras, sigue cada pedido y descubre beneficios preparados para nuestra comunidad.</p>
+        <div className="auth-benefit-list">
+          <span>✓ Carrito siempre disponible</span>
+          <span>✓ Pedidos en un solo lugar</span>
+          <span>✓ Atención personalizada</span>
+        </div>
+        <div className="auth-night-scene" aria-hidden="true"><span>☾</span><i>🦇</i><b>✦</b></div>
       </div>
 
       <form className="auth-card" onSubmit={handleSendCode}>
+        <div className="auth-card__eyebrow">Nuevo miembro</div>
         <h2>Registro</h2>
+        <p className="auth-card__intro">Completa tus datos y confirma tu correo para activar la cuenta.</p>
         <div className="form-grid form-grid--wide">
           <label>
             Nombre
@@ -500,8 +514,8 @@ export function RegisterPage() {
             {loading ? "Enviando..." : "Enviar codigo"}
           </button>
         </div>
-        <p className="muted-text">
-          Ya tienes cuenta? <Link to="/login">Inicia sesion</Link>
+        <p className="muted-text auth-switch-link">
+          ¿Ya tienes cuenta? <Link to="/login">Iniciar sesión</Link>
         </p>
       </form>
 
