@@ -2110,6 +2110,30 @@ textarea {
 
   .catalog-shell .section-card--spotlight > .pill-row { display: none; }
   .catalog-shell .section-card--spotlight > .muted-text { padding-left: 132px; }
+
+  /* En escritorio el catalogo baja por filas; las ofertas conservan su carrusel. */
+  .catalog-shell .section-card--spotlight .product-carousel__track {
+    grid-auto-flow: row;
+    grid-auto-columns: unset;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    overflow: visible;
+    gap: 16px;
+    padding-bottom: 0;
+  }
+
+  .catalog-shell .section-card--spotlight .product-carousel__arrow { display: none; }
+
+  .catalog-offers-showcase {
+    overflow: hidden;
+    border-color: rgba(255, 174, 89, 0.3);
+    background:
+      radial-gradient(circle at 92% 12%, rgba(255, 108, 23, 0.18), transparent 30%),
+      linear-gradient(145deg, rgba(54, 29, 63, 0.97), rgba(29, 17, 41, 0.98));
+  }
+
+  .catalog-offers-showcase .product-carousel__track {
+    grid-auto-columns: minmax(245px, 285px);
+  }
 }
 
 .section-card--spotlight {

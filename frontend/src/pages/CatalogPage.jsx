@@ -5,14 +5,6 @@ import { ProductCarousel } from "../components/ProductCarousel.jsx";
 import { useCart } from "../context/CartContext.jsx";
 import { apiFetch } from "../lib/api.js";
 
-const upcomingSections = [
-  { title: "Mas vendidos", text: "Productos con mejor movimiento apareceran aqui." },
-  { title: "Nuevos productos", text: "Novedades listas para publicarse proximamente." },
-  { title: "Suscripciones IA", text: "Accesos digitales y herramientas inteligentes." },
-  { title: "Ofertas destacadas", text: "Promociones seleccionadas para comprar mejor." },
-  { title: "Proximamente", text: "Categorias nuevas en preparacion." }
-];
-
 function productCountLabel(total) {
   const count = Number(total || 0);
   if (count === 1) return "1 producto disponible";
@@ -25,6 +17,7 @@ export function CatalogPage() {
   const { addToCart } = useCart();
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
+  const [offerProducts, setOfferProducts] = useState([]);
   const [pagination, setPagination] = useState({ total: 0, limit: 24 });
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -41,6 +34,22 @@ export function CatalogPage() {
         setCategories([]);
         setMessage(error.message || "No se pudieron cargar las categorias.");
       });
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    apiFetch("/products?limit=48")
+      .then((response) => {
+        if (active) setOfferProducts(response.items || []);
+      })
+      .catch(() => {
+        if (active) setOfferProducts([]);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -126,6 +135,19 @@ export function CatalogPage() {
     : activeCategory
       ? "Mientras tanto, puedes explorar nuestras ofertas disponibles."
       : "Aun no hay productos publicados. Vuelve pronto para ver la nueva coleccion.";
+  const highlightedOffers = useMemo(() => {
+    const categoriesSeen = new Set();
+    const actualOffers = offerProducts.filter((product) =>
+      product.oferta || Number(product.descuento || 0) > 0 || Number(product.precioOriginal || 0) > Number(product.precio || 0)
+    );
+
+    return actualOffers.filter((product) => {
+      const category = String(product.categoria || "otros").toLowerCase();
+      if (categoriesSeen.has(category)) return false;
+      categoriesSeen.add(category);
+      return true;
+    }).slice(0, 12);
+  }, [offerProducts]);
 
   return (
     <div className={`catalog-shell catalog-shell--empty${categoryMenuOpen ? " catalog-shell--menu-open" : ""}`}>
@@ -236,28 +258,26 @@ export function CatalogPage() {
         {message && <p className="inline-message">{message}</p>}
       </section>
 
-      {!loading && products.length <= 1 && (
-        <section className="section-card catalog-coming-soon">
+      {!!highlightedOffers.length && (
+        <section className="section-card catalog-offers-showcase">
           <div className="section-heading section-heading--compact">
             <div>
-              <p className="section-label">Mas para explorar</p>
-              <h2>La tienda sigue creciendo</h2>
+              <p className="section-label">Ofertas de temporada</p>
+              <h2>Descubre ofertas de distintas categorias</h2>
             </div>
           </div>
-          <div className="trust-badge-grid">
-            <span>Entrega rapida</span>
-            <span>Soporte por WhatsApp</span>
-            <span>Pago seguro</span>
-            <span>Garantia segun producto</span>
-          </div>
-          <div className="coming-soon-grid">
-            {upcomingSections.map((section) => (
-              <article key={section.title} className="coming-soon-card">
-                <strong>{section.title}</strong>
-                <p>{section.text}</p>
-              </article>
+          <p className="muted-text">Una selección de promociones activas; desliza para descubrir más.</p>
+          <ProductCarousel label="Ofertas destacadas">
+            {highlightedOffers.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                busy={busyProductId === product.id}
+                onAddToCart={addProductToCart}
+                onBuyNow={buyProductNow}
+              />
             ))}
-          </div>
+          </ProductCarousel>
         </section>
       )}
     </div>
