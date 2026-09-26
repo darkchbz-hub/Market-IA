@@ -125,7 +125,7 @@ export function AppShell() {
   const [commandOpen, setCommandOpen] = useState(false);
   const [commandQuery, setCommandQuery] = useState("");
   const [noticeOpen, setNoticeOpen] = useState(false);
-  const [sectionsOpen, setSectionsOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [routeLog, setRouteLog] = useState([]);
   const [theme, setTheme] = useState(getInitialTheme);
   const audioRef = useRef(null);
@@ -300,7 +300,6 @@ export function AppShell() {
     return core;
   }, [isAdmin]);
 
-  const quickCategories = useMemo(() => siteData.categories.slice(0, 8), [siteData.categories]);
   const whatsappLink = siteData.general?.paymentLinks?.whatsapp || siteData.general?.whatsapp || "";
   const supportHref = whatsappLink || "/chat";
   const supportIsExternal = /^https?:\/\//i.test(supportHref);
@@ -556,10 +555,6 @@ export function AppShell() {
         </div>
 
         <nav className="market-nav">
-          <button type="button" className="market-nav__link market-nav__link--button" onClick={() => setSectionsOpen((current) => !current)}>
-            <AppIcon name={sectionsOpen ? "close" : "sections"} />
-            <span>{sectionsOpen ? "Cerrar secciones" : "Secciones"}</span>
-          </button>
           <NavLink to="/" end className={navLinkClass}>
             <AppIcon name="home" />
             <span>Inicio</span>
@@ -573,56 +568,6 @@ export function AppShell() {
             <span>Soporte</span>
           </NavLink>
         </nav>
-
-        {sectionsOpen && (
-          <div className="sections-panel">
-            <div className="sections-panel__header">
-              <div>
-                <p className="section-label">Secciones rapidas</p>
-                <h2>Explora sin saturar la portada</h2>
-              </div>
-              <div className="header-actions">
-                <button type="button" className="button button--ghost" onClick={() => setCommandOpen(true)}>
-                  <AppIcon name="shortcuts" />
-                  <span>Atajos</span>
-                </button>
-                <button type="button" className="button button--ghost" onClick={() => setNoticeOpen((current) => !current)}>
-                  <AppIcon name="activity" />
-                  <span>Actividad</span>
-                </button>
-                <button type="button" className="button button--ghost" onClick={() => setSectionsOpen(false)}>
-                  <AppIcon name="close" />
-                  <span>Cerrar</span>
-                </button>
-              </div>
-            </div>
-            <div className="sections-panel__grid">
-              {navItems.map((item) => (
-                <button key={item.path} type="button" className="market-rail__link" onClick={() => navigate(item.path)}>
-                  <AppIcon name={item.icon} />
-                  <span>
-                    <strong>{item.label}</strong>
-                    <small>{item.hint}</small>
-                  </span>
-                </button>
-              ))}
-              {quickCategories.map((category) => (
-                <button
-                  key={category.id}
-                  type="button"
-                  className="market-rail__link"
-                  onClick={() => navigate(`/catalogo?category=${category.slug}`)}
-                >
-                  <AppIcon name="category" />
-                  <span>
-                    <strong>{category.nombre}</strong>
-                    <small>{category.descripcion || "Categoria destacada"}</small>
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
         {!!noticeOpen && (
           <div className="notice-panel">
@@ -664,12 +609,29 @@ export function AppShell() {
       <nav className="mobile-dock">
         <button type="button" onClick={() => navigate("/")}><AppIcon name="home" /><span>Inicio</span></button>
         <button type="button" onClick={() => navigate("/catalogo")}><AppIcon name="catalog" /><span>Catalogo</span></button>
-        <button type="button" onClick={() => setCommandOpen(true)}><AppIcon name="shortcuts" /><span>Atajos</span></button>
+        <button type="button" onClick={() => setMobileMenuOpen(true)}><AppIcon name="sections" /><span>Menu</span></button>
         <button type="button" onClick={() => navigate(isAuthenticated ? (isAdmin ? "/admin" : "/perfil") : "/login", isAuthenticated ? undefined : { state: { from: location } })}>
           <AppIcon name={isAdmin ? "admin" : "profile"} />
           <span>{isAdmin ? "Admin" : isAuthenticated ? "Perfil" : "Entrar"}</span>
         </button>
       </nav>
+
+      {mobileMenuOpen && (
+        <div className="mobile-menu-overlay" role="presentation" onClick={() => setMobileMenuOpen(false)}>
+          <aside className="mobile-side-menu" aria-label="Menu de navegacion" onClick={(event) => event.stopPropagation()}>
+            <div className="mobile-side-menu__head">
+              <div><p className="section-label">Gray C Shop</p><strong>Menu</strong></div>
+              <button type="button" onClick={() => setMobileMenuOpen(false)} aria-label="Cerrar menu">×</button>
+            </div>
+            {navItems.map((item) => (
+              <button key={item.path} type="button" onClick={() => { navigate(item.path); setMobileMenuOpen(false); }}>
+                <AppIcon name={item.icon} />
+                <span><strong>{item.label}</strong><small>{item.hint}</small></span>
+              </button>
+            ))}
+          </aside>
+        </div>
+      )}
 
       {canPlayInlineTrack && (
         <audio

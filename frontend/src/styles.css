@@ -4163,6 +4163,80 @@ textarea {
     padding: 7px 4px;
   }
 
+  .mobile-menu-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 110;
+    background: rgba(10, 5, 16, 0.62);
+    backdrop-filter: blur(4px);
+  }
+
+  .mobile-side-menu {
+    display: grid;
+    align-content: start;
+    gap: 8px;
+    width: min(82vw, 318px);
+    height: 100%;
+    padding: 18px 14px calc(24px + env(safe-area-inset-bottom));
+    overflow-y: auto;
+    border-right: 1px solid rgba(255, 181, 99, 0.28);
+    background: linear-gradient(160deg, #321d40, #171021);
+    box-shadow: 18px 0 40px rgba(3, 1, 7, 0.42);
+    animation: mobile-menu-enter 0.22s ease-out;
+  }
+
+  .mobile-side-menu__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 4px 12px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid rgba(255, 179, 96, 0.2);
+  }
+
+  .mobile-side-menu__head .section-label { margin: 0 0 2px; }
+  .mobile-side-menu__head strong { color: #fff5ea; font-family: var(--font-title); }
+  .mobile-side-menu__head button {
+    display: grid;
+    width: 36px;
+    height: 36px;
+    place-items: center;
+    border: 1px solid rgba(255, 181, 99, 0.34);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff5ea;
+    font-size: 1.5rem;
+  }
+
+  .mobile-side-menu > button {
+    display: grid;
+    grid-template-columns: 25px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 11px 10px;
+    border: 1px solid transparent;
+    border-radius: 13px;
+    background: transparent;
+    color: #fff5ea;
+    text-align: left;
+  }
+
+  .mobile-side-menu > button:active {
+    border-color: rgba(255, 177, 90, 0.35);
+    background: rgba(255, 121, 26, 0.16);
+  }
+
+  .mobile-side-menu > button .ui-icon { color: #ffad5b; }
+  .mobile-side-menu > button strong,
+  .mobile-side-menu > button small { display: block; }
+  .mobile-side-menu > button small { margin-top: 2px; color: #d5c2d8; font-size: 0.7rem; }
+
+  @keyframes mobile-menu-enter {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+  }
+
   .app-theme-fab {
     top: 10px;
     bottom: auto;
