@@ -23,7 +23,7 @@ export function CatalogPage() {
   const [message, setMessage] = useState("");
   const [busyProductId, setBusyProductId] = useState(null);
   const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
-  const [visibleDesktopProducts, setVisibleDesktopProducts] = useState(4);
+  const [visibleDesktopProducts, setVisibleDesktopProducts] = useState(10);
   const desktopLoadMoreRef = useRef(null);
 
   const activeCategory = useMemo(() => searchParams.get("category") || "", [searchParams]);
@@ -94,7 +94,7 @@ export function CatalogPage() {
   }, [activeCategory, activeSearch]);
 
   useEffect(() => {
-    setVisibleDesktopProducts(4);
+    setVisibleDesktopProducts(10);
   }, [activeCategory, activeSearch, products.length]);
 
   useEffect(() => {
@@ -106,7 +106,7 @@ export function CatalogPage() {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setVisibleDesktopProducts((current) => Math.min(current + 6, products.length));
+          setVisibleDesktopProducts((current) => Math.min(current + 10, products.length));
         }
       },
       { rootMargin: "0px 0px 180px" }
@@ -258,20 +258,22 @@ export function CatalogPage() {
           </div>
         ) : products.length ? (
           <>
-            <div className="catalog-desktop-product-grid" aria-label="Productos del catalogo">
-              {products.slice(0, visibleDesktopProducts).map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  busy={busyProductId === product.id}
-                  onAddToCart={addProductToCart}
-                  onBuyNow={buyProductNow}
-                />
-              ))}
+            <div className="catalog-desktop-product-scroll">
+              <div className="catalog-desktop-product-grid" aria-label="Productos del catalogo">
+                {products.slice(0, visibleDesktopProducts).map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    busy={busyProductId === product.id}
+                    onAddToCart={addProductToCart}
+                    onBuyNow={buyProductNow}
+                  />
+                ))}
+              </div>
             </div>
             {visibleDesktopProducts < products.length && (
               <div ref={desktopLoadMoreRef} className="catalog-desktop-load-more" aria-live="polite">
-                <span>Desplaza hacia abajo para cargar 6 productos más</span>
+                <span>Desplaza hacia abajo para cargar 10 productos más</span>
               </div>
             )}
             <div className="catalog-mobile-products">
