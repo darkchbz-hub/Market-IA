@@ -29,6 +29,7 @@ export function CatalogPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [busyProductId, setBusyProductId] = useState(null);
+  const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
 
   const activeCategory = useMemo(() => searchParams.get("category") || "", [searchParams]);
   const activeSearch = useMemo(() => searchParams.get("search") || "", [searchParams]);
@@ -127,7 +128,47 @@ export function CatalogPage() {
       : "Aun no hay productos publicados. Vuelve pronto para ver la nueva coleccion.";
 
   return (
-    <div className="catalog-shell catalog-shell--empty">
+    <div className={`catalog-shell catalog-shell--empty${categoryMenuOpen ? " catalog-shell--menu-open" : ""}`}>
+      <button
+        type="button"
+        className="catalog-category-toggle"
+        onClick={() => setCategoryMenuOpen(true)}
+        aria-expanded={categoryMenuOpen}
+        aria-controls="catalog-category-drawer"
+      >
+        <span aria-hidden="true">☰</span>
+        Categorias
+      </button>
+
+      <aside id="catalog-category-drawer" className="catalog-category-drawer" aria-label="Categorias del catalogo">
+        <div className="catalog-category-drawer__head">
+          <div>
+            <p className="section-label">Explorar</p>
+            <strong>Categorias</strong>
+          </div>
+          <button type="button" className="catalog-category-drawer__close" onClick={() => setCategoryMenuOpen(false)} aria-label="Cerrar menu de categorias">
+            ×
+          </button>
+        </div>
+        <button
+          type="button"
+          className={`catalog-category-drawer__item${!activeCategory ? " is-active" : ""}`}
+          onClick={() => updateCategory("")}
+        >
+          Todas las categorias
+        </button>
+        {categories.map((category) => (
+          <button
+            key={category.id}
+            type="button"
+            className={`catalog-category-drawer__item${activeCategory === category.slug ? " is-active" : ""}`}
+            onClick={() => updateCategory(category.slug)}
+          >
+            {category.nombre}
+          </button>
+        ))}
+      </aside>
+
       <section className="section-card section-card--spotlight">
         <div className="section-heading">
           <div>
