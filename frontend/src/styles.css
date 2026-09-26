@@ -1673,6 +1673,10 @@ textarea {
   display: none;
 }
 
+.halloween-mobile-scene {
+  display: none;
+}
+
 .product-carousel__arrow:hover {
   background: var(--primary);
   color: #fff;
@@ -4064,6 +4068,29 @@ textarea {
   }
 
   .app-download-strip__link { color: #fff1df; }
+
+  .halloween-mobile-scene {
+    position: fixed;
+    right: -18px;
+    bottom: calc(74px + env(safe-area-inset-bottom));
+    z-index: 58;
+    display: block;
+    width: min(40vw, 172px);
+    pointer-events: none;
+    filter: drop-shadow(0 10px 18px rgba(7, 2, 13, 0.34));
+    animation: halloween-float 5s ease-in-out infinite;
+  }
+
+  .halloween-mobile-scene img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  @keyframes halloween-float {
+    0%, 100% { transform: translateY(0) rotate(-1deg); }
+    50% { transform: translateY(-8px) rotate(1deg); }
+  }
 }
 
 @media (max-width: 430px) {

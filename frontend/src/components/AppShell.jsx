@@ -420,6 +420,9 @@ export function AppShell() {
   if (isAuthPage) {
     return (
       <div className="marketplace">
+        <div className="halloween-mobile-scene" aria-hidden="true">
+          <img src="/assets/halloween-ghost-bats.png" alt="" />
+        </div>
         <button
           type="button"
           className="button button--theme app-theme-fab"
@@ -443,6 +446,9 @@ export function AppShell() {
 
   return (
     <div className="marketplace">
+      <div className="halloween-mobile-scene" aria-hidden="true">
+        <img src="/assets/halloween-ghost-bats.png" alt="" />
+      </div>
       <header className={`market-header${headerHidden ? " is-hidden" : ""}`}>
         <div className="market-header__top">
           <Link to="/" className="brand">
