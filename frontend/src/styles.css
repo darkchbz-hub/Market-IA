@@ -468,8 +468,18 @@
 
 @media print {
   body { background: #fff !important; }
-  .site-header, .site-footer, .mobile-bottom-nav, .magic-dock, .invoice-toolbar { display: none !important; }
-  .app-main { width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; }
+  .market-header,
+  .market-footer,
+  .mobile-dock,
+  .mobile-menu-overlay,
+  .magic-dock,
+  .command-overlay,
+  .notification-panel,
+  .halloween-desktop-host,
+  .invoice-toolbar { display: none !important; }
+  .market-content { width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; }
+  .halloween-mobile-scene { display: block !important; position: fixed !important; right: 5mm !important; bottom: 5mm !important; width: 24mm !important; z-index: 2 !important; opacity: .9 !important; animation: none !important; }
+  .halloween-mobile-scene img { width: 100% !important; height: auto !important; }
   .invoice-page { width: 100%; }
   .invoice-sheet { border-radius: 0; padding: 9mm 10mm; font-size: 8.5pt; box-shadow: none; }
   .invoice-header { grid-template-columns: 55px minmax(0,1fr) minmax(130px,.48fr); gap: 11px; border-bottom-width: 2px; padding-bottom: 10px; }
