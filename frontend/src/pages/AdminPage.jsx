@@ -765,35 +765,47 @@ export function AdminPage() {
   const selectedUserOrders = selectedUser?.orders || [];
 
   return (
-    <div className="page-stack">
-      <section className="section-card">
-        <div className="section-heading">
+    <div className="page-stack admin-page">
+      <header className="admin-hero">
+        <div className="admin-hero__copy">
+          <div className="admin-hero__icon">GC</div>
           <div>
             <p className="section-label">Panel administrador</p>
-            <h1>Control total de Gray C Shop</h1>
+            <h1>Centro de control Gray C Shop</h1>
+            <p>Administra la tienda, clientes, pedidos y contenido desde un espacio organizado.</p>
           </div>
-          {message && <p className="inline-message">{message}</p>}
         </div>
+        <div className="admin-hero__metrics">
+          {metrics.map((item) => <div key={item.label}><span>{item.label}</span><strong>{item.value}</strong></div>)}
+        </div>
+      </header>
 
-        <div className="admin-tabs">
+      <div className="admin-workspace">
+        <aside className="admin-sidebar">
+          <div className="admin-sidebar__heading"><span>☾</span><div><strong>Administración</strong><small>Herramientas de la tienda</small></div></div>
+          <nav className="admin-tabs" aria-label="Secciones administrativas">
           {[
-            ["dashboard", "Dashboard"],
-            ["home", "Inicio"],
-            ["products", "Productos"],
-            ["users", "Usuarios"],
-            ["orders", "Pedidos"],
-            ["folios", "Buscador de folios"],
-            ["reviews", "Reseñas"],
-            ["categories", "Categorias"],
-            ["content", "Portada y medios"],
-            ["terms", "Terminos"]
-          ].map(([id, label]) => (
-            <button key={id} type="button" className={`pill${tab === id ? " is-active" : ""}`} onClick={() => setTab(id)}>
-              {label}
+            ["dashboard", "⌂", "Dashboard", "Resumen general"],
+            ["home", "✦", "Inicio", "Mensaje y portada"],
+            ["products", "▦", "Productos", `${products.length} en inventario`],
+            ["users", "♙", "Usuarios", `${users.length} clientes`],
+            ["orders", "▣", "Pedidos", `${orders.length} registrados`],
+            ["folios", "⌕", "Folios", "Buscar compras"],
+            ["reviews", "☆", "Reseñas", `${reviews.length} comentarios`],
+            ["categories", "◇", "Categorías", `${categories.length} secciones`],
+            ["content", "▤", "Portada y medios", "Banners, video y audio"],
+            ["terms", "§", "Términos", "Contenido legal"]
+          ].map(([id, icon, label, hint]) => (
+            <button key={id} type="button" className={tab === id ? "is-active" : ""} onClick={() => setTab(id)}>
+              <span className="admin-sidebar__icon">{icon}</span><span><strong>{label}</strong><small>{hint}</small></span><b>›</b>
             </button>
           ))}
-        </div>
-      </section>
+          </nav>
+          <Link to="/" className="admin-sidebar__store-link">Ver tienda pública ↗</Link>
+        </aside>
+
+        <main className="admin-content">
+          {message && <p className="inline-message admin-global-message">{message}</p>}
 
       {tab === "dashboard" && (
         <>
@@ -2173,6 +2185,8 @@ export function AdminPage() {
           </button>
         </section>
       )}
+        </main>
+      </div>
     </div>
   );
 }
