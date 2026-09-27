@@ -913,6 +913,91 @@ async function lookupBrazilPostalLocations(postalInput) {
   };
 }
 
+const TECH_NEWS_SOURCES = [
+  { name: "Xataka Móvil", url: "https://www.xatakamovil.com/index.xml" },
+  { name: "Mundo Xiaomi", url: "https://www.mundoxiaomi.com/index.xml" },
+  { name: "Genbeta", url: "https://www.genbeta.com/index.xml" }
+];
+
+function decodeXmlText(value) {
+  const named = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
+  return String(value || "")
+    .replace(/^<!\[CDATA\[|\]\]>$/g, "")
+    .replace(/&#(x?[0-9a-f]+);/gi, (_, code) => {
+      const number = code.toLowerCase().startsWith("x") ? parseInt(code.slice(1), 16) : parseInt(code, 10);
+      return Number.isFinite(number) ? String.fromCodePoint(number) : "";
+    })
+    .replace(/&([a-z]+);/gi, (_, entity) => named[entity.toLowerCase()] ?? "");
+}
+
+function xmlTag(item, tag) {
+  const match = String(item || "").match(new RegExp(`<${tag}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${tag}>`, "i"));
+  return decodeXmlText(match?.[1] || "").trim();
+}
+
+function cleanNewsText(value) {
+  return decodeXmlText(String(value || "").replace(/<[^>]+>/g, " "))
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function newsCategory(title) {
+  const value = String(title || "").toLowerCase();
+  if (/iphone|ipad|apple|macbook|ios|airpods/.test(value)) return "Apple";
+  if (/xiaomi|redmi|poco|hyperos/.test(value)) return "Xiaomi";
+  if (/inteligencia artificial|\bia\b|chatgpt|gemini|copilot/.test(value)) return "Inteligencia artificial";
+  if (/android|samsung|galaxy|pixel|smartphone|móvil|movil|celular/.test(value)) return "Móviles";
+  if (/windows|linux|software|app|google|microsoft/.test(value)) return "Software";
+  return "Tecnología";
+}
+
+function parseTechnologyFeed(xml, sourceName) {
+  const items = String(xml || "").match(/<item\b[\s\S]*?<\/item>/gi) || [];
+  return items.slice(0, 28).map((item, index) => {
+    const descriptionHtml = xmlTag(item, "description");
+    const imageMatch = descriptionHtml.match(/<img[^>]+src=["']([^"']+)["']/i);
+    const title = cleanNewsText(xmlTag(item, "title"));
+    const dateValue = xmlTag(item, "pubDate");
+    const date = new Date(dateValue);
+    return {
+      id: `${sourceName}-${dateValue}-${index}`,
+      title,
+      summary: cleanNewsText(descriptionHtml).slice(0, 190),
+      url: xmlTag(item, "link"),
+      imageUrl: decodeXmlText(imageMatch?.[1] || ""),
+      source: sourceName,
+      category: newsCategory(title),
+      publishedAt: Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString()
+    };
+  }).filter((item) => item.title && /^https:\/\//i.test(item.url));
+}
+
+async function getTechnologyNews() {
+  const results = await Promise.allSettled(
+    TECH_NEWS_SOURCES.map(async (source) => {
+      const response = await fetch(source.url, {
+        headers: { "User-Agent": "GrayCShop-Tech-News/1.0" },
+        cf: { cacheTtl: 1800, cacheEverything: true }
+      });
+      if (!response.ok) throw new Error(`news_source_${response.status}`);
+      return parseTechnologyFeed(await response.text(), source.name);
+    })
+  );
+
+  const unique = new Map();
+  results.forEach((result) => {
+    if (result.status !== "fulfilled") return;
+    result.value.forEach((item) => {
+      const key = item.title.toLowerCase().replace(/[^a-z0-9áéíóúñ]+/gi, " ").trim();
+      if (!unique.has(key)) unique.set(key, item);
+    });
+  });
+
+  return [...unique.values()]
+    .sort((left, right) => new Date(right.publishedAt) - new Date(left.publishedAt))
+    .slice(0, 9);
+}
+
 async function listAdminReviewItems(db) {
   const result = await db
     .prepare(
@@ -961,6 +1046,15 @@ export async function onRequest(context) {
         runtime: "cloudflare-pages-functions",
         timestamp: new Date().toISOString()
       });
+    }
+
+    if (first === "tech-news" && request.method === "GET") {
+      const items = await getTechnologyNews();
+      return json(
+        { items, updatedAt: new Date().toISOString() },
+        200,
+        { "Cache-Control": "public, max-age=900, s-maxage=1800, stale-while-revalidate=86400" }
+      );
     }
 
     if (first === "geo" && second === "postal-lookup" && request.method === "GET") {

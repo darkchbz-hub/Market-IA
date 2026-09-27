@@ -61,20 +61,6 @@ const initialCategory = {
   activa: true,
   orden: "0"
 };
-const defaultStoreStatusCards = [
-  {
-    title: "Productos eliminados",
-    text: "El inventario visible fue retirado para crear una nueva coleccion con estandar mas alto."
-  },
-  {
-    title: "Ventas restauradas",
-    text: "La seccion comercial se mantiene limpia para iniciar un nuevo ciclo de ventas desde base renovada."
-  },
-  {
-    title: "Experiencia mejorada",
-    text: "Navegacion renovada, botones de accion rapida y un look mucho mas profesional."
-  }
-];
 const shippingIconOptions = [
   { id: "avion", label: "Avion", icon: "✈" },
   { id: "barco", label: "Barco", icon: "🚢" },
@@ -130,14 +116,6 @@ function formatAddress(address) {
     .filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== "")
     .map(([key, value]) => `${key}: ${value}`)
     .join(" | ") || "Sin direccion";
-}
-
-function getStoreStatusCard(homepage, index) {
-  const cards = Array.isArray(homepage?.storeStatusCards) ? homepage.storeStatusCards : [];
-  return {
-    title: cards[index]?.title ?? defaultStoreStatusCards[index]?.title ?? "",
-    text: cards[index]?.text ?? defaultStoreStatusCards[index]?.text ?? ""
-  };
 }
 
 function getProductColorVariant(product) {
@@ -1840,48 +1818,8 @@ export function AdminPage() {
               <textarea rows="4" value={content.homepage.heroDescription || ""} onChange={(event) => setContent((current) => ({ ...current, homepage: { ...current.homepage, heroDescription: event.target.value } }))} />
             </label>
             <article className="detail-card">
-              <h3>Panorama comercial del inicio</h3>
-              <p className="muted-text">Edita las tres tarjetas que aparecen en "Estado actual de la tienda".</p>
-              <div className="list-stack">
-                {defaultStoreStatusCards.map((_, index) => {
-                  const card = getStoreStatusCard(content.homepage, index);
-                  return (
-                    <div key={`store-status-${index}`} className="mini-item mini-item--stacked">
-                      <label>
-                        Titulo tarjeta {index + 1}
-                        <input
-                          value={card.title}
-                          onChange={(event) =>
-                            setContent((current) => {
-                              const cards = Array.isArray(current.homepage.storeStatusCards)
-                                ? [...current.homepage.storeStatusCards]
-                                : [...defaultStoreStatusCards];
-                              cards[index] = { ...(cards[index] || {}), title: event.target.value };
-                              return { ...current, homepage: { ...current.homepage, storeStatusCards: cards } };
-                            })
-                          }
-                        />
-                      </label>
-                      <label>
-                        Descripcion tarjeta {index + 1}
-                        <textarea
-                          rows="3"
-                          value={card.text}
-                          onChange={(event) =>
-                            setContent((current) => {
-                              const cards = Array.isArray(current.homepage.storeStatusCards)
-                                ? [...current.homepage.storeStatusCards]
-                                : [...defaultStoreStatusCards];
-                              cards[index] = { ...(cards[index] || {}), text: event.target.value };
-                              return { ...current, homepage: { ...current.homepage, storeStatusCards: cards } };
-                            })
-                          }
-                        />
-                      </label>
-                    </div>
-                  );
-                })}
-              </div>
+              <h3>Radar tecnológico automático</h3>
+              <p className="muted-text">El antiguo panorama comercial fue sustituido por noticias recientes de tecnología, móviles e inteligencia artificial. Se actualiza automáticamente desde fuentes tecnológicas en español.</p>
             </article>
             <label>
               Titulo empresas asociadas

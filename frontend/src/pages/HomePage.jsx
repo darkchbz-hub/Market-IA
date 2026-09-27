@@ -43,21 +43,6 @@ function isVideoUrl(url) {
   return /\.(mp4|webm|ogg)(\?.*)?$/i.test(String(url || "")) || String(url || "").startsWith("data:video/");
 }
 
-const defaultStatusCards = [
-  {
-    title: "Productos eliminados",
-    text: "El inventario visible fue retirado para crear una nueva coleccion con estandar mas alto."
-  },
-  {
-    title: "Ventas restauradas",
-    text: "La seccion comercial se mantiene limpia para iniciar un nuevo ciclo de ventas desde base renovada."
-  },
-  {
-    title: "Experiencia mejorada",
-    text: "Navegacion renovada, botones de accion rapida y un look mucho mas profesional."
-  }
-];
-
 function getDailyOfferProducts(products) {
   const offers = Array.isArray(products) ? products.filter((product) => product?.oferta) : [];
   const daySeed = Math.floor(Date.now() / 86400000);
@@ -77,6 +62,9 @@ export function HomePage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [spotlightIndex, setSpotlightIndex] = useState(0);
+  const [techNews, setTechNews] = useState([]);
+  const [newsLoading, setNewsLoading] = useState(true);
+  const [newsMessage, setNewsMessage] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -103,6 +91,25 @@ export function HomePage() {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    setNewsLoading(true);
+    apiFetch("/tech-news", { timeoutMs: 20000 })
+      .then((payload) => {
+        if (active) setTechNews(Array.isArray(payload.items) ? payload.items : []);
+      })
+      .catch((error) => {
+        if (active) setNewsMessage(error.message || "No se pudieron cargar las noticias.");
+      })
+      .finally(() => {
+        if (active) setNewsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const heroStats = useMemo(
     () => [
       { label: "Ventas", value: "Reiniciadas" },
@@ -116,17 +123,6 @@ export function HomePage() {
     return videos.find((video) => video.activa !== false && video.videoUrl) || videos.find((video) => video.videoUrl) || null;
   }, [home.videos]);
   const activeVideoEmbed = getYouTubeEmbedUrl(activeVideo?.videoUrl);
-  const statusCards = useMemo(() => {
-    const configured = Array.isArray(home.settings?.storeStatusCards) ? home.settings.storeStatusCards : [];
-    const normalized = configured
-      .map((card, index) => ({
-        title: String(card?.title || defaultStatusCards[index]?.title || "").trim(),
-        text: String(card?.text || defaultStatusCards[index]?.text || "").trim()
-      }))
-      .filter((card) => card.title || card.text);
-
-    return normalized.length ? normalized.slice(0, 3) : defaultStatusCards;
-  }, [home.settings]);
   const dailyOfferProducts = useMemo(() => getDailyOfferProducts(home.offerProducts), [home.offerProducts]);
 
   const promoItems = useMemo(() => {
@@ -306,21 +302,39 @@ export function HomePage() {
 
       {message && <p className="inline-message">{message}</p>}
 
-      <section className="section-card">
-        <div className="section-heading">
+      <section className="section-card tech-news-section">
+        <div className="section-heading tech-news-heading">
           <div>
-            <p className="section-label">Panorama comercial</p>
-            <h2>Estado actual de la tienda</h2>
+            <p className="section-label">Radar tecnológico</p>
+            <h2>Lo nuevo en tecnología, hoy</h2>
+            <p className="muted-text">Lanzamientos, móviles, inteligencia artificial y novedades que están dando de qué hablar.</p>
           </div>
+          <span className="tech-news-live"><i /> Actualización diaria</span>
         </div>
-        <div className="detail-columns detail-columns--status">
-          {statusCards.map((card, index) => (
-            <article key={`${card.title}-${index}`} className="detail-card">
-              <h3>{card.title}</h3>
-              <p>{card.text}</p>
-            </article>
-          ))}
-        </div>
+        {newsLoading ? (
+          <div className="tech-news-grid tech-news-grid--loading">
+            {Array.from({ length: 6 }, (_, index) => <div className="tech-news-skeleton" key={index} />)}
+          </div>
+        ) : techNews.length ? (
+          <div className="tech-news-grid">
+            {techNews.map((article, index) => (
+              <a className={`tech-news-card${index === 0 ? " tech-news-card--featured" : ""}`} href={article.url} target="_blank" rel="noreferrer" key={article.id || article.url}>
+                <div className="tech-news-card__media">
+                  {article.imageUrl ? <img src={article.imageUrl} alt="" loading="lazy" /> : <span>{article.category?.slice(0, 1) || "T"}</span>}
+                  <b>{article.category || "Tecnología"}</b>
+                </div>
+                <div className="tech-news-card__body">
+                  <div className="tech-news-card__meta"><span>{article.source}</span><time>{new Date(article.publishedAt).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}</time></div>
+                  <h3>{article.title}</h3>
+                  {article.summary && <p>{article.summary}</p>}
+                  <strong>Leer noticia <span>↗</span></strong>
+                </div>
+              </a>
+            ))}
+          </div>
+        ) : (
+          <div className="tech-news-empty"><strong>El radar se está actualizando.</strong><span>{newsMessage || "Vuelve en unos minutos para ver las noticias más recientes."}</span></div>
+        )}
       </section>
 
       {!!dailyOfferProducts.length && (
