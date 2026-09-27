@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { apiFetch } from "../lib/api.js";
 import { formatMexicoDate, parseStoreDate } from "../lib/date.js";
@@ -49,6 +50,7 @@ function getBotDisplayName(message, fallbackBot) {
 }
 
 function getBotForMessage(message, fallbackBot) {
+  if (message?.botId) return getSelectedBot(message.botId);
   const displayName = getBotDisplayName(message, fallbackBot).toLowerCase();
   return supportBots.find((bot) => bot.name.toLowerCase() === displayName) || fallbackBot;
 }
@@ -85,16 +87,22 @@ export function ChatPage() {
   const { token, user, isAdmin } = useAuth();
   const refreshTimerRef = useRef(null);
   const messagesBoxRef = useRef(null);
+  const attachmentInputRef = useRef(null);
   const [threads, setThreads] = useState([]);
   const [selectedUserId, setSelectedUserId] = useState("");
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState("");
-  const [selectedBotId, setSelectedBotId] = useState("grayce");
+  const [selectedBotId, setSelectedBotId] = useState(() => window.localStorage.getItem("gc_support_bot") || "grayce");
   const [botEnabled, setBotEnabled] = useState(true);
   const [status, setStatus] = useState("Soporte activo");
   const [sending, setSending] = useState(false);
+  const [attachment, setAttachment] = useState(null);
 
   const selectedBot = getSelectedBot(selectedBotId);
+
+  useEffect(() => {
+    window.localStorage.setItem("gc_support_bot", selectedBotId);
+  }, [selectedBotId]);
 
   const loadThreads = async () => {
     if (!isAdmin) {
@@ -186,7 +194,8 @@ export function ChatPage() {
       fecha: new Date().toISOString(),
       rolRemitente: "customer",
       mensaje: userText,
-      usuarioId: user?.id
+      usuarioId: user?.id,
+      metadata: attachment ? { attachment } : {}
     };
 
     setMessages((current) => [...current, userMessage]);
@@ -199,7 +208,8 @@ export function ChatPage() {
           method: "POST",
           token,
           body: {
-            mensaje: userText
+            mensaje: userText,
+            attachment
           }
         }),
         apiFetch("/messages/assistant", {
@@ -207,7 +217,7 @@ export function ChatPage() {
           token,
           body: {
             botId: bot.id,
-            mensaje: userText
+            mensaje: attachment ? `${userText}\nEl cliente adjuntó ${attachment.name}; si requiere validación, escálalo a soporte humano.` : userText
           }
         })
       ]);
@@ -217,6 +227,7 @@ export function ChatPage() {
         persistedUserMessage.message,
         assistantPayload.message
       ]);
+      setAttachment(null);
 
       if (/asesor|humano|agente|persona/i.test(userText)) {
         setBotEnabled(false);
@@ -233,12 +244,14 @@ export function ChatPage() {
 
   const handleSend = async (event) => {
     event.preventDefault();
-    if (!draft.trim()) {
+    if (!draft.trim() && !attachment) {
       return;
     }
 
+    const messageText = draft.trim() || `Adjunto: ${attachment.name}`;
+
     if (!isAdmin && botEnabled) {
-      await sendCustomerBotMessage(draft, chooseBotForText(draft, selectedBot.id));
+      await sendCustomerBotMessage(messageText, selectedBot.id);
       return;
     }
 
@@ -250,11 +263,13 @@ export function ChatPage() {
         token,
         body: {
           userId: isAdmin ? selectedUserId : undefined,
-          mensaje: draft.trim()
+          mensaje: messageText,
+          attachment
         }
       });
       setMessages((current) => [...current, payload.message]);
       setDraft("");
+      setAttachment(null);
       if (isAdmin) {
         await loadThreads();
       }
@@ -263,6 +278,29 @@ export function ChatPage() {
       setStatus(error.message || "No se pudo enviar el mensaje.");
     } finally {
       setSending(false);
+    }
+  };
+
+  const selectAttachment = (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!/^(image\/(png|jpeg|webp|gif)|application\/pdf)$/i.test(file.type) || file.size > 1024 * 1024) {
+      setStatus("Adjunta una imagen o PDF menor a 1 MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setAttachment({ name: file.name, type: file.type, data: String(reader.result || "") });
+    reader.onerror = () => setStatus("No se pudo leer el archivo.");
+    reader.readAsDataURL(file);
+  };
+
+  const rateMessage = async (messageId, rating) => {
+    try {
+      const payload = await apiFetch(`/messages/${messageId}/rating`, { method: "POST", token, body: { rating } });
+      setMessages((current) => current.map((message) => message.id === messageId ? payload.message : message));
+    } catch (error) {
+      setStatus(error.message || "No se pudo guardar tu valoración.");
     }
   };
 
@@ -356,7 +394,46 @@ export function ChatPage() {
                   <article className={`message ${isOutgoing ? "message--outgoing" : "message--incoming"}`}>
                     <strong>{senderName}</strong>
                     <p>{message.mensaje}</p>
+                    {message.metadata?.attachment && (
+                      <a className="support-attachment" href={message.metadata.attachment.data} target="_blank" rel="noreferrer" download={message.metadata.attachment.name}>
+                        {message.metadata.attachment.type?.startsWith("image/") ? <img src={message.metadata.attachment.data} alt={message.metadata.attachment.name} /> : <span>PDF</span>}
+                        <b>{message.metadata.attachment.name}</b>
+                      </a>
+                    )}
                     <time>{getMessageTime(message.fecha)}</time>
+                    {!isAdmin && message.rolRemitente === "bot" && (
+                      <div className="support-response-tools">
+                        {!!message.metadata?.products?.length && (
+                          <div className="support-product-suggestions">
+                            {message.metadata.products.map((product) => (
+                              <Link to={`/producto/${product.slug}`} key={product.id}>
+                                {product.imagen && <img src={product.imagen} alt="" />}
+                                <span><b>{product.nombre}</b><small>${Number(product.precio || 0).toFixed(2)}</small></span>
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                        {!!message.metadata?.actions?.length && (
+                          <div className="support-message-actions">
+                            {message.metadata.actions.map((action, actionIndex) => action.to ? (
+                              <Link to={action.to} key={`${action.label}-${actionIndex}`}>{action.label}</Link>
+                            ) : (
+                              <span className="support-handoff-chip" key={`${action.label}-${actionIndex}`}>{action.label}</span>
+                            ))}
+                          </div>
+                        )}
+                        {!!message.metadata?.suggestions?.length && (
+                          <div className="support-followups">
+                            {message.metadata.suggestions.map((suggestion) => <button type="button" key={suggestion} onClick={() => setDraft(suggestion)}>{suggestion}</button>)}
+                          </div>
+                        )}
+                        <div className="support-rating" aria-label="Valorar respuesta">
+                          <span>¿Te ayudó?</span>
+                          <button type="button" className={message.rating === 1 ? "is-active" : ""} onClick={() => rateMessage(message.id, 1)} aria-label="Respuesta útil">👍</button>
+                          <button type="button" className={message.rating === -1 ? "is-active" : ""} onClick={() => rateMessage(message.id, -1)} aria-label="Respuesta no útil">👎</button>
+                        </div>
+                      </div>
+                    )}
                   </article>
                 </div>
               </div>
@@ -369,7 +446,7 @@ export function ChatPage() {
           </article>
         )}
         {!isAdmin && botEnabled && sending && (
-          <div className="support-message-row is-incoming support-typing-row">
+          <div className="support-message-row is-incoming support-typing-row support-cat-moment">
             <span className="support-message-avatar"><img src={selectedBot.avatar} alt="" /></span>
             <div className="support-typing" aria-label={`${selectedBot.name} está escribiendo`}><i /><i /><i /></div>
           </div>
@@ -377,6 +454,9 @@ export function ChatPage() {
       </div>
 
       <form className="chat-form chat-form--support" onSubmit={handleSend}>
+        <input ref={attachmentInputRef} className="support-file-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" onChange={selectAttachment} />
+        <button type="button" className="support-attach-button" onClick={() => attachmentInputRef.current?.click()} aria-label="Adjuntar imagen o PDF">＋</button>
+        {attachment && <span className="support-attachment-preview"><b>{attachment.name}</b><button type="button" onClick={() => setAttachment(null)} aria-label="Quitar adjunto">×</button></span>}
         <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={`Escribe un mensaje${!isAdmin ? ` para ${selectedBot.name}` : ""}...`} />
         <button type="submit" className="button button--primary support-send-button" disabled={(!selectedUserId && isAdmin) || sending} aria-label="Enviar mensaje">
           {sending ? "Enviando..." : <><span>Enviar</span><b aria-hidden="true">➤</b></>}
@@ -406,6 +486,7 @@ export function ChatPage() {
                 >
                   <strong>{thread.nombre}</strong>
                   <span>{thread.email}</span>
+                  {thread.necesitaHumano && <b className="thread-human-alert">Necesita atención</b>}
                 </button>
               ))
             ) : (

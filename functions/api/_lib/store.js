@@ -705,6 +705,10 @@ const schemaStatements = [
       sender_role TEXT NOT NULL,
       mensaje TEXT NOT NULL,
       leido INTEGER NOT NULL DEFAULT 0,
+      bot_id TEXT NOT NULL DEFAULT '',
+      metadata TEXT NOT NULL DEFAULT '{}',
+      rating INTEGER NOT NULL DEFAULT 0,
+      needs_human INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `,
@@ -968,11 +972,15 @@ function serializeChatMessage(row) {
     rolRemitente: String(row.sender_role || "customer"),
     mensaje: String(row.mensaje || ""),
     leido: Boolean(Number(row.leido || 0)),
+    botId: String(row.bot_id || ""),
+    metadata: parseJson(row.metadata, {}),
+    rating: Number(row.rating || 0),
+    necesitaHumano: Boolean(Number(row.needs_human || 0)),
     fecha: row.created_at
   };
 }
 
-export async function createChatMessage(db, { userId, senderRole, mensaje }) {
+export async function createChatMessage(db, { userId, senderRole, mensaje, botId = "", metadata = {}, needsHuman = false }) {
   const payload = String(mensaje || "").trim();
   if (!payload) {
     throw new Error("El mensaje no puede ir vacio.");
@@ -981,20 +989,38 @@ export async function createChatMessage(db, { userId, senderRole, mensaje }) {
   await db
     .prepare(
       `
-      INSERT INTO messages (user_id, sender_role, mensaje, leido, created_at)
-      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+      INSERT INTO messages (user_id, sender_role, mensaje, leido, bot_id, metadata, needs_human, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `
     )
     .bind(
       Number(userId),
       String(senderRole || "customer"),
       payload,
-      senderRole === "admin" || senderRole === "bot" ? 1 : 0
+      senderRole === "admin" || senderRole === "bot" ? 1 : 0,
+      String(botId || ""),
+      JSON.stringify(metadata || {}),
+      needsHuman ? 1 : 0
     )
     .run();
 
   const created = await db.prepare("SELECT * FROM messages WHERE id = last_insert_rowid()").first();
   return serializeChatMessage(created);
+}
+
+export async function rateChatMessage(db, { messageId, userId, rating }) {
+  const normalizedRating = Number(rating);
+  if (![1, -1].includes(normalizedRating)) {
+    throw new Error("La valoración debe ser positiva o negativa.");
+  }
+
+  await db.prepare(
+    `UPDATE messages SET rating = ? WHERE id = ? AND user_id = ? AND sender_role = 'bot'`
+  ).bind(normalizedRating, Number(messageId), Number(userId)).run();
+
+  const updated = await db.prepare("SELECT * FROM messages WHERE id = ? AND user_id = ?").bind(Number(messageId), Number(userId)).first();
+  if (!updated) throw new Error("No se encontró la respuesta para valorar.");
+  return serializeChatMessage(updated);
 }
 
 export async function listChatMessagesByUser(db, userId) {
@@ -1031,6 +1057,7 @@ export async function listChatThreads(db) {
           LIMIT 1
         ) AS ultimo_mensaje,
         SUM(CASE WHEN m.sender_role = 'customer' AND m.leido = 0 THEN 1 ELSE 0 END) AS pendientes
+        ,MAX(CASE WHEN m.needs_human = 1 THEN 1 ELSE 0 END) AS necesita_humano
       FROM messages m
       INNER JOIN users u ON u.id = m.user_id
       GROUP BY u.id, u.nombre, u.email
@@ -1046,6 +1073,7 @@ export async function listChatThreads(db) {
     ultimoMensaje: row.ultimo_mensaje || "",
     ultimaFecha: row.ultima_fecha || "",
     pendientes: Number(row.pendientes || 0)
+    ,necesitaHumano: Boolean(Number(row.necesita_humano || 0))
   }));
 }
 
@@ -1201,6 +1229,10 @@ export async function ensureDatabase(env) {
       await ensureColumn(env.DB, "users", "geo_meta", "TEXT NOT NULL DEFAULT '{}'");
       await ensureColumn(env.DB, "product_comments", "reviewer_name", "TEXT NOT NULL DEFAULT ''");
       await ensureColumn(env.DB, "product_comments", "imagenes", "TEXT NOT NULL DEFAULT '[]'");
+      await ensureColumn(env.DB, "messages", "bot_id", "TEXT NOT NULL DEFAULT ''");
+      await ensureColumn(env.DB, "messages", "metadata", "TEXT NOT NULL DEFAULT '{}'");
+      await ensureColumn(env.DB, "messages", "rating", "INTEGER NOT NULL DEFAULT 0");
+      await ensureColumn(env.DB, "messages", "needs_human", "INTEGER NOT NULL DEFAULT 0");
       await backfillOrderItemFolios(env.DB);
       await seedDatabase(env.DB, env);
     })().catch((error) => {
