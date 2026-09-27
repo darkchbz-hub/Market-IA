@@ -40,7 +40,7 @@ export function InvoicePage() {
           {invoice.discount > 0 && <div className="invoice-discount"><span>Descuento {invoice.couponCode ? `(${invoice.couponCode})` : ""}</span><strong>-{money(invoice.discount)}</strong></div>}
           <div className="invoice-grand-total"><span>Total pagado</span><strong>{money(invoice.total)}</strong></div>
         </section>
-        <footer className="invoice-footer"><img src="/assets/review-tigresa.png" alt="Tigresa agradece tu compra" /><div><small>TIGRESA DICE</small><h2>¡Gracias por tu compra!</h2><p>Esperamos que disfrutes tus productos. Conserva esta factura como comprobante de tu pedido.</p></div></footer>
+        <footer className="invoice-footer"><img src="/assets/review-tigresa.png?v=20260927-2" alt="Tigresa agradece tu compra" /><div><small>TIGRESA DICE</small><h2>¡Gracias por tu compra!</h2><p>Esperamos que disfrutes tus productos. Conserva esta factura como comprobante de tu pedido.</p></div></footer>
       </article>
     </div>
   );

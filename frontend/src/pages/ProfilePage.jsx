@@ -342,7 +342,7 @@ export function ProfilePage() {
         <div className="review-thanks" role="status" aria-live="polite">
           <button type="button" className="review-thanks__close" onClick={() => setShowReviewThanks(false)} aria-label="Cerrar agradecimiento">×</button>
           <div className="review-thanks__sparkles" aria-hidden="true"><span>✦</span><span>★</span><span>✦</span></div>
-          <img src="/assets/review-tigresa.png" alt="Tigresa, la gatita de Gray C Shop" />
+          <img src="/assets/review-tigresa.png?v=20260927-2" alt="Tigresa, la gatita de Gray C Shop" />
           <div>
             <small>Tigresa dice</small>
             <strong>¡Gracias por tu comentario!</strong>
