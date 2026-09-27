@@ -6250,3 +6250,34 @@ section.auth-layout.auth-layout--halloween {
   .admin-content > .admin-grid > .section-card,
   .admin-content > .admin-grid > form.section-card { border-radius: 18px; }
 }
+
+/* Prevent stale About content from flashing while current store data loads. */
+.about-loading {
+  display: grid;
+  gap: 14px;
+  min-height: 310px;
+  align-content: start;
+}
+
+.about-loading span {
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.055) 20%, rgba(255,173,98,0.16) 45%, rgba(255,255,255,0.055) 70%);
+  background-size: 240% 100%;
+  animation: about-loading-shimmer 1.25s ease-in-out infinite;
+}
+
+.about-loading__eyebrow { width: 112px; height: 12px; }
+.about-loading__title { width: min(330px, 70%); height: 34px; margin-bottom: 16px; }
+.about-loading__line { width: 100%; height: 14px; }
+.about-loading__line--short { width: 28%; }
+.about-loading__line--medium { width: 68%; }
+
+@keyframes about-loading-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-loading span { animation: none; }
+}
