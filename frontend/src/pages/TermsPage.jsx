@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../lib/api.js";
 import { formatMexicoDate } from "../lib/date.js";
@@ -41,9 +41,39 @@ const legalDocuments = {
 
 const legalLinks = [["terms", "/terminos", "Términos"], ["privacy", "/privacidad", "Privacidad"], ["refunds", "/reembolsos", "Cambios y reembolsos"]];
 
+const termChapters = [
+  [1, 5, "Compra, precios y recepción", "Información esencial antes y durante la entrega"],
+  [6, 13, "Garantías, devoluciones y reembolsos", "Cobertura, evidencias, cancelaciones y resolución"],
+  [14, 20, "Productos y responsabilidades", "Condición, seguridad, uso y aceptación de la compra"],
+  [21, 27, "Sitio web y cuenta de usuario", "Registro, verificación, conducta y contenido"],
+  [28, 34, "Contenido, privacidad y servicios", "Propiedad intelectual, datos, cookies y terceros"],
+  [35, 40, "Seguridad comercial y aceptación", "Promociones, fraude, edad mínima y terminación"]
+];
+
+function parseTermsDocument(value, fallbackSections) {
+  const lines = String(value || "").split("\n").map((line) => line.trim());
+  const clauses = [];
+  let current = null;
+
+  for (const line of lines) {
+    if (!line) continue;
+    const heading = line.match(/^(\d+)\.\s+(.+)$/);
+    if (heading) {
+      current = { number: Number(heading[1]), title: heading[2], paragraphs: [] };
+      clauses.push(current);
+    } else if (current) {
+      current.paragraphs.push(line);
+    }
+  }
+
+  if (clauses.length) return clauses;
+  return fallbackSections.map(([title, content], index) => ({ number: index + 1, title, paragraphs: [content] }));
+}
+
 function LegalDocumentPage({ type }) {
   const document = legalDocuments[type];
   const [siteName, setSiteName] = useState("Gray C Shop");
+  const [savedTerms, setSavedTerms] = useState("");
   const [loading, setLoading] = useState(type === "terms");
 
   useEffect(() => {
@@ -51,9 +81,12 @@ function LegalDocumentPage({ type }) {
     apiFetch("/products/home").then((payload) => {
       if (!active) return;
       setSiteName(payload?.general?.siteName || "Gray C Shop");
+      if (type === "terms") setSavedTerms(payload?.general?.termsAndConditions || "");
     }).catch(() => {}).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [type]);
+
+  const clauses = useMemo(() => parseTermsDocument(savedTerms, legalDocuments.terms.sections), [savedTerms]);
 
   if (loading) return <section className="section-card legal-loading"><span /><span /><span /><span /></section>;
 
@@ -69,9 +102,28 @@ function LegalDocumentPage({ type }) {
       </nav>
       <section className="legal-document">
         <div className="legal-document__intro"><span>{document.icon}</span><div><small>{siteName}</small><strong>{document.title}</strong><p>Lee cada apartado antes de utilizar el servicio o completar una compra.</p></div></div>
-        <div className="legal-section-grid">
-          {document.sections.map(([title, content], index) => <article key={`${title}-${index}`}><span>{String(index + 1).padStart(2, "0")}</span><div><h2>{title}</h2><p>{content}</p></div></article>)}
-        </div>
+        {type === "terms" ? (
+          <div className="legal-terms-groups">
+            <div className="legal-terms-summary"><strong>40 términos conservados</strong><span>Organizados en 6 capítulos para facilitar su lectura. Abre cada capítulo para consultar todas sus cláusulas.</span></div>
+            {termChapters.map(([start, end, title, description], chapterIndex) => {
+              const chapterClauses = clauses.filter((clause) => clause.number >= start && clause.number <= end);
+              return (
+                <details className="legal-terms-chapter" key={title} open={chapterIndex === 0}>
+                  <summary><span>{String(chapterIndex + 1).padStart(2, "0")}</span><div><strong>{title}</strong><small>{description} · Apartados {start}–{end}</small></div><b>⌄</b></summary>
+                  <div className="legal-terms-clauses">
+                    {chapterClauses.map((clause) => (
+                      <article key={clause.number}><span>{clause.number}</span><div><h2>{clause.title}</h2>{clause.paragraphs.map((paragraph, index) => <p key={`${clause.number}-${index}`}>{paragraph}</p>)}</div></article>
+                    ))}
+                  </div>
+                </details>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="legal-section-grid">
+            {document.sections.map(([title, content], index) => <article key={`${title}-${index}`}><span>{String(index + 1).padStart(2, "0")}</span><div><h2>{title}</h2><p>{content}</p></div></article>)}
+          </div>
+        )}
         <footer className="legal-help"><div><strong>¿Tienes una duda sobre este documento?</strong><p>Barban puede orientarte o dejar tu caso preparado para atención humana.</p></div><Link className="button button--primary" to="/chat">Hablar con soporte</Link></footer>
         {type === "terms" && (
           <div className="legal-signature">
