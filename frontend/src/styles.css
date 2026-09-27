@@ -416,6 +416,17 @@
 .admin-payment-documents > div { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: 8px; border: 1px solid rgba(255,171,84,.17); border-radius: 16px; padding: 13px; background: rgba(255,255,255,.025); }
 .admin-payment-documents > div > strong { width: 100%; color: #fff6ee; }
 .admin-payment-documents > div > small { width: 100%; color: var(--muted); overflow-wrap: anywhere; }
+.receipt-preview-backdrop { position: fixed; z-index: 1600; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(7,3,10,.82); backdrop-filter: blur(10px); }
+.receipt-preview-modal { display: grid; grid-template-rows: auto minmax(0,1fr) auto; width: min(920px,100%); height: min(780px,calc(100vh - 40px)); overflow: hidden; border: 1px solid rgba(255,164,73,.35); border-radius: 24px; background: #21142a; box-shadow: 0 30px 100px rgba(0,0,0,.65); }
+.receipt-preview-modal > header, .receipt-preview-modal > footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; background: rgba(255,255,255,.025); }
+.receipt-preview-modal > header > div { min-width: 0; }
+.receipt-preview-modal > header p { margin: 0 0 3px; }
+.receipt-preview-modal > header strong { display: block; overflow: hidden; color: #fff7ef; text-overflow: ellipsis; white-space: nowrap; }
+.receipt-preview-modal > header > button { display: grid; width: 36px; height: 36px; flex: 0 0 36px; place-items: center; border: 1px solid rgba(255,255,255,.12); border-radius: 50%; background: rgba(255,255,255,.06); color: #fff; font-size: 1.25rem; cursor: pointer; }
+.receipt-preview-content { min-height: 0; overflow: auto; background: #ede9ef; }
+.receipt-preview-content iframe { width: 100%; height: 100%; border: 0; background: #fff; }
+.receipt-preview-content img { display: block; max-width: 100%; min-height: 100%; margin: auto; object-fit: contain; }
+.receipt-preview-modal > footer { justify-content: flex-end; }
 
 .invoice-page { width: min(1080px,100%); margin: 0 auto; }
 .invoice-toolbar { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 18px; }

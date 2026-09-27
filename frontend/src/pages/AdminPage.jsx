@@ -215,6 +215,7 @@ export function AdminPage() {
   const [folioResults, setFolioResults] = useState([]);
   const [coupons, setCoupons] = useState([]);
   const [couponForm, setCouponForm] = useState(initialCoupon);
+  const [receiptPreview, setReceiptPreview] = useState(null);
 
   const loadAdmin = async () => {
     const [summaryPayload, productsPayload, ordersPayload, usersPayload, reviewsPayload, categoriesPayload, contentPayload, foliosPayload, couponsPayload] =
@@ -531,6 +532,26 @@ export function AdminPage() {
     setMessage("El cliente ya puede subir un nuevo comprobante.");
   };
 
+  const closeReceiptPreview = () => {
+    if (receiptPreview?.url) URL.revokeObjectURL(receiptPreview.url);
+    setReceiptPreview(null);
+  };
+
+  const viewPaymentReceipt = (order) => {
+    try {
+      closeReceiptPreview();
+      const [header, encoded = ""] = String(order.paymentReceipt || "").split(",", 2);
+      const mimeType = header.match(/^data:([^;]+)/)?.[1] || order.receiptType || "application/octet-stream";
+      const binary = header.includes(";base64") ? window.atob(encoded) : decodeURIComponent(encoded);
+      const bytes = new Uint8Array(binary.length);
+      for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+      const url = URL.createObjectURL(new Blob([bytes], { type: mimeType }));
+      setReceiptPreview({ url, type: mimeType, name: order.receiptName || "comprobante" });
+    } catch {
+      setMessage("No se pudo preparar la vista del comprobante. Pide al cliente que vuelva a subirlo.");
+    }
+  };
+
   const toggleInvoice = async (orderId, enabled) => {
     await apiFetch(`/admin/orders/${orderId}/invoice`, { method: "PATCH", token, body: { enabled } });
     await loadAdmin();
@@ -803,6 +824,15 @@ export function AdminPage() {
 
   return (
     <div className="page-stack admin-page">
+      {receiptPreview && (
+        <div className="receipt-preview-backdrop" role="dialog" aria-modal="true" aria-label="Vista del comprobante">
+          <section className="receipt-preview-modal">
+            <header><div><p className="section-label">Comprobante de pago</p><strong>{receiptPreview.name}</strong></div><button type="button" onClick={closeReceiptPreview} aria-label="Cerrar">×</button></header>
+            <div className="receipt-preview-content">{receiptPreview.type === "application/pdf" ? <iframe src={receiptPreview.url} title={receiptPreview.name} /> : <img src={receiptPreview.url} alt={receiptPreview.name} />}</div>
+            <footer><a className="button button--ghost" href={receiptPreview.url} download={receiptPreview.name}>Descargar archivo</a><button type="button" className="button button--primary" onClick={closeReceiptPreview}>Cerrar</button></footer>
+          </section>
+        </div>
+      )}
       <header className="admin-hero">
         <div className="admin-hero__copy">
           <div className="admin-hero__icon">GC</div>
@@ -1371,7 +1401,7 @@ export function AdminPage() {
                   <div>
                     <strong>Comprobante de pago</strong>
                     {order.paymentReceipt ? (
-                      <><a className="button button--ghost" href={order.paymentReceipt} target="_blank" rel="noreferrer">Ver comprobante</a><small>{order.receiptName || "Archivo adjunto"} · {order.receiptSubmittedAt ? new Date(order.receiptSubmittedAt).toLocaleString("es-MX") : "Recibido"}</small></>
+                      <><button type="button" className="button button--ghost" onClick={() => viewPaymentReceipt(order)}>Ver comprobante</button><small>{order.receiptName || "Archivo adjunto"} · {order.receiptSubmittedAt ? new Date(order.receiptSubmittedAt).toLocaleString("es-MX") : "Recibido"}</small></>
                     ) : <span className="muted-text">El cliente todavía no lo ha enviado.</span>}
                     <button type="button" className="button button--ghost" onClick={() => reopenReceiptUpload(order.id)}>Permitir nueva carga</button>
                   </div>
