@@ -79,6 +79,8 @@ function pathLabel(pathname) {
     "/admin": "Admin",
     "/dashboard": "Dashboard",
     "/terminos": "Terminos",
+    "/privacidad": "Privacidad",
+    "/reembolsos": "Reembolsos",
     "/sobre-nosotros": "Nosotros",
     "/centro-control": "Centro de Control"
   };
@@ -688,7 +690,7 @@ export function AppShell() {
 
           <details className="market-footer__column" open>
             <summary>Legal</summary>
-            <div><Link to="/terminos"><AppIcon name="about" />Términos y condiciones</Link><Link to="/terminos"><AppIcon name="about" />Política de privacidad</Link><Link to="/terminos"><AppIcon name="about" />Reembolsos</Link></div>
+            <div><Link to="/terminos"><AppIcon name="about" />Términos y condiciones</Link><Link to="/privacidad"><AppIcon name="about" />Política de privacidad</Link><Link to="/reembolsos"><AppIcon name="about" />Cambios y reembolsos</Link></div>
           </details>
         </div>
         <div className="market-footer__bottom">

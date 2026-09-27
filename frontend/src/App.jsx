@@ -15,7 +15,7 @@ import { ProductPage } from "./pages/ProductPage.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
 import { RegisterPage } from "./pages/RegisterPage.jsx";
 import { AboutPage } from "./pages/AboutPage.jsx";
-import { TermsPage } from "./pages/TermsPage.jsx";
+import { PrivacyPage, RefundsPage, TermsPage } from "./pages/TermsPage.jsx";
 import { InvoicePage } from "./pages/InvoicePage.jsx";
 
 export default function App() {
@@ -106,6 +106,8 @@ export default function App() {
           path="/terminos"
           element={<TermsPage />}
         />
+        <Route path="/privacidad" element={<PrivacyPage />} />
+        <Route path="/reembolsos" element={<RefundsPage />} />
         <Route
           path="/sobre-nosotros"
           element={<AboutPage />}
