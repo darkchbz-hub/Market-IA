@@ -9,6 +9,7 @@ import { CheckoutPage } from "./pages/CheckoutPage.jsx";
 import { ControlCenterPage } from "./pages/ControlCenterPage.jsx";
 import { HomePage } from "./pages/HomePage.jsx";
 import { LoginPage } from "./pages/LoginPage.jsx";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage.jsx";
 import { PaymentStatusPage } from "./pages/PaymentStatusPage.jsx";
 import { ProductPage } from "./pages/ProductPage.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
@@ -21,6 +22,7 @@ export default function App() {
     <Routes>
       <Route element={<AppShell />}>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/recuperar-contrasena" element={<ForgotPasswordPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route
           index

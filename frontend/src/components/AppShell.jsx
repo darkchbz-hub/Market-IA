@@ -129,7 +129,7 @@ export function AppShell() {
   const [routeLog, setRouteLog] = useState([]);
   const [theme, setTheme] = useState(getInitialTheme);
   const audioRef = useRef(null);
-  const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
+  const isAuthPage = location.pathname === "/login" || location.pathname === "/register" || location.pathname === "/recuperar-contrasena";
   const isDarkTheme = theme === DARK_THEME;
   const toggleTheme = () => {
     setTheme((current) => (current === DARK_THEME ? LIGHT_THEME : DARK_THEME));
