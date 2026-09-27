@@ -6832,6 +6832,8 @@ section.auth-layout.auth-layout--halloween {
 .legal-hero__moon i:nth-child(3) { bottom: 18px; left: 17px; width: 13px; height: 13px; }
 .legal-hero__moon i:nth-child(4) { bottom: 24px; right: 15px; width: 6px; height: 6px; }
 .legal-hero__stamp { position: relative; z-index: 1; max-width: 150px; border: 1px solid color-mix(in srgb, var(--legal-accent) 32%, transparent); border-radius: 999px; padding: 8px 11px; color: color-mix(in srgb, var(--legal-accent) 75%, white); background: rgba(13,8,19,.48); font-size: .67rem; text-align: center; }
+.legal-hero__actions { position: relative; z-index: 1; display: grid; justify-items: end; gap: 9px; }
+.legal-print-button { min-height: 36px; padding: 7px 12px; font-size: .72rem; }
 
 .legal-switcher {
   display: grid;
@@ -6931,7 +6933,8 @@ section.auth-layout.auth-layout--halloween {
   .legal-hero { grid-template-columns: auto minmax(0, 1fr); gap: 14px; min-height: 170px; padding: 21px 17px; }
   .legal-hero__moon { width: 64px; height: 64px; }
   .legal-hero__moon span { font-size: 1.45rem; }
-  .legal-hero__stamp { grid-column: 1 / -1; max-width: none; justify-self: start; }
+  .legal-hero__actions { grid-column: 1 / -1; grid-template-columns: 1fr auto; align-items: center; justify-items: start; width: 100%; }
+  .legal-hero__stamp { max-width: none; }
   .legal-switcher { display: flex; overflow-x: auto; scrollbar-width: none; }
   .legal-switcher a { min-width: max-content; flex: 1; }
   .legal-document { padding: 18px 13px; border-radius: 21px; }
@@ -6947,4 +6950,59 @@ section.auth-layout.auth-layout--halloween {
   .legal-help .button { width: 100%; }
   .legal-signature { grid-template-columns: 1fr; gap: 12px; padding-top: 22px; text-align: center; }
   .legal-signature img { width: min(100%, 360px); justify-self: center; }
+}
+
+@media print {
+  body:has(.legal-page) { color: #111 !important; background: #fff !important; }
+  body:has(.legal-page) .halloween-mobile-scene,
+  body:has(.legal-page) .halloween-desktop-host,
+  body:has(.legal-page) .magic-dock,
+  body:has(.legal-page) .mobile-dock,
+  body:has(.legal-page) .market-header,
+  body:has(.legal-page) .market-footer,
+  body:has(.legal-page) .legal-switcher,
+  body:has(.legal-page) .legal-help,
+  body:has(.legal-page) .legal-print-button { display: none !important; }
+  body:has(.legal-page) .market-main-shell,
+  body:has(.legal-page) .market-content { display: block !important; width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; }
+  .legal-page { display: block !important; color: #111 !important; background: #fff !important; }
+  .legal-hero { display: grid !important; grid-template-columns: 19mm minmax(0, 1fr) auto !important; min-height: 0 !important; margin: 0 0 5mm !important; border: 0 !important; border-bottom: 2px solid #222 !important; border-radius: 0 !important; padding: 0 0 5mm !important; color: #111 !important; background: #fff !important; box-shadow: none !important; break-inside: avoid; }
+  .legal-hero::before,
+  .legal-hero::after { display: none !important; }
+  .legal-hero__moon { width: 16mm !important; height: 16mm !important; color: #111 !important; background: #f2f2f2 !important; box-shadow: none !important; }
+  .legal-hero h1 { color: #111 !important; font-size: 18pt !important; }
+  .legal-hero p,
+  .legal-hero .section-label { color: #333 !important; }
+  .legal-hero__actions { display: block !important; }
+  .legal-hero__stamp { display: inline-block !important; max-width: 42mm !important; border: 1px solid #aaa !important; color: #333 !important; background: #fff !important; }
+  .legal-document { display: block !important; border: 0 !important; border-radius: 0 !important; padding: 0 !important; color: #111 !important; background: #fff !important; box-shadow: none !important; }
+  .legal-document__intro { margin-bottom: 4mm !important; border-bottom: 1px solid #bbb !important; padding-bottom: 3mm !important; }
+  .legal-document__intro > span { color: #111 !important; background: #eee !important; }
+  .legal-document__intro small,
+  .legal-document__intro strong,
+  .legal-document__intro p { color: #111 !important; }
+  .legal-terms-summary { margin-bottom: 3mm !important; border: 1px solid #bbb !important; padding: 2.5mm 3mm !important; color: #222 !important; background: #f7f7f7 !important; }
+  .legal-terms-summary strong { color: #111 !important; }
+  .legal-terms-chapter { display: block !important; overflow: visible !important; margin-bottom: 4mm !important; border: 1px solid #aaa !important; border-radius: 0 !important; color: #111 !important; background: #fff !important; }
+  .legal-terms-chapter > summary { padding: 3mm !important; border-bottom: 1px solid #aaa !important; background: #eee !important; }
+  .legal-terms-chapter > summary > span { width: 8mm !important; height: 8mm !important; color: #111 !important; background: #ddd !important; }
+  .legal-terms-chapter > summary strong,
+  .legal-terms-chapter > summary small { color: #111 !important; }
+  .legal-terms-chapter > summary > b { display: none !important; }
+  .legal-terms-chapter:not([open]) > .legal-terms-clauses,
+  .legal-terms-clauses { display: grid !important; padding: 1mm 4mm 3mm !important; }
+  .legal-terms-clauses article { display: grid !important; grid-template-columns: 8mm minmax(0, 1fr) !important; padding: 3mm 0 !important; border-color: #ddd !important; break-inside: avoid; }
+  .legal-terms-clauses article > span { width: 7mm !important; height: 7mm !important; border-color: #bbb !important; color: #111 !important; }
+  .legal-terms-clauses h2 { color: #111 !important; font-size: 10pt !important; }
+  .legal-terms-clauses p { color: #222 !important; font-size: 8.5pt !important; line-height: 1.4 !important; }
+  .legal-section-grid { display: block !important; }
+  .legal-section-grid article { margin-bottom: 3mm !important; border: 1px solid #bbb !important; color: #111 !important; background: #fff !important; break-inside: avoid; }
+  .legal-section-grid h2,
+  .legal-section-grid p { color: #111 !important; }
+  .legal-signature { grid-template-columns: 45mm minmax(0, 1fr) !important; margin-top: 6mm !important; border-color: #999 !important; padding-top: 5mm !important; break-inside: avoid; }
+  .legal-signature small,
+  .legal-signature strong,
+  .legal-signature span { color: #111 !important; }
+  .legal-signature img { max-height: 28mm !important; filter: none !important; mix-blend-mode: normal !important; }
+  @page { size: A4; margin: 12mm; }
 }

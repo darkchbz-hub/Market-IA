@@ -95,7 +95,10 @@ function LegalDocumentPage({ type }) {
       <header className="legal-hero">
         <div className="legal-hero__moon" aria-hidden="true"><span>{document.icon}</span><i /><i /><i /></div>
         <div><p className="section-label">{document.eyebrow}</p><h1>{document.title}</h1><p>{document.intro}</p></div>
-        <span className="legal-hero__stamp">Actualizado {formatMexicoDate(new Date().toISOString(), { day: "numeric", month: "long", year: "numeric" })}</span>
+        <div className="legal-hero__actions">
+          <span className="legal-hero__stamp">Actualizado {formatMexicoDate(new Date().toISOString(), { day: "numeric", month: "long", year: "numeric" })}</span>
+          <button type="button" className="button button--primary legal-print-button" onClick={() => window.print()}>Imprimir documento</button>
+        </div>
       </header>
       <nav className="legal-switcher" aria-label="Documentos legales">
         {legalLinks.map(([id, path, label]) => <Link className={type === id ? "is-active" : ""} to={path} key={id}>{label}</Link>)}
