@@ -16,18 +16,21 @@ const supportBots = [
     id: "grayce",
     name: "Grayce",
     subtitle: "Recomienda productos y ofertas",
+    avatar: "/assets/support-grayce.png",
     toneClass: "is-silver"
   },
   {
     id: "barban",
     name: "BarbaN",
     subtitle: "Pedidos, entregas y soporte",
+    avatar: "/assets/support-barban.png",
     toneClass: "is-gold"
   },
   {
     id: "taz",
     name: "Taz",
     subtitle: "Carrito, compras y pagos",
+    avatar: "/assets/support-taz.png",
     toneClass: "is-blue"
   }
 ];
@@ -264,10 +267,8 @@ export function ChatPage() {
               className={`support-bot-option ${bot.toneClass} ${selectedBotId === bot.id ? "is-selected" : ""}`}
               onClick={() => setSelectedBotId(bot.id)}
             >
-              <span className="cat-avatar">
-                <span className="cat-avatar__ear cat-avatar__ear--left" />
-                <span className="cat-avatar__ear cat-avatar__ear--right" />
-                <span className="cat-avatar__face">{bot.name.slice(0, 1)}</span>
+              <span className="cat-avatar cat-avatar--portrait">
+                <img src={bot.avatar} alt={`Retrato de ${bot.name}`} />
               </span>
               <span className="support-bot-option__meta">
                 <strong>{bot.name}</strong>
