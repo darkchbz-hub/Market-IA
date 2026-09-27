@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-do
 import { apiFetch } from "../lib/api.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCart } from "../context/CartContext.jsx";
+import { formatMexicoDateTime } from "../lib/date.js";
 
 const THEME_STORAGE_KEY = "gc_theme";
 const LIGHT_THEME = "day";
@@ -560,7 +561,7 @@ export function AppShell() {
                   <AppIcon name="activity" />
                   <span>
                     <strong>{item.label}</strong>
-                    <small>{new Date(item.when).toLocaleString()}</small>
+                    <small>{formatMexicoDateTime(item.when)}</small>
                   </span>
                 </button>
               ))}

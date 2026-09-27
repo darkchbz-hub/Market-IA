@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../lib/api.js";
+import { formatMexicoDateTime, parseStoreDate } from "../lib/date.js";
 import { useAuth } from "../context/AuthContext.jsx";
 
 const initialProduct = {
@@ -808,7 +809,7 @@ export function AdminPage() {
     const payload = await apiFetch("/admin/coupons", {
       method: "POST",
       token,
-      body: { ...couponForm, percentage: Number(couponForm.percentage), maxUses: Number(couponForm.maxUses) }
+      body: { ...couponForm, expiresAt: new Date(couponForm.expiresAt).toISOString(), percentage: Number(couponForm.percentage), maxUses: Number(couponForm.maxUses) }
     });
     setCoupons(payload.items || []);
     setCouponForm(initialCoupon);
@@ -1351,7 +1352,7 @@ export function AdminPage() {
                           <strong>{order.id}</strong>
                           <span className={statusClass(order.estado)}>{statusLabel(order.estado)}</span>
                         </div>
-                        <small>{new Date(order.fecha).toLocaleString()}</small>
+                        <small>{formatMexicoDateTime(order.fecha)} · Hora de México</small>
                         <p>Total: {formatMoney(order.total)} | Pago: {statusLabel(order.paymentStatus || order.estado)}</p>
                         <p>Direccion de envio: {formatAddress(order.direccionEnvio || order.direccion)}</p>
                         <div className="order-item-list">
@@ -1401,7 +1402,7 @@ export function AdminPage() {
                   <div>
                     <strong>Comprobante de pago</strong>
                     {order.paymentReceipt ? (
-                      <><button type="button" className="button button--ghost" onClick={() => viewPaymentReceipt(order)}>Ver comprobante</button><small>{order.receiptName || "Archivo adjunto"} · {order.receiptSubmittedAt ? new Date(order.receiptSubmittedAt).toLocaleString("es-MX") : "Recibido"}</small></>
+                      <><button type="button" className="button button--ghost" onClick={() => viewPaymentReceipt(order)}>Ver comprobante</button><small>{order.receiptName || "Archivo adjunto"} · {order.receiptSubmittedAt ? formatMexicoDateTime(order.receiptSubmittedAt) : "Recibido"}</small></>
                     ) : <span className="muted-text">El cliente todavía no lo ha enviado.</span>}
                     <button type="button" className="button button--ghost" onClick={() => reopenReceiptUpload(order.id)}>Permitir nueva carga</button>
                   </div>
@@ -1657,7 +1658,7 @@ export function AdminPage() {
                     <span><strong>Cantidad:</strong> {item.cantidad}</span>
                     <span><strong>Precio:</strong> {formatMoney(item.precio)}</span>
                     <span><strong>Total pedido:</strong> {formatMoney(item.totalPedido)}</span>
-                    <span><strong>Fecha:</strong> {new Date(item.fecha).toLocaleString()}</span>
+                    <span><strong>Fecha:</strong> {formatMexicoDateTime(item.fecha)}</span>
                   </div>
                 </article>
               ))
@@ -2261,10 +2262,10 @@ export function AdminPage() {
             <div className="section-heading section-heading--compact"><div><p className="section-label">Códigos disponibles</p><h2>Cupones creados</h2></div></div>
             <div className="coupon-admin-list">
               {coupons.length ? coupons.map((coupon) => {
-                const expired = new Date(coupon.expiresAt).getTime() <= Date.now();
+                const expired = (parseStoreDate(coupon.expiresAt)?.getTime() || 0) <= Date.now();
                 return <article key={coupon.id} className={`coupon-admin-card${expired || !coupon.active ? " is-inactive" : ""}`}>
                   <div><strong>{coupon.code}</strong><span>{coupon.percentage}% de descuento</span></div>
-                  <p>Vence: {new Date(coupon.expiresAt).toLocaleString("es-MX")}</p>
+                  <p>Vence: {formatMexicoDateTime(coupon.expiresAt)} · Hora de México</p>
                   <small>{coupon.uses} uso(s) de {coupon.maxUses || "ilimitados"} · {expired ? "Vencido" : coupon.active ? "Activo" : "Inactivo"}</small>
                   <button type="button" className="button button--danger" onClick={() => removeCoupon(coupon.id)}>Eliminar</button>
                 </article>;

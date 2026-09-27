@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { apiFetch } from "../lib/api.js";
+import { formatMexicoDate, formatMexicoDateTime } from "../lib/date.js";
 import {
   INTERNATIONAL_CHECKOUT_MESSAGE,
   INTERNATIONAL_SHIPPING_MESSAGE,
@@ -392,7 +393,7 @@ export function ProfilePage() {
             <button type="button" onClick={() => selectSection("datos")}><span>♙</span><div><strong>Información personal</strong><small>Actualiza tus datos, foto y domicilio</small></div><b>Editar perfil →</b></button>
           </div>
           <div className="profile-overview__recent">
-            <div><p className="section-label">Último movimiento</p><h3>{orders[0] ? `Pedido ${orders[0].id.slice(0, 8)}` : "Aún no hay movimientos"}</h3><p>{orders[0] ? `${new Date(orders[0].fecha).toLocaleDateString("es-MX")} · $${orders[0].total.toFixed(2)}` : "Explora el catálogo y encuentra algo especial."}</p></div>
+            <div><p className="section-label">Último movimiento</p><h3>{orders[0] ? `Pedido ${orders[0].id.slice(0, 8)}` : "Aún no hay movimientos"}</h3><p>{orders[0] ? `${formatMexicoDate(orders[0].fecha)} · $${orders[0].total.toFixed(2)}` : "Explora el catálogo y encuentra algo especial."}</p></div>
             <Link to="/catalogo" className="button button--primary">Explorar catálogo</Link>
           </div>
         </section>
@@ -504,7 +505,7 @@ export function ProfilePage() {
                     <strong>{order.id.slice(0, 8)}</strong>
                     <span className={statusClass(order.estado)}>{statusLabel(order.estado)}</span>
                   </div>
-                  <small>{new Date(order.fecha).toLocaleString()}</small>
+                  <small>{formatMexicoDateTime(order.fecha)} · Hora de México</small>
                   <p>Metodo: {order.metodoPago || "Por definir"} · Total: ${order.total.toFixed(2)}</p>
                   <div className="order-documents">
                     {order.receiptName ? (
@@ -702,13 +703,13 @@ export function ProfilePage() {
               {searches.map((item) => (
                 <article key={item.id} className="mini-item">
                   <strong>{item.busqueda}</strong>
-                  <small>{new Date(item.fecha).toLocaleString()}</small>
+                  <small>{formatMexicoDateTime(item.fecha)}</small>
                 </article>
               ))}
               {viewedProducts.map((item) => (
                 <article key={item.id} className="mini-item">
                   <Link to={`/producto/${item.producto.slug}`}>{item.producto.nombre}</Link>
-                  <small>{new Date(item.fecha).toLocaleString()}</small>
+                  <small>{formatMexicoDateTime(item.fecha)}</small>
                 </article>
               ))}
               {!searches.length && !viewedProducts.length && <div className="profile-empty-state"><span>⌁</span><strong>Sin actividad reciente</strong><p>Tus búsquedas y productos visitados aparecerán en este espacio.</p></div>}

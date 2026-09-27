@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { apiFetch } from "../lib/api.js";
+import { formatMexicoDateTime } from "../lib/date.js";
 
 const money = (value) => new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(Number(value || 0));
 
@@ -31,7 +32,7 @@ export function InvoicePage() {
         </header>
         <section className="invoice-meta">
           <div><small>CLIENTE</small><strong>{invoice.customerName}</strong><span>{invoice.customerEmail}</span></div>
-          <div><small>FECHA Y HORA DE COMPRA</small><strong>{new Date(invoice.date).toLocaleString("es-MX", { dateStyle: "long", timeStyle: "short" })}</strong><span>Pago: {invoice.paymentProvider || "Registrado"}</span></div>
+          <div><small>FECHA Y HORA DE COMPRA · MÉXICO</small><strong>{formatMexicoDateTime(invoice.date, { dateStyle: "long", timeStyle: "short" })}</strong><span>Pago: {invoice.paymentProvider || "Registrado"}</span></div>
         </section>
         <div className="invoice-table-wrap"><table className="invoice-table"><thead><tr><th>Producto</th><th>Folio</th><th>Cantidad</th><th>Precio</th><th>Importe</th></tr></thead><tbody>{invoice.items.map((item) => <tr key={item.id}><td><strong>{item.nombre}</strong></td><td>{item.folio}</td><td>{item.cantidad}</td><td>{money(item.precio)}</td><td>{money(item.precio * item.cantidad)}</td></tr>)}</tbody></table></div>
         <section className="invoice-totals">

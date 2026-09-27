@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api.js";
+import { formatMexicoDate } from "../lib/date.js";
 
 const fallbackHome = {
   settings: {},
@@ -324,7 +325,7 @@ export function HomePage() {
                   <b>{article.category || "Tecnología"}</b>
                 </div>
                 <div className="tech-news-card__body">
-                  <div className="tech-news-card__meta"><span>{article.source}</span><time>{new Date(article.publishedAt).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}</time></div>
+                  <div className="tech-news-card__meta"><span>{article.source}</span><time>{formatMexicoDate(article.publishedAt, { day: "numeric", month: "short" })}</time></div>
                   <h3>{article.title}</h3>
                   {article.summary && <p>{article.summary}</p>}
                   <strong>Leer noticia <span>↗</span></strong>
