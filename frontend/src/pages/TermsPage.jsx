@@ -98,7 +98,11 @@ function LegalDocumentPage({ type }) {
         <div className="legal-hero__actions">
           <span className="legal-hero__stamp">Actualizado {formatMexicoDate(new Date().toISOString(), { day: "numeric", month: "long", year: "numeric" })}</span>
           {type === "terms" && <a className="button button--ghost legal-pdf-button" href="/assets/terminos-y-condiciones-gray-c-shop.pdf" download>Descargar PDF</a>}
-          <button type="button" className="button button--primary legal-print-button" onClick={() => window.print()}>Imprimir documento</button>
+          {type === "terms" ? (
+            <a className="button button--primary legal-print-button" href="/assets/terminos-y-condiciones-gray-c-shop.pdf" target="_blank" rel="noreferrer">Imprimir documento</a>
+          ) : (
+            <button type="button" className="button button--primary legal-print-button" onClick={() => window.print()}>Imprimir documento</button>
+          )}
         </div>
       </header>
       <nav className="legal-switcher" aria-label="Documentos legales">
