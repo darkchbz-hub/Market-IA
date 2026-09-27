@@ -1,19 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../lib/api.js";
 import { formatMexicoDate } from "../lib/date.js";
-
-const defaultTerms = `Al usar Gray C Shop aceptas estas condiciones de compra y navegación.
-
-Los precios, promociones y existencias pueden cambiar antes de finalizar la compra.
-
-Toda compra queda sujeta a la validación del pago. Un pedido pendiente no se considera pagado.
-
-Los tiempos de entrega son estimados y pueden variar según el producto, proveedor y destino.
-
-Las garantías y devoluciones respetan la información publicada en cada producto.
-
-El uso indebido de la plataforma puede ocasionar la suspensión de la cuenta.`;
 
 const legalDocuments = {
   terms: {
@@ -56,7 +44,6 @@ const legalLinks = [["terms", "/terminos", "Términos"], ["privacy", "/privacida
 function LegalDocumentPage({ type }) {
   const document = legalDocuments[type];
   const [siteName, setSiteName] = useState("Gray C Shop");
-  const [customTerms, setCustomTerms] = useState("");
   const [loading, setLoading] = useState(type === "terms");
 
   useEffect(() => {
@@ -64,18 +51,9 @@ function LegalDocumentPage({ type }) {
     apiFetch("/products/home").then((payload) => {
       if (!active) return;
       setSiteName(payload?.general?.siteName || "Gray C Shop");
-      if (type === "terms") setCustomTerms(payload?.general?.termsAndConditions || defaultTerms);
-    }).catch(() => {
-      if (active && type === "terms") setCustomTerms(defaultTerms);
-    }).finally(() => { if (active) setLoading(false); });
+    }).catch(() => {}).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [type]);
-
-  const sections = useMemo(() => {
-    if (type !== "terms" || !customTerms) return document.sections;
-    const lines = customTerms.split("\n").map((line) => line.trim()).filter(Boolean);
-    return lines.length > 1 ? lines.map((line, index) => [index === 0 ? "Condiciones generales" : `Cláusula ${index}`, line.replace(/^\d+[.)]\s*/, "")]) : document.sections;
-  }, [customTerms, document.sections, type]);
 
   if (loading) return <section className="section-card legal-loading"><span /><span /><span /><span /></section>;
 
@@ -92,7 +70,7 @@ function LegalDocumentPage({ type }) {
       <section className="legal-document">
         <div className="legal-document__intro"><span>{document.icon}</span><div><small>{siteName}</small><strong>{document.title}</strong><p>Lee cada apartado antes de utilizar el servicio o completar una compra.</p></div></div>
         <div className="legal-section-grid">
-          {sections.map(([title, content], index) => <article key={`${title}-${index}`}><span>{String(index + 1).padStart(2, "0")}</span><div><h2>{title}</h2><p>{content}</p></div></article>)}
+          {document.sections.map(([title, content], index) => <article key={`${title}-${index}`}><span>{String(index + 1).padStart(2, "0")}</span><div><h2>{title}</h2><p>{content}</p></div></article>)}
         </div>
         <footer className="legal-help"><div><strong>¿Tienes una duda sobre este documento?</strong><p>Barban puede orientarte o dejar tu caso preparado para atención humana.</p></div><Link className="button button--primary" to="/chat">Hablar con soporte</Link></footer>
       </section>
