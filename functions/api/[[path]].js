@@ -32,6 +32,7 @@ import {
   getCartState,
   getOrderById,
   getOrderWithItems,
+  getInvoiceOrder,
   getPasswordResetCode,
   findUserOrderItemByFolio,
   getProductById,
@@ -60,10 +61,13 @@ import {
   savePaymentRecord,
   savePasswordResetCode,
   saveRegistrationCode,
+  saveOrderReceipt,
   saveCoupon,
   serializeUser,
   setCartItem,
   setUserActiveStatus,
+  setOrderReceiptUpload,
+  setOrderInvoiceEnabled,
   updateSiteContent,
   updateAdminProductComment,
   updateOrderItemStatus,
@@ -1634,6 +1638,17 @@ export async function onRequest(context) {
       return json(await createOrderFromCart(db, user.id, { direccion, proveedorPago, telefono, couponCode }), 201);
     }
 
+    if (first === "orders" && second && third === "receipt" && request.method === "POST") {
+      const user = await authenticate(request, env, db);
+      const body = await readJson(request);
+      return json(await saveOrderReceipt(db, user.id, second, body));
+    }
+
+    if (first === "orders" && second && third === "invoice" && request.method === "GET") {
+      const user = await authenticate(request, env, db);
+      return json({ invoice: await getInvoiceOrder(db, second, user.id, user.role === "admin") });
+    }
+
     if (first === "admin" && second === "coupons" && !third && request.method === "GET") {
       const user = await authenticate(request, env, db);
       requireAdmin(user);
@@ -1786,6 +1801,20 @@ export async function onRequest(context) {
       requireAdmin(user);
       const body = await readJson(request);
       return json(await updateOrderTracking(db, third, body.tracking));
+    }
+
+    if (first === "admin" && second === "orders" && third && segments[3] === "receipt-upload" && request.method === "PATCH") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      const body = await readJson(request);
+      return json(await setOrderReceiptUpload(db, third, Boolean(body.enabled)));
+    }
+
+    if (first === "admin" && second === "orders" && third && segments[3] === "invoice" && request.method === "PATCH") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      const body = await readJson(request);
+      return json(await setOrderInvoiceEnabled(db, third, Boolean(body.enabled)));
     }
 
     if (first === "admin" && second === "orders" && third && request.method === "PATCH") {

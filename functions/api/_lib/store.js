@@ -1188,6 +1188,12 @@ export async function ensureDatabase(env) {
       await ensureColumn(env.DB, "orders", "subtotal", "REAL NOT NULL DEFAULT 0");
       await ensureColumn(env.DB, "orders", "discount", "REAL NOT NULL DEFAULT 0");
       await ensureColumn(env.DB, "orders", "coupon_code", "TEXT NOT NULL DEFAULT ''");
+      await ensureColumn(env.DB, "orders", "payment_receipt", "TEXT NOT NULL DEFAULT ''");
+      await ensureColumn(env.DB, "orders", "payment_receipt_name", "TEXT NOT NULL DEFAULT ''");
+      await ensureColumn(env.DB, "orders", "payment_receipt_type", "TEXT NOT NULL DEFAULT ''");
+      await ensureColumn(env.DB, "orders", "payment_receipt_at", "TEXT NOT NULL DEFAULT ''");
+      await ensureColumn(env.DB, "orders", "receipt_upload_enabled", "INTEGER NOT NULL DEFAULT 1");
+      await ensureColumn(env.DB, "orders", "invoice_enabled", "INTEGER NOT NULL DEFAULT 0");
       await ensureColumn(env.DB, "users", "telefono", "TEXT NOT NULL DEFAULT ''");
       await ensureColumn(env.DB, "users", "is_active", "INTEGER NOT NULL DEFAULT 1");
       await ensureColumn(env.DB, "users", "nickname", "TEXT NOT NULL DEFAULT ''");
@@ -2278,7 +2284,7 @@ export async function decrementStockForOrder(db, orderId) {
 export async function getUserDashboard(db, userId) {
   const user = await getUserById(db, userId);
   const orders = await db
-    .prepare("SELECT id, total, estado, proveedor_pago, direccion, tracking, created_at FROM orders WHERE user_id = ? ORDER BY created_at DESC LIMIT 10")
+    .prepare("SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC LIMIT 10")
     .bind(userId)
     .all();
   const orderRows = orders.results || [];
@@ -2337,6 +2343,14 @@ export async function getUserDashboard(db, userId) {
         direccion: parseJson(item.direccion, {}),
         direccionEnvio: parseJson(item.direccion, {}),
         tracking: parseJson(item.tracking, []),
+        subtotal: Number(item.subtotal || item.total),
+        discount: Number(item.discount || 0),
+        couponCode: item.coupon_code || "",
+        receiptName: item.payment_receipt_name || "",
+        receiptType: item.payment_receipt_type || "",
+        receiptSubmittedAt: item.payment_receipt_at || "",
+        receiptUploadEnabled: Boolean(Number(item.receipt_upload_enabled ?? 1)),
+        invoiceEnabled: Boolean(Number(item.invoice_enabled || 0)),
         fecha: item.created_at,
         items: itemsByOrder.get(item.id) || []
       })),
@@ -2407,9 +2421,72 @@ export async function listAdminOrders(db) {
     proveedorPago: order.proveedor_pago,
     direccion: parseJson(order.direccion, {}),
     tracking: parseJson(order.tracking, []),
+    subtotal: Number(order.subtotal || order.total),
+    discount: Number(order.discount || 0),
+    couponCode: order.coupon_code || "",
+    paymentReceipt: order.payment_receipt || "",
+    receiptName: order.payment_receipt_name || "",
+    receiptType: order.payment_receipt_type || "",
+    receiptSubmittedAt: order.payment_receipt_at || "",
+    receiptUploadEnabled: Boolean(Number(order.receipt_upload_enabled ?? 1)),
+    invoiceEnabled: Boolean(Number(order.invoice_enabled || 0)),
     fecha: order.created_at,
     items: itemsByOrder.get(order.id) || []
   }));
+}
+
+export async function saveOrderReceipt(db, userId, orderId, payload = {}) {
+  const order = await db.prepare("SELECT * FROM orders WHERE id = ? AND user_id = ?").bind(String(orderId), Number(userId)).first();
+  if (!order) throw new Error("El pedido no existe.");
+  if (!Number(order.receipt_upload_enabled ?? 1) || order.payment_receipt) throw new Error("La carga del comprobante ya esta cerrada para este pedido.");
+  if (["cancelled", "canceled", "cancelado"].includes(String(order.estado || "").toLowerCase())) throw new Error("No puedes adjuntar comprobante a un pedido cancelado.");
+  const dataUrl = String(payload.dataUrl || "");
+  const name = String(payload.name || "comprobante").slice(0, 140);
+  const type = String(payload.type || "").toLowerCase();
+  if (!dataUrl.startsWith("data:image/") && !dataUrl.startsWith("data:application/pdf")) throw new Error("Adjunta una imagen o un archivo PDF valido.");
+  if (dataUrl.length > 5_500_000) throw new Error("El comprobante no puede superar aproximadamente 4 MB.");
+  await db.prepare("UPDATE orders SET payment_receipt = ?, payment_receipt_name = ?, payment_receipt_type = ?, payment_receipt_at = CURRENT_TIMESTAMP, receipt_upload_enabled = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+    .bind(dataUrl, name, type, String(orderId)).run();
+  return { ok: true, receiptName: name, receiptType: type, receiptUploadEnabled: false };
+}
+
+export async function setOrderReceiptUpload(db, orderId, enabled) {
+  if (enabled) {
+    await db.prepare("UPDATE orders SET receipt_upload_enabled = 1, payment_receipt = '', payment_receipt_name = '', payment_receipt_type = '', payment_receipt_at = '', updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+      .bind(String(orderId)).run();
+  } else {
+    await db.prepare("UPDATE orders SET receipt_upload_enabled = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(String(orderId)).run();
+  }
+  return { ok: true };
+}
+
+export async function setOrderInvoiceEnabled(db, orderId, enabled) {
+  const order = await db.prepare("SELECT estado, payment_receipt FROM orders WHERE id = ?").bind(String(orderId)).first();
+  if (!order) throw new Error("El pedido no existe.");
+  if (enabled && !["paid", "pagado"].includes(String(order.estado || "").toLowerCase())) throw new Error("Primero marca el pedido como pagado.");
+  if (enabled && !order.payment_receipt) throw new Error("Primero revisa el comprobante del cliente.");
+  await db.prepare("UPDATE orders SET invoice_enabled = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(enabled ? 1 : 0, String(orderId)).run();
+  return { ok: true, invoiceEnabled: Boolean(enabled) };
+}
+
+export async function getInvoiceOrder(db, orderId, userId, isAdmin = false) {
+  const order = await db.prepare("SELECT o.*, u.nombre AS usuario_nombre, u.email AS usuario_email FROM orders o INNER JOIN users u ON u.id = o.user_id WHERE o.id = ?")
+    .bind(String(orderId)).first();
+  if (!order || (!isAdmin && Number(order.user_id) !== Number(userId))) throw new Error("La factura no existe.");
+  if (!isAdmin && (!["paid", "pagado"].includes(String(order.estado || "").toLowerCase()) || !Number(order.invoice_enabled))) throw new Error("La factura aun no esta disponible.");
+  const items = await db.prepare("SELECT * FROM order_items WHERE order_id = ? ORDER BY id ASC").bind(String(orderId)).all();
+  return {
+    id: order.id,
+    customerName: order.usuario_nombre,
+    customerEmail: order.usuario_email,
+    subtotal: Number(order.subtotal || order.total),
+    discount: Number(order.discount || 0),
+    couponCode: order.coupon_code || "",
+    total: Number(order.total),
+    paymentProvider: order.proveedor_pago || "",
+    date: order.created_at,
+    items: (items.results || []).map(serializeOrderItem)
+  };
 }
 
 export async function searchAdminFolios(db, search = "") {

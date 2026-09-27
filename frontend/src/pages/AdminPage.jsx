@@ -525,6 +525,18 @@ export function AdminPage() {
     setMessage("Pedido actualizado.");
   };
 
+  const reopenReceiptUpload = async (orderId) => {
+    await apiFetch(`/admin/orders/${orderId}/receipt-upload`, { method: "PATCH", token, body: { enabled: true } });
+    await loadAdmin();
+    setMessage("El cliente ya puede subir un nuevo comprobante.");
+  };
+
+  const toggleInvoice = async (orderId, enabled) => {
+    await apiFetch(`/admin/orders/${orderId}/invoice`, { method: "PATCH", token, body: { enabled } });
+    await loadAdmin();
+    setMessage(enabled ? "Factura generada y liberada para el cliente." : "Factura bloqueada.");
+  };
+
   const updateTracking = async (orderId) => {
     await apiFetch(`/admin/orders/${orderId}`, {
       method: "PUT",
@@ -1355,6 +1367,23 @@ export function AdminPage() {
                 </div>
                 <small>{order.usuarioEmail} · {order.usuarioTelefono || "Sin telefono"}</small>
                 <p>{order.proveedorPago || "Sin proveedor"} · ${order.total.toFixed(2)}</p>
+                <div className="admin-payment-documents">
+                  <div>
+                    <strong>Comprobante de pago</strong>
+                    {order.paymentReceipt ? (
+                      <><a className="button button--ghost" href={order.paymentReceipt} target="_blank" rel="noreferrer">Ver comprobante</a><small>{order.receiptName || "Archivo adjunto"} · {order.receiptSubmittedAt ? new Date(order.receiptSubmittedAt).toLocaleString("es-MX") : "Recibido"}</small></>
+                    ) : <span className="muted-text">El cliente todavía no lo ha enviado.</span>}
+                    <button type="button" className="button button--ghost" onClick={() => reopenReceiptUpload(order.id)}>Permitir nueva carga</button>
+                  </div>
+                  <div>
+                    <strong>Factura del pedido</strong>
+                    <span>{order.invoiceEnabled ? "Liberada para el cliente" : "Bloqueada"}</span>
+                    <button type="button" className="button button--primary" disabled={!order.paymentReceipt || !["paid", "pagado"].includes(String(order.estado || "").toLowerCase())} onClick={() => toggleInvoice(order.id, !order.invoiceEnabled)}>
+                      {order.invoiceEnabled ? "Bloquear factura" : "Generar y liberar factura"}
+                    </button>
+                    {order.invoiceEnabled && <Link className="button button--ghost" to={`/factura/${order.id}`}>Vista previa</Link>}
+                  </div>
+                </div>
                 <div className="admin-shipping-list">
                   {(order.items || []).length ? (
                     order.items.map((item) => (

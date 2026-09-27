@@ -16,6 +16,7 @@ import { ProfilePage } from "./pages/ProfilePage.jsx";
 import { RegisterPage } from "./pages/RegisterPage.jsx";
 import { AboutPage } from "./pages/AboutPage.jsx";
 import { TermsPage } from "./pages/TermsPage.jsx";
+import { InvoicePage } from "./pages/InvoicePage.jsx";
 
 export default function App() {
   return (
@@ -100,6 +101,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/factura/:orderId" element={<ProtectedRoute><InvoicePage /></ProtectedRoute>} />
         <Route
           path="/terminos"
           element={<TermsPage />}

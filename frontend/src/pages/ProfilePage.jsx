@@ -211,6 +211,30 @@ export function ProfilePage() {
     updateReviewForm(key, { imagenes: [...(currentReview.imagenes || []), ...images].slice(0, 6) });
   };
 
+  const uploadPaymentReceipt = async (order, file) => {
+    if (!file) return;
+    if (!file.type?.startsWith("image/") && file.type !== "application/pdf") {
+      setMessage("El comprobante debe ser una imagen o PDF.");
+      return;
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      setMessage("El comprobante no puede superar 4 MB.");
+      return;
+    }
+    setSaving(true);
+    setMessage("");
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      await apiFetch(`/orders/${order.id}/receipt`, { method: "POST", token, body: { dataUrl, name: file.name, type: file.type } });
+      await loadDashboard();
+      setMessage("Comprobante enviado. El administrador lo revisará antes de liberar tu factura.");
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const submitProductReview = async (event, order, item) => {
     event.preventDefault();
     const key = `${order.id}-${item.id || item.productoId}`;
@@ -482,6 +506,23 @@ export function ProfilePage() {
                   </div>
                   <small>{new Date(order.fecha).toLocaleString()}</small>
                   <p>Metodo: {order.metodoPago || "Por definir"} · Total: ${order.total.toFixed(2)}</p>
+                  <div className="order-documents">
+                    {order.receiptName ? (
+                      <div className="order-document-status is-ready"><span>✓</span><div><strong>Comprobante enviado</strong><small>{order.receiptName} · En revisión</small></div></div>
+                    ) : order.receiptUploadEnabled && !["cancelled", "canceled", "cancelado"].includes(String(order.estado || "").toLowerCase()) ? (
+                      <label className="button button--ghost order-receipt-upload">
+                        Subir comprobante
+                        <input type="file" accept="image/*,application/pdf" disabled={saving} onChange={async (event) => { await uploadPaymentReceipt(order, event.target.files?.[0]); event.target.value = ""; }} />
+                      </label>
+                    ) : (
+                      <div className="order-document-status"><span>⌛</span><div><strong>Comprobante cerrado</strong><small>Contacta a soporte si necesitas reemplazarlo.</small></div></div>
+                    )}
+                    {["paid", "pagado"].includes(String(order.estado || "").toLowerCase()) && order.invoiceEnabled ? (
+                      <Link to={`/factura/${order.id}`} className="button button--primary">Descargar factura</Link>
+                    ) : (
+                      <span className="invoice-locked">🔒 Factura disponible después de confirmar el pago</span>
+                    )}
+                  </div>
                   {!isMexicoCountry(order.direccionEnvio?.pais || order.direccion?.pais) && (
                     <div className="shipping-support-card">
                       <strong>{INTERNATIONAL_SHIPPING_MESSAGE}</strong>
