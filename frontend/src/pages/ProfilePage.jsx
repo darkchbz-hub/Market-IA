@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { apiFetch } from "../lib/api.js";
@@ -73,6 +73,8 @@ export function ProfilePage() {
   });
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [activeSection, setActiveSection] = useState("resumen");
+  const profileContentRef = useRef(null);
 
   const loadDashboard = async () => {
     const payload = await apiFetch("/users/me", { token });
@@ -287,10 +289,71 @@ export function ProfilePage() {
     return <div className="page-loader">{message || "Cargando tu cuenta..."}</div>;
   }
 
+  const orders = dashboard.historial?.ordenes || [];
+  const favorites = dashboard.historial?.favoritos || [];
+  const searches = dashboard.historial?.busquedas || [];
+  const viewedProducts = dashboard.historial?.productosVistos || [];
+  const profileName = dashboard.user?.nombre || form.nombre || "Cliente Gray C Shop";
+  const profileInitial = profileName.trim().slice(0, 1).toUpperCase() || "G";
+  const paidOrders = orders.filter((order) => ["paid", "pagado"].includes(String(order.estado || "").toLowerCase())).length;
+  const selectSection = (section) => {
+    setActiveSection(section);
+    if (window.matchMedia("(max-width: 800px)").matches) {
+      window.requestAnimationFrame(() => profileContentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    }
+  };
+
   return (
-    <div className="page-stack">
-      <div className="profile-shell">
-        <form className="section-card" onSubmit={handleSubmit}>
+    <div className="page-stack profile-page">
+      <header className="profile-hero">
+        <div className="profile-hero__identity">
+          <div className="profile-hero__avatar">
+            {form.avatarUrl ? <img src={form.avatarUrl} alt={`Foto de ${profileName}`} /> : <span>{profileInitial}</span>}
+          </div>
+          <div>
+            <p className="section-label">Mi cuenta Gray C Shop</p>
+            <h1>Hola, {profileName}</h1>
+            <p>{dashboard.user?.email || form.email} · @{dashboard.user?.nickname || form.nickname || "cliente"}</p>
+          </div>
+        </div>
+        <div className="profile-hero__metrics">
+          <div><strong>{orders.length}</strong><span>Pedidos</span></div>
+          <div><strong>{paidOrders}</strong><span>Compras pagadas</span></div>
+          <div><strong>{favorites.length}</strong><span>Favoritos</span></div>
+        </div>
+      </header>
+
+      <div className="profile-dashboard">
+        <aside className="profile-sidebar" aria-label="Secciones del perfil">
+          <div className="profile-sidebar__title"><span>☾</span><div><strong>Centro de cuenta</strong><small>Todo en orden</small></div></div>
+          {[
+            ["resumen", "⌂", "Resumen", "Vista general"],
+            ["datos", "♙", "Mi información", "Datos y dirección"],
+            ["pedidos", "▣", "Mis pedidos", `${orders.length} registrados`],
+            ["favoritos", "♡", "Favoritos", `${favorites.length} guardados`],
+            ["actividad", "⌁", "Actividad", "Búsquedas y vistos"]
+          ].map(([id, icon, label, hint]) => (
+            <button type="button" key={id} className={activeSection === id ? "is-active" : ""} onClick={() => selectSection(id)}>
+              <span className="profile-sidebar__icon">{icon}</span><span><strong>{label}</strong><small>{hint}</small></span><b>›</b>
+            </button>
+          ))}
+          {isAdmin && <Link to="/admin" className="profile-sidebar__admin">Panel administrador ↗</Link>}
+        </aside>
+
+        <section ref={profileContentRef} className={`section-card profile-dashboard__panel profile-overview${activeSection === "resumen" ? " is-active" : ""}`}>
+          <div className="section-heading"><div><p className="section-label">Resumen</p><h2>Tu cuenta de un vistazo</h2></div></div>
+          <div className="profile-overview__grid">
+            <button type="button" onClick={() => selectSection("pedidos")}><span>▣</span><div><strong>{orders.length ? `Tienes ${orders.length} pedido${orders.length === 1 ? "" : "s"}` : "Sin pedidos todavía"}</strong><small>{orders.length ? "Consulta pagos, envíos y reseñas" : "Tu próxima compra aparecerá aquí"}</small></div><b>Ver pedidos →</b></button>
+            <button type="button" onClick={() => selectSection("favoritos")}><span>♡</span><div><strong>{favorites.length ? `${favorites.length} producto${favorites.length === 1 ? "" : "s"} guardado${favorites.length === 1 ? "" : "s"}` : "Tu lista está esperando"}</strong><small>Guarda productos para encontrarlos rápido</small></div><b>Ver favoritos →</b></button>
+            <button type="button" onClick={() => selectSection("datos")}><span>♙</span><div><strong>Información personal</strong><small>Actualiza tus datos, foto y domicilio</small></div><b>Editar perfil →</b></button>
+          </div>
+          <div className="profile-overview__recent">
+            <div><p className="section-label">Último movimiento</p><h3>{orders[0] ? `Pedido ${orders[0].id.slice(0, 8)}` : "Aún no hay movimientos"}</h3><p>{orders[0] ? `${new Date(orders[0].fecha).toLocaleDateString("es-MX")} · $${orders[0].total.toFixed(2)}` : "Explora el catálogo y encuentra algo especial."}</p></div>
+            <Link to="/catalogo" className="button button--primary">Explorar catálogo</Link>
+          </div>
+        </section>
+
+        <form className={`section-card profile-dashboard__panel profile-edit-form${activeSection === "datos" ? " is-active" : ""}`} onSubmit={handleSubmit}>
           <div className="section-heading">
             <div>
               <p className="section-label">Tu cuenta</p>
@@ -382,8 +445,8 @@ export function ProfilePage() {
           </button>
         </form>
 
-        <div className="profile-shell__side">
-          <section className="section-card">
+        <div className="profile-dashboard__sections">
+          <section className={`section-card profile-dashboard__panel profile-orders${activeSection === "pedidos" ? " is-active" : ""}`}>
             <div className="section-heading section-heading--compact">
               <div>
                 <p className="section-label">Tus compras</p>
@@ -391,7 +454,7 @@ export function ProfilePage() {
               </div>
             </div>
             <div className="list-stack">
-              {dashboard.historial.ordenes.map((order) => (
+              {orders.length ? orders.map((order) => (
                 <article key={order.id} className="order-card">
                   <div className="order-card__head">
                     <strong>{order.id.slice(0, 8)}</strong>
@@ -536,11 +599,11 @@ export function ProfilePage() {
                     </button>
                   )}
                 </article>
-              ))}
+              )) : <div className="profile-empty-state"><span>▣</span><strong>Aún no tienes pedidos</strong><p>Cuando realices una compra podrás seguirla desde aquí.</p><Link to="/catalogo" className="button button--primary">Explorar productos</Link></div>}
             </div>
           </section>
 
-          <section className="section-card">
+          <section className={`section-card profile-dashboard__panel profile-favorites${activeSection === "favoritos" ? " is-active" : ""}`}>
             <div className="section-heading section-heading--compact">
               <div>
                 <p className="section-label">Favoritos</p>
@@ -548,8 +611,8 @@ export function ProfilePage() {
               </div>
             </div>
             <div className="list-stack">
-              {dashboard.historial.favoritos.length ? (
-                dashboard.historial.favoritos.map((item) => (
+              {favorites.length ? (
+                favorites.map((item) => (
                   <article key={item.id} className="mini-item mini-item--product">
                     <img src={item.imagenes?.[0]} alt={item.nombre} />
                     <div>
@@ -562,12 +625,12 @@ export function ProfilePage() {
                   </article>
                 ))
               ) : (
-                <p className="muted-text">Todavia no guardas favoritos.</p>
+                <div className="profile-empty-state"><span>♡</span><strong>Tu wishlist está vacía</strong><p>Guarda los productos que te gustan para encontrarlos después.</p><Link to="/catalogo" className="button button--primary">Descubrir productos</Link></div>
               )}
             </div>
           </section>
 
-          <section className="section-card">
+          <section className={`section-card profile-dashboard__panel profile-activity${activeSection === "actividad" ? " is-active" : ""}`}>
             <div className="section-heading section-heading--compact">
               <div>
                 <p className="section-label">Actividad</p>
@@ -575,18 +638,19 @@ export function ProfilePage() {
               </div>
             </div>
             <div className="list-stack">
-              {dashboard.historial.busquedas.map((item) => (
+              {searches.map((item) => (
                 <article key={item.id} className="mini-item">
                   <strong>{item.busqueda}</strong>
                   <small>{new Date(item.fecha).toLocaleString()}</small>
                 </article>
               ))}
-              {dashboard.historial.productosVistos.map((item) => (
+              {viewedProducts.map((item) => (
                 <article key={item.id} className="mini-item">
                   <Link to={`/producto/${item.producto.slug}`}>{item.producto.nombre}</Link>
                   <small>{new Date(item.fecha).toLocaleString()}</small>
                 </article>
               ))}
+              {!searches.length && !viewedProducts.length && <div className="profile-empty-state"><span>⌁</span><strong>Sin actividad reciente</strong><p>Tus búsquedas y productos visitados aparecerán en este espacio.</p></div>}
             </div>
           </section>
         </div>
