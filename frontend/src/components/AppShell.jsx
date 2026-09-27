@@ -409,16 +409,6 @@ export function AppShell() {
         <div className="halloween-desktop-host" aria-hidden="true">
           <img src="/assets/halloween-desktop-host.png" alt="" />
         </div>
-        <button
-          type="button"
-          className="button button--theme app-theme-fab"
-          onClick={toggleTheme}
-          aria-pressed={isDarkTheme}
-          title={isDarkTheme ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-        >
-          <span className="theme-label theme-label--full">Accesibilidad: {isDarkTheme ? "Claro" : "Oscuro"}</span>
-          <span className="theme-label theme-label--short">{isDarkTheme ? "Claro" : "Oscuro"}</span>
-        </button>
         <main className="market-content">
           <Outlet />
         </main>
@@ -578,7 +568,7 @@ export function AppShell() {
 
       <div className="market-main-shell">
         <main className="market-content">
-          <Outlet />
+          <Outlet context={{ theme, isDarkTheme, toggleTheme }} />
         </main>
       </div>
 
@@ -623,25 +613,16 @@ export function AppShell() {
         />
       )}
 
-      <div className="magic-dock" aria-label="Accesibilidad visual">
+      <div className="magic-dock" aria-label="Contacto por WhatsApp">
         <a
           className="magic-dock__button magic-dock__button--support"
           href={supportHref}
           target={supportIsExternal ? "_blank" : undefined}
           rel={supportIsExternal ? "noreferrer" : undefined}
         >
-          Soporte
+          <svg viewBox="0 0 448 512" aria-hidden="true"><path d="M380.9 97.1C339 55.1 283.2 32 223.9 32 101.5 32 2 131.5 2 253.9c0 44.9 11.7 88.8 33.9 127L0 480l102.5-33.8c37.5 20.4 79.7 31.1 121.3 31.1h.1C346.2 477.3 448 377.8 448 255.4c0-59.3-25.2-115-67.1-158.3zM223.9 439.6c-37.1 0-73.3-10-104.9-28.9l-7.5-4.5-60.8 20 20.4-59.2-4.9-7.7c-20.6-32.8-31.5-70.7-31.5-109.4 0-103.8 84.5-188.3 188.4-188.3 50.3 0 97.6 19.6 133.2 55.2 35.6 35.6 57 82.9 56.9 133.3 0 103.9-85.4 189.5-189.3 189.5zm101.7-138.9c-5.6-2.8-33.1-16.3-38.2-18.2-5.1-1.9-8.8-2.8-12.6 2.8-3.7 5.6-14.5 18.2-17.7 22-3.3 3.7-6.5 4.2-12.1 1.4-32.9-16.4-54.5-29.3-76.4-66.4-5.8-10 5.8-9.3 16.4-30.9 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.6-30.3-17.2-41.5-4.5-10.8-9.1-9.3-12.6-9.5-3.3-.2-7-.2-10.7-.2-3.7 0-9.8 1.4-14.9 6.9-5.1 5.6-19.6 19.1-19.6 46.5s20.1 54 22.9 57.7c2.8 3.7 39.5 60.3 95.7 84.6 35.5 15.3 49.4 16.6 67.1 14 10.8-1.6 33.1-13.5 37.7-26.5 4.7-13 4.7-24.2 3.3-26.5-1.3-2.5-5-3.9-10.6-6.6z" /></svg>
+          <span className="sr-only">WhatsApp</span>
         </a>
-        <button
-          type="button"
-          className="magic-dock__button magic-dock__button--accent magic-dock__button--theme"
-          onClick={toggleTheme}
-          aria-pressed={isDarkTheme}
-          title={isDarkTheme ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-        >
-          <span className="theme-label theme-label--full">Accesibilidad: {isDarkTheme ? "Claro" : "Oscuro"}</span>
-          <span className="theme-label theme-label--short">{isDarkTheme ? "Claro" : "Oscuro"}</span>
-        </button>
       </div>
 
       {commandOpen && (

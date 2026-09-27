@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useOutletContext } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { apiFetch } from "../lib/api.js";
 import { formatMexicoDate, formatMexicoDateTime } from "../lib/date.js";
@@ -58,6 +58,7 @@ function fileToDataUrl(file) {
 }
 
 export function ProfilePage() {
+  const { isDarkTheme = true, toggleTheme = () => {} } = useOutletContext() || {};
   const { token, refreshUser, isAdmin } = useAuth();
   const [dashboard, setDashboard] = useState(null);
   const [paymentLinks, setPaymentLinks] = useState({});
@@ -377,6 +378,7 @@ export function ProfilePage() {
             ["pedidos", "▣", "Mis pedidos", `${orders.length} registrados`],
             ["favoritos", "♡", "Favoritos", `${favorites.length} guardados`],
             ["actividad", "⌁", "Actividad", "Búsquedas y vistos"]
+            ,["accesibilidad", "◐", "Accesibilidad", isDarkTheme ? "Modo oscuro" : "Modo claro"]
           ].map(([id, icon, label, hint]) => (
             <button type="button" key={id} className={activeSection === id ? "is-active" : ""} onClick={() => selectSection(id)}>
               <span className="profile-sidebar__icon">{icon}</span><span><strong>{label}</strong><small>{hint}</small></span><b>›</b>
@@ -395,6 +397,15 @@ export function ProfilePage() {
           <div className="profile-overview__recent">
             <div><p className="section-label">Último movimiento</p><h3>{orders[0] ? `Pedido ${orders[0].id.slice(0, 8)}` : "Aún no hay movimientos"}</h3><p>{orders[0] ? `${formatMexicoDate(orders[0].fecha)} · $${orders[0].total.toFixed(2)}` : "Explora el catálogo y encuentra algo especial."}</p></div>
             <Link to="/catalogo" className="button button--primary">Explorar catálogo</Link>
+          </div>
+        </section>
+
+        <section className={`section-card profile-dashboard__panel profile-accessibility${activeSection === "accesibilidad" ? " is-active" : ""}`}>
+          <div className="section-heading"><div><p className="section-label">Preferencias visuales</p><h2>Accesibilidad</h2></div></div>
+          <div className="profile-accessibility__option">
+            <span aria-hidden="true">{isDarkTheme ? "☾" : "☀"}</span>
+            <div><strong>Tema de la tienda</strong><small>Actualmente estás usando el modo {isDarkTheme ? "oscuro" : "claro"}.</small></div>
+            <button type="button" className="button button--primary" onClick={toggleTheme}>Cambiar a modo {isDarkTheme ? "claro" : "oscuro"}</button>
           </div>
         </section>
 
