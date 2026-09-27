@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { apiFetch } from "../lib/api.js";
+import { formatMexicoDate, parseStoreDate } from "../lib/date.js";
 
 const quickSupportTopics = [
   { label: "Recomiendame productos", botId: "grayce", message: "Recomiendame productos que me puedan interesar" },
@@ -47,6 +48,21 @@ function getBotDisplayName(message, fallbackBot) {
   return match[1] === "Barban" ? "BarbaN" : match[1];
 }
 
+function getBotForMessage(message, fallbackBot) {
+  const displayName = getBotDisplayName(message, fallbackBot).toLowerCase();
+  return supportBots.find((bot) => bot.name.toLowerCase() === displayName) || fallbackBot;
+}
+
+function getMessageDay(value) {
+  return formatMexicoDate(value, { year: "numeric", month: "long", day: "numeric" });
+}
+
+function getMessageTime(value) {
+  const date = parseStoreDate(value);
+  if (!date) return "";
+  return new Intl.DateTimeFormat("es-MX", { timeZone: "America/Mexico_City", hour: "numeric", minute: "2-digit" }).format(date);
+}
+
 function chooseBotForText(text, fallbackBotId = "grayce") {
   const value = String(text || "").toLowerCase();
 
@@ -68,6 +84,7 @@ function chooseBotForText(text, fallbackBotId = "grayce") {
 export function ChatPage() {
   const { token, user, isAdmin } = useAuth();
   const refreshTimerRef = useRef(null);
+  const messagesBoxRef = useRef(null);
   const [threads, setThreads] = useState([]);
   const [selectedUserId, setSelectedUserId] = useState("");
   const [messages, setMessages] = useState([]);
@@ -146,6 +163,12 @@ export function ChatPage() {
       }
     };
   }, [token, isAdmin, selectedUserId]);
+
+  useEffect(() => {
+    const box = messagesBoxRef.current;
+    if (!box) return;
+    box.scrollTo({ top: box.scrollHeight, behavior: messages.length > 1 ? "smooth" : "auto" });
+  }, [messages.length, sending]);
 
   const sendCustomerBotMessage = async (messageText, forcedBotId = "") => {
     const userText = String(messageText || "").trim();
@@ -303,31 +326,60 @@ export function ChatPage() {
 
   const conversationPanel = (
     <section className="support-conversation-card">
-      <div className="messages-box messages-box--compact">
+      <header className="support-chat-header">
+        <span className="cat-avatar cat-avatar--portrait support-chat-header__avatar">
+          <img src={selectedBot.avatar} alt={`Retrato de ${selectedBot.name}`} />
+        </span>
+        <span className="support-chat-header__identity">
+          <strong>{isAdmin ? "Atención al cliente" : selectedBot.name}</strong>
+          <small><i /> {isAdmin ? "Conversación sincronizada" : `${selectedBot.subtitle} · En línea`}</small>
+        </span>
+      </header>
+
+      <div className="messages-box messages-box--compact support-chat-messages" ref={messagesBoxRef}>
         {messages.length ? (
-          messages.map((message) => (
-            <article
-              key={`${message.id}-${message.fecha}`}
-              className={`message ${
-                message.rolRemitente === "admin" ? "message--admin" : message.rolRemitente === "bot" ? "message--bot" : "message--customer"
-              }`}
-            >
-              <strong>{message.rolRemitente === "admin" ? "Soporte" : message.rolRemitente === "bot" ? getBotDisplayName(message, selectedBot) : "Cliente"}</strong>
-              <p>{message.mensaje}</p>
-            </article>
-          ))
+          messages.map((message, index) => {
+            const previousMessage = messages[index - 1];
+            const messageDay = getMessageDay(message.fecha);
+            const showDay = !previousMessage || getMessageDay(previousMessage.fecha) !== messageDay;
+            const isOutgoing = isAdmin ? message.rolRemitente === "admin" : message.rolRemitente === "customer";
+            const messageBot = getBotForMessage(message, selectedBot);
+            const senderName = message.rolRemitente === "admin" ? "Soporte" : message.rolRemitente === "bot" ? messageBot.name : "Tú";
+
+            return (
+              <div className="support-message-group" key={`${message.id}-${message.fecha}`}>
+                {showDay && <div className="support-date-separator"><span>{messageDay}</span></div>}
+                <div className={`support-message-row ${isOutgoing ? "is-outgoing" : "is-incoming"}`}>
+                  {!isOutgoing && message.rolRemitente === "bot" && (
+                    <span className="support-message-avatar"><img src={messageBot.avatar} alt="" /></span>
+                  )}
+                  <article className={`message ${isOutgoing ? "message--outgoing" : "message--incoming"}`}>
+                    <strong>{senderName}</strong>
+                    <p>{message.mensaje}</p>
+                    <time>{getMessageTime(message.fecha)}</time>
+                  </article>
+                </div>
+              </div>
+            );
+          })
         ) : (
           <article className="support-empty-state">
             <strong>{isAdmin ? "Esperando mensajes de clientes" : `${selectedBot.name} esta listo para ayudarte`}</strong>
             <p>{isAdmin ? "Cuando un cliente escriba en soporte, la conversacion aparecera aqui." : "Escribe tu duda sobre pedidos, carrito, pagos o cuenta para empezar."}</p>
           </article>
         )}
+        {!isAdmin && botEnabled && sending && (
+          <div className="support-message-row is-incoming support-typing-row">
+            <span className="support-message-avatar"><img src={selectedBot.avatar} alt="" /></span>
+            <div className="support-typing" aria-label={`${selectedBot.name} está escribiendo`}><i /><i /><i /></div>
+          </div>
+        )}
       </div>
 
       <form className="chat-form chat-form--support" onSubmit={handleSend}>
-        <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Escribe tu mensaje" />
-        <button type="submit" className="button button--primary" disabled={(!selectedUserId && isAdmin) || sending}>
-          {sending ? "Enviando..." : "Enviar"}
+        <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={`Escribe un mensaje${!isAdmin ? ` para ${selectedBot.name}` : ""}...`} />
+        <button type="submit" className="button button--primary support-send-button" disabled={(!selectedUserId && isAdmin) || sending} aria-label="Enviar mensaje">
+          {sending ? "Enviando..." : <><span>Enviar</span><b aria-hidden="true">➤</b></>}
         </button>
       </form>
     </section>
