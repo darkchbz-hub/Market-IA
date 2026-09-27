@@ -471,7 +471,28 @@
   .site-header, .site-footer, .mobile-bottom-nav, .magic-dock, .invoice-toolbar { display: none !important; }
   .app-main { width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; }
   .invoice-page { width: 100%; }
-  .invoice-sheet { border-radius: 0; padding: 18mm 14mm; box-shadow: none; }
+  .invoice-sheet { border-radius: 0; padding: 9mm 10mm; font-size: 8.5pt; box-shadow: none; }
+  .invoice-header { grid-template-columns: 55px minmax(0,1fr) minmax(130px,.48fr); gap: 11px; border-bottom-width: 2px; padding-bottom: 10px; }
+  .invoice-header > img { width: 55px; height: 55px; border-radius: 10px; }
+  .invoice-header h1 { margin: 1px 0; font-size: 16pt; }
+  .invoice-header p, .invoice-header span, .invoice-number small { font-size: 6.5pt; }
+  .invoice-number strong { margin-top: 2px; font-size: 6.8pt; }
+  .invoice-meta { gap: 12px; margin: 11px 0; border-radius: 9px; padding: 9px 11px; }
+  .invoice-meta > div { gap: 2px; }
+  .invoice-meta small, .invoice-meta span { font-size: 6.5pt; }
+  .invoice-meta strong { font-size: 7.5pt; }
+  .invoice-table-wrap { overflow: visible; }
+  .invoice-table th { padding: 6px 7px; font-size: 6.3pt; }
+  .invoice-table td { padding: 7px; font-size: 6.8pt; }
+  .invoice-totals { width: 270px; gap: 3px; margin: 10px 0 10px auto; }
+  .invoice-totals > div { gap: 10px; padding: 4px 7px; }
+  .invoice-grand-total { border-radius: 7px; font-size: 9pt; }
+  .invoice-footer { grid-template-columns: 76px minmax(0,1fr); gap: 10px; border-radius: 11px; padding: 5px 12px 5px 4px; break-inside: avoid; }
+  .invoice-footer img { width: 76px; height: 70px; }
+  .invoice-footer small { font-size: 6pt; }
+  .invoice-footer h2 { margin: 1px 0; font-size: 11pt; }
+  .invoice-footer p { font-size: 6.5pt; line-height: 1.3; }
+  .invoice-header, .invoice-meta, .invoice-table tr, .invoice-totals { break-inside: avoid; }
   @page { size: A4; margin: 0; }
 }
 
