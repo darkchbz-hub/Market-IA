@@ -97,6 +97,7 @@ function LegalDocumentPage({ type }) {
         <div><p className="section-label">{document.eyebrow}</p><h1>{document.title}</h1><p>{document.intro}</p></div>
         <div className="legal-hero__actions">
           <span className="legal-hero__stamp">Actualizado {formatMexicoDate(new Date().toISOString(), { day: "numeric", month: "long", year: "numeric" })}</span>
+          {type === "terms" && <a className="button button--ghost legal-pdf-button" href="/assets/terminos-y-condiciones-gray-c-shop.pdf" download>Descargar PDF</a>}
           <button type="button" className="button button--primary legal-print-button" onClick={() => window.print()}>Imprimir documento</button>
         </div>
       </header>
