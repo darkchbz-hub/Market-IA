@@ -1907,6 +1907,7 @@ textarea {
 }
 
 .home-ad-player {
+  position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
   border: 1px solid var(--line);
@@ -1916,6 +1917,14 @@ textarea {
   box-shadow: 0 18px 38px rgba(15, 23, 42, 0.12);
 }
 
+.home-ad-player::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  cursor: default;
+}
+
 .home-ad-player iframe,
 .home-ad-player video {
   width: 100%;
@@ -1923,6 +1932,8 @@ textarea {
   display: block;
   border: 0;
   object-fit: cover;
+  pointer-events: none;
+  user-select: none;
 }
 
 .ambient-audio {

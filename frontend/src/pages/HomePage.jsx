@@ -34,7 +34,7 @@ function getYouTubeEmbedUrl(url) {
       }
     }
 
-    return id ? `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1&autoplay=1&mute=1&playsinline=1&loop=1&playlist=${id}` : "";
+    return id ? `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1&autoplay=1&mute=1&playsinline=1&loop=1&playlist=${id}&controls=0&disablekb=1&fs=0&iv_load_policy=3` : "";
   } catch {
     return "";
   }
@@ -281,11 +281,11 @@ export function HomePage() {
                   <iframe
                     src={activeVideoEmbed}
                     title={activeVideo.titulo || "Video de portada"}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
+                    allow="autoplay; encrypted-media"
+                    tabIndex={-1}
                   />
                 ) : isVideoUrl(activeVideo.videoUrl) ? (
-                  <video src={activeVideo.videoUrl} autoPlay muted loop playsInline poster={activeVideo.posterUrl || ""} />
+                  <video src={activeVideo.videoUrl} autoPlay muted loop playsInline tabIndex={-1} poster={activeVideo.posterUrl || ""} />
                 ) : (
                   <a className="button button--primary" href={activeVideo.videoUrl} target="_blank" rel="noreferrer">
                     Ver anuncio
