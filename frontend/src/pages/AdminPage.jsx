@@ -76,6 +76,7 @@ const initialCatalogGenerator = {
   category: "tecnologia",
   includeImages: true
 };
+const initialCoupon = { code: "", percentage: "10", expiresAt: "", maxUses: "0", active: true };
 
 function statusLabel(status) {
   const value = String(status || "").trim().toLowerCase();
@@ -212,9 +213,11 @@ export function AdminPage() {
   const [userSearch, setUserSearch] = useState("");
   const [folioSearch, setFolioSearch] = useState("");
   const [folioResults, setFolioResults] = useState([]);
+  const [coupons, setCoupons] = useState([]);
+  const [couponForm, setCouponForm] = useState(initialCoupon);
 
   const loadAdmin = async () => {
-    const [summaryPayload, productsPayload, ordersPayload, usersPayload, reviewsPayload, categoriesPayload, contentPayload, foliosPayload] =
+    const [summaryPayload, productsPayload, ordersPayload, usersPayload, reviewsPayload, categoriesPayload, contentPayload, foliosPayload, couponsPayload] =
       await Promise.all([
         apiFetch("/admin/summary", { token }),
         apiFetch("/admin/products", { token }),
@@ -223,7 +226,8 @@ export function AdminPage() {
         apiFetch("/admin/reviews", { token }),
         apiFetch("/admin/categories", { token }),
         apiFetch("/admin/content", { token }),
-        apiFetch("/admin/folios", { token })
+        apiFetch("/admin/folios", { token }),
+        apiFetch("/admin/coupons", { token })
       ]);
 
     setSummary(summaryPayload);
@@ -233,6 +237,7 @@ export function AdminPage() {
     setReviews(reviewsPayload.items || []);
     setCategories(categoriesPayload.items || []);
     setFolioResults(foliosPayload.items || []);
+    setCoupons(couponsPayload.items || []);
     setContent({
       homepage: contentPayload.homepage || {},
       general: contentPayload.general || {},
@@ -765,6 +770,25 @@ export function AdminPage() {
   const selectedUserCart = selectedUser?.cart || [];
   const selectedUserOrders = selectedUser?.orders || [];
 
+  const saveCouponForm = async (event) => {
+    event.preventDefault();
+    const payload = await apiFetch("/admin/coupons", {
+      method: "POST",
+      token,
+      body: { ...couponForm, percentage: Number(couponForm.percentage), maxUses: Number(couponForm.maxUses) }
+    });
+    setCoupons(payload.items || []);
+    setCouponForm(initialCoupon);
+    setMessage(`Cupón ${payload.coupon.code} guardado.`);
+  };
+
+  const removeCoupon = async (couponId) => {
+    if (!window.confirm("¿Eliminar este cupón?")) return;
+    await apiFetch(`/admin/coupons/${couponId}`, { method: "DELETE", token });
+    setCoupons((current) => current.filter((coupon) => coupon.id !== couponId));
+    setMessage("Cupón eliminado.");
+  };
+
   return (
     <div className="page-stack admin-page">
       <header className="admin-hero">
@@ -792,6 +816,7 @@ export function AdminPage() {
             ["users", "♙", "Usuarios", `${users.length} clientes`],
             ["orders", "▣", "Pedidos", `${orders.length} registrados`],
             ["folios", "⌕", "Folios", "Buscar compras"],
+            ["coupons", "%", "Cupones", `${coupons.length} creados`],
             ["reviews", "☆", "Reseñas", `${reviews.length} comentarios`],
             ["categories", "◇", "Categorías", `${categories.length} secciones`],
             ["content", "▤", "Portada y medios", "Banners, video y audio"],
@@ -2155,6 +2180,36 @@ export function AdminPage() {
                   <button type="button" className="button button--ghost" onClick={() => deleteMedia("music", track.id)}>Eliminar</button>
                 </article>
               ))}
+            </div>
+          </section>
+        </div>
+      )}
+
+      {tab === "coupons" && (
+        <div className="admin-grid admin-coupons">
+          <form className="section-card" onSubmit={saveCouponForm}>
+            <div className="section-heading section-heading--compact"><div><p className="section-label">Promociones</p><h2>Crear cupón</h2></div></div>
+            <label>Código<input value={couponForm.code} onChange={(event) => setCouponForm((current) => ({ ...current, code: event.target.value.toUpperCase().replace(/\s/g, "") }))} placeholder="HALLOWEEN20" minLength="3" maxLength="24" required /></label>
+            <div className="form-grid">
+              <label>Descuento (%)<input type="number" min="1" max="100" value={couponForm.percentage} onChange={(event) => setCouponForm((current) => ({ ...current, percentage: event.target.value }))} required /></label>
+              <label>Límite de usos<input type="number" min="0" value={couponForm.maxUses} onChange={(event) => setCouponForm((current) => ({ ...current, maxUses: event.target.value }))} /><small>0 significa usos ilimitados.</small></label>
+            </div>
+            <label>Fecha y hora límite<input type="datetime-local" value={couponForm.expiresAt} onChange={(event) => setCouponForm((current) => ({ ...current, expiresAt: event.target.value }))} required /></label>
+            <label className="checkbox-row"><input type="checkbox" checked={couponForm.active} onChange={(event) => setCouponForm((current) => ({ ...current, active: event.target.checked }))} /> Activar cupón al guardarlo</label>
+            <button type="submit" className="button button--primary">Guardar cupón</button>
+          </form>
+          <section className="section-card">
+            <div className="section-heading section-heading--compact"><div><p className="section-label">Códigos disponibles</p><h2>Cupones creados</h2></div></div>
+            <div className="coupon-admin-list">
+              {coupons.length ? coupons.map((coupon) => {
+                const expired = new Date(coupon.expiresAt).getTime() <= Date.now();
+                return <article key={coupon.id} className={`coupon-admin-card${expired || !coupon.active ? " is-inactive" : ""}`}>
+                  <div><strong>{coupon.code}</strong><span>{coupon.percentage}% de descuento</span></div>
+                  <p>Vence: {new Date(coupon.expiresAt).toLocaleString("es-MX")}</p>
+                  <small>{coupon.uses} uso(s) de {coupon.maxUses || "ilimitados"} · {expired ? "Vencido" : coupon.active ? "Activo" : "Inactivo"}</small>
+                  <button type="button" className="button button--danger" onClick={() => removeCoupon(coupon.id)}>Eliminar</button>
+                </article>;
+              }) : <p className="muted-text">Aún no has creado cupones.</p>}
             </div>
           </section>
         </div>

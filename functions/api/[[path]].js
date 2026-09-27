@@ -26,6 +26,7 @@ import {
   deleteRegistrationCode,
   deleteProductComment,
   deleteProduct,
+  deleteCoupon,
   ensureDatabase,
   getAdminUserDetail,
   getCartState,
@@ -48,6 +49,7 @@ import {
   listChatMessagesByUser,
   listChatThreads,
   listAdminOrders,
+  listCoupons,
   listProductComments,
   listProducts,
   marketplaceCategories,
@@ -58,6 +60,7 @@ import {
   savePaymentRecord,
   savePasswordResetCode,
   saveRegistrationCode,
+  saveCoupon,
   serializeUser,
   setCartItem,
   setUserActiveStatus,
@@ -70,6 +73,7 @@ import {
   updateProduct,
   updateUserPassword,
   updateUserAddress,
+  validateCoupon,
   bumpPasswordResetAttempt,
   bumpRegistrationCodeAttempt
 } from "./_lib/store.js";
@@ -1604,12 +1608,20 @@ export async function onRequest(context) {
       return json(await buildCheckoutSummary(db, user.id));
     }
 
+    if (first === "checkout" && second === "coupon" && request.method === "POST") {
+      const user = await authenticate(request, env, db);
+      const body = await readJson(request);
+      const summary = await buildCheckoutSummary(db, user.id);
+      return json(await validateCoupon(db, body.code, summary.total));
+    }
+
     if (first === "checkout" && second === "orders" && request.method === "POST") {
       const user = await authenticate(request, env, db);
       const body = await readJson(request);
       const direccion = normalizeAddress(body.direccion);
       const proveedorPago = String(body.proveedorPago || "").trim().toLowerCase();
       const telefono = String(body.telefono || "").trim();
+      const couponCode = String(body.couponCode || "").trim();
 
       if (!direccion.calle || !direccion.ciudad || !direccion.estado || !direccion.cp || !direccion.pais) {
         throw httpError(400, "Completa toda la direccion antes de continuar.");
@@ -1619,7 +1631,26 @@ export async function onRequest(context) {
         throw httpError(400, "Selecciona un metodo de pago valido.");
       }
 
-      return json(await createOrderFromCart(db, user.id, { direccion, proveedorPago, telefono }), 201);
+      return json(await createOrderFromCart(db, user.id, { direccion, proveedorPago, telefono, couponCode }), 201);
+    }
+
+    if (first === "admin" && second === "coupons" && !third && request.method === "GET") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      return json({ items: await listCoupons(db) });
+    }
+
+    if (first === "admin" && second === "coupons" && !third && request.method === "POST") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      const body = await readJson(request);
+      return json({ coupon: await saveCoupon(db, body), items: await listCoupons(db) }, 201);
+    }
+
+    if (first === "admin" && second === "coupons" && third && request.method === "DELETE") {
+      const user = await authenticate(request, env, db);
+      requireAdmin(user);
+      return json(await deleteCoupon(db, third));
     }
 
     if (first === "admin" && second === "products" && !third && request.method === "GET") {

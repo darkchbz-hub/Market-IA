@@ -47,10 +47,34 @@ export function CheckoutPage() {
   }));
   const [provider, setProvider] = useState("mercadopago");
   const [paymentLinks, setPaymentLinks] = useState({});
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponBusy, setCouponBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [order, setOrder] = useState(null);
   const isMexicoShipping = isMexicoCountry(address.pais);
+  const checkoutTotal = appliedCoupon?.total ?? summary?.total ?? 0;
+
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) {
+      setMessage("Escribe un codigo de cupon.");
+      return;
+    }
+    setCouponBusy(true);
+    setMessage("");
+    try {
+      const payload = await apiFetch("/checkout/coupon", { method: "POST", token, body: { code: couponCode } });
+      setAppliedCoupon(payload);
+      setCouponCode(payload.coupon.code);
+      setMessage(`Cupon ${payload.coupon.code} aplicado: ${payload.coupon.percentage}% de descuento.`);
+    } catch (error) {
+      setAppliedCoupon(null);
+      setMessage(error.message);
+    } finally {
+      setCouponBusy(false);
+    }
+  };
 
   useEffect(() => {
     apiFetch("/checkout/summary", { token })
@@ -114,7 +138,8 @@ export function CheckoutPage() {
         token,
         body: {
           direccion: address,
-          proveedorPago: provider
+          proveedorPago: provider,
+          couponCode: appliedCoupon?.coupon?.code || ""
         }
       });
 
@@ -225,6 +250,15 @@ export function CheckoutPage() {
           ))}
         </div>
 
+        <div className="checkout-coupon">
+          <div><span className="checkout-coupon__icon">%</span><div><strong>¿Tienes un cupón?</strong><small>Aplícalo antes de continuar al pago.</small></div></div>
+          <div className="checkout-coupon__controls">
+            <input value={couponCode} onChange={(event) => { setCouponCode(event.target.value.toUpperCase()); setAppliedCoupon(null); }} placeholder="CÓDIGO" maxLength="24" />
+            <button type="button" className="button button--ghost" onClick={applyCoupon} disabled={couponBusy}>{couponBusy ? "Validando..." : "Aplicar"}</button>
+          </div>
+          {appliedCoupon && <p>✓ Ahorraste ${appliedCoupon.discount.toFixed(2)} con {appliedCoupon.coupon.code}</p>}
+        </div>
+
         {!isMexicoShipping && (
           <div className="shipping-support-card">
             <strong>{INTERNATIONAL_SHIPPING_MESSAGE}</strong>
@@ -262,9 +296,10 @@ export function CheckoutPage() {
           <strong>{isMexicoShipping ? "$0.00" : "Variable"}</strong>
         </div>
         <div className="summary-row summary-row--total">
-          <span>Total</span>
+          <span>{appliedCoupon ? "Subtotal" : "Total"}</span>
           <strong>${summary.total.toFixed(2)}</strong>
         </div>
+        {appliedCoupon && <><div className="summary-row summary-row--discount"><span>Cupón {appliedCoupon.coupon.code} ({appliedCoupon.coupon.percentage}%)</span><strong>-${appliedCoupon.discount.toFixed(2)}</strong></div><div className="summary-row summary-row--total"><span>Total con descuento</span><strong>${checkoutTotal.toFixed(2)}</strong></div></>}
 
         {order && (
           <div className="status-box">

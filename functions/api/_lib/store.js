@@ -745,6 +745,19 @@ const schemaStatements = [
       imagenes TEXT NOT NULL DEFAULT '[]',
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
+  `,
+  `
+    CREATE TABLE IF NOT EXISTS coupons (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      code TEXT NOT NULL UNIQUE,
+      percentage REAL NOT NULL,
+      expires_at TEXT NOT NULL,
+      max_uses INTEGER NOT NULL DEFAULT 0,
+      uses INTEGER NOT NULL DEFAULT 0,
+      active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
   `
 ];
 
@@ -1172,6 +1185,9 @@ export async function ensureDatabase(env) {
       await ensureColumn(env.DB, "cart_items", "variante", "TEXT NOT NULL DEFAULT '{}'");
       await ensureColumn(env.DB, "order_items", "variante", "TEXT NOT NULL DEFAULT '{}'");
       await ensureColumn(env.DB, "orders", "tracking", "TEXT NOT NULL DEFAULT '[]'");
+      await ensureColumn(env.DB, "orders", "subtotal", "REAL NOT NULL DEFAULT 0");
+      await ensureColumn(env.DB, "orders", "discount", "REAL NOT NULL DEFAULT 0");
+      await ensureColumn(env.DB, "orders", "coupon_code", "TEXT NOT NULL DEFAULT ''");
       await ensureColumn(env.DB, "users", "telefono", "TEXT NOT NULL DEFAULT ''");
       await ensureColumn(env.DB, "users", "is_active", "INTEGER NOT NULL DEFAULT 1");
       await ensureColumn(env.DB, "users", "nickname", "TEXT NOT NULL DEFAULT ''");
@@ -1983,13 +1999,73 @@ export async function buildCheckoutSummary(db, userId) {
   };
 }
 
-export async function createOrderFromCart(db, userId, { direccion, proveedorPago, telefono = "" }) {
+function serializeCoupon(row) {
+  return {
+    id: Number(row.id),
+    code: String(row.code || ""),
+    percentage: Number(row.percentage || 0),
+    expiresAt: row.expires_at || "",
+    maxUses: Number(row.max_uses || 0),
+    uses: Number(row.uses || 0),
+    active: Boolean(Number(row.active ?? 1)),
+    createdAt: row.created_at || ""
+  };
+}
+
+export async function listCoupons(db) {
+  const result = await db.prepare("SELECT * FROM coupons ORDER BY datetime(created_at) DESC, id DESC").all();
+  return (result.results || []).map(serializeCoupon);
+}
+
+export async function saveCoupon(db, payload = {}) {
+  const code = String(payload.code || "").trim().toUpperCase().replace(/[^A-Z0-9_-]/g, "").slice(0, 24);
+  const percentage = Math.max(1, Math.min(100, Number(payload.percentage || 0)));
+  const expiresAt = String(payload.expiresAt || "").trim();
+  const maxUses = Math.max(0, Math.floor(Number(payload.maxUses || 0)));
+  const active = payload.active === false ? 0 : 1;
+  if (code.length < 3) throw new Error("El codigo debe tener al menos 3 caracteres.");
+  if (!Number.isFinite(percentage)) throw new Error("Ingresa un porcentaje valido.");
+  if (!expiresAt || Number.isNaN(new Date(expiresAt).getTime())) throw new Error("Ingresa una fecha limite valida.");
+
+  const existing = await db.prepare("SELECT id FROM coupons WHERE code = ?").bind(code).first();
+  if (existing) {
+    await db.prepare("UPDATE coupons SET percentage = ?, expires_at = ?, max_uses = ?, active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+      .bind(percentage, expiresAt, maxUses, active, existing.id).run();
+  } else {
+    await db.prepare("INSERT INTO coupons (code, percentage, expires_at, max_uses, active) VALUES (?, ?, ?, ?, ?)")
+      .bind(code, percentage, expiresAt, maxUses, active).run();
+  }
+  return db.prepare("SELECT * FROM coupons WHERE code = ?").bind(code).first().then(serializeCoupon);
+}
+
+export async function deleteCoupon(db, couponId) {
+  await db.prepare("DELETE FROM coupons WHERE id = ?").bind(Number(couponId)).run();
+  return { ok: true };
+}
+
+export async function validateCoupon(db, couponCode, subtotal) {
+  const code = String(couponCode || "").trim().toUpperCase();
+  if (!code) throw new Error("Escribe un codigo de cupon.");
+  const row = await db.prepare("SELECT * FROM coupons WHERE code = ?").bind(code).first();
+  if (!row || !Number(row.active)) throw new Error("Este cupon no existe o esta desactivado.");
+  if (new Date(row.expires_at).getTime() <= Date.now()) throw new Error("Este cupon ya vencio.");
+  if (Number(row.max_uses || 0) > 0 && Number(row.uses || 0) >= Number(row.max_uses)) throw new Error("Este cupon alcanzo su limite de usos.");
+  const base = Math.max(0, Number(subtotal || 0));
+  const discount = Math.round(base * (Number(row.percentage) / 100) * 100) / 100;
+  return { coupon: serializeCoupon(row), subtotal: base, discount, total: Math.max(0, Math.round((base - discount) * 100) / 100) };
+}
+
+export async function createOrderFromCart(db, userId, { direccion, proveedorPago, telefono = "", couponCode = "" }) {
   const summary = await buildCheckoutSummary(db, userId);
 
   if (!summary.items.length) {
     throw new Error("Tu carrito esta vacio.");
   }
 
+  const couponResult = couponCode ? await validateCoupon(db, couponCode, summary.total) : null;
+  const finalTotal = couponResult?.total ?? summary.total;
+  const discount = couponResult?.discount || 0;
+  const appliedCode = couponResult?.coupon?.code || "";
   const orderId = generateOrderId();
 
   const initialTracking = [
@@ -2005,18 +2081,21 @@ export async function createOrderFromCart(db, userId, { direccion, proveedorPago
   await db
     .prepare(
       `
-      INSERT INTO orders (id, user_id, total, estado, proveedor_pago, direccion, tracking)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO orders (id, user_id, total, estado, proveedor_pago, direccion, tracking, subtotal, discount, coupon_code)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
     )
     .bind(
       orderId,
       userId,
-      summary.total,
+      finalTotal,
       "pending_payment",
       proveedorPago,
       JSON.stringify(direccion || {}),
-      JSON.stringify(initialTracking)
+      JSON.stringify(initialTracking),
+      summary.total,
+      discount,
+      appliedCode
     )
     .run();
 
@@ -2041,12 +2120,19 @@ export async function createOrderFromCart(db, userId, { direccion, proveedorPago
   }
 
   await updateUserAddress(db, userId, direccion, telefono);
+  if (couponResult) {
+    await db.prepare("UPDATE coupons SET uses = uses + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+      .bind(couponResult.coupon.id).run();
+  }
   await clearCart(db, userId);
 
   return {
     order: {
       id: orderId,
-      total: summary.total,
+      subtotal: summary.total,
+      discount,
+      couponCode: appliedCode,
+      total: finalTotal,
         estado: "pending_payment",
         proveedorPago,
         tracking: initialTracking,

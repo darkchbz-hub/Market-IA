@@ -368,6 +368,40 @@
   .auth-layout--halloween .form-grid--wide { grid-template-columns: 1fr; }
 }
 
+/* Coupon management and checkout */
+.checkout-coupon {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  border: 1px dashed rgba(255, 159, 67, 0.48);
+  border-radius: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(255, 139, 45, 0.08), rgba(121, 65, 144, 0.1));
+}
+.checkout-coupon > div:first-child { display: flex; align-items: center; gap: 12px; }
+.checkout-coupon > div:first-child div { display: grid; gap: 2px; }
+.checkout-coupon small { color: var(--muted); }
+.checkout-coupon__icon { display: grid; width: 42px; height: 42px; flex: 0 0 42px; place-items: center; border-radius: 14px; background: #f4781f; color: #1b0e22; font-size: 1.1rem; font-weight: 950; box-shadow: 0 8px 20px rgba(244,120,31,.26); }
+.checkout-coupon__controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 9px; }
+.checkout-coupon__controls input { text-transform: uppercase; font-weight: 850; letter-spacing: .08em; }
+.checkout-coupon > p { margin: 0; color: #5ee0a0; font-weight: 800; }
+.summary-row--discount { color: #63e6a5; }
+.summary-row--discount strong { color: #63e6a5; }
+.coupon-admin-list { display: grid; gap: 11px; }
+.coupon-admin-card { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 6px 12px; align-items: center; border: 1px solid rgba(255,167,79,.22); border-radius: 16px; padding: 14px; background: rgba(255,255,255,.025); }
+.coupon-admin-card > div { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.coupon-admin-card > div strong { border-radius: 8px; padding: 5px 9px; background: rgba(244,120,31,.15); color: #ffad65; letter-spacing: .08em; }
+.coupon-admin-card > div span { color: #fff4ea; font-weight: 750; }
+.coupon-admin-card p, .coupon-admin-card small { grid-column: 1; margin: 0; color: var(--muted); }
+.coupon-admin-card .button { grid-column: 2; grid-row: 1 / span 3; }
+.coupon-admin-card.is-inactive { opacity: .58; filter: saturate(.55); }
+
+@media (max-width: 600px) {
+  .checkout-coupon__controls { grid-template-columns: 1fr; }
+  .coupon-admin-card { grid-template-columns: 1fr; }
+  .coupon-admin-card .button { grid-column: 1; grid-row: auto; }
+}
+
 :root[data-theme="day"] {
   color-scheme: light;
   --bg: #fffdf7;
