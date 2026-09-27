@@ -73,6 +73,7 @@ export function ProfilePage() {
   });
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [showReviewThanks, setShowReviewThanks] = useState(false);
   const [activeSection, setActiveSection] = useState("resumen");
   const profileContentRef = useRef(null);
 
@@ -101,6 +102,12 @@ export function ProfilePage() {
       .then((payload) => setPaymentLinks(payload?.general?.paymentLinks || {}))
       .catch(() => setPaymentLinks({}));
   }, []);
+
+  useEffect(() => {
+    if (!showReviewThanks) return undefined;
+    const timer = window.setTimeout(() => setShowReviewThanks(false), 4800);
+    return () => window.clearTimeout(timer);
+  }, [showReviewThanks]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -236,6 +243,7 @@ export function ProfilePage() {
       }));
       setActiveReviewKey("");
       setMessage("Gracias, tu reseña ya aparece en el producto.");
+      setShowReviewThanks(true);
     } catch (error) {
       setMessage(error.message);
     } finally {
@@ -305,6 +313,18 @@ export function ProfilePage() {
 
   return (
     <div className="page-stack profile-page">
+      {showReviewThanks && (
+        <div className="review-thanks" role="status" aria-live="polite">
+          <button type="button" className="review-thanks__close" onClick={() => setShowReviewThanks(false)} aria-label="Cerrar agradecimiento">×</button>
+          <div className="review-thanks__sparkles" aria-hidden="true"><span>✦</span><span>★</span><span>✦</span></div>
+          <img src="/assets/review-tigresa.png" alt="Tigresa, la gatita de Gray C Shop" />
+          <div>
+            <small>Tigresa dice</small>
+            <strong>¡Gracias por tu comentario!</strong>
+            <p>Tu opinión ayuda a otros clientes a elegir mejor.</p>
+          </div>
+        </div>
+      )}
       <header className="profile-hero">
         <div className="profile-hero__identity">
           <div className="profile-hero__avatar">

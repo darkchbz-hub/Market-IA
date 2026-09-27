@@ -5616,6 +5616,102 @@ section.auth-layout.auth-layout--halloween {
   line-height: 1.35;
 }
 
+/* Tigresa review thank-you animation */
+.review-thanks {
+  position: fixed;
+  z-index: 1200;
+  right: 24px;
+  bottom: 24px;
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  width: min(430px, calc(100vw - 32px));
+  min-height: 138px;
+  align-items: center;
+  overflow: visible;
+  border: 1px solid rgba(255, 164, 74, 0.48);
+  border-radius: 26px;
+  padding: 18px 22px 18px 14px;
+  background: linear-gradient(135deg, rgba(49, 25, 59, 0.98), rgba(20, 12, 31, 0.99));
+  box-shadow: 0 24px 70px rgba(5, 1, 9, 0.58), 0 0 34px rgba(255, 131, 32, 0.13);
+  animation: tigresa-arrives 0.62s cubic-bezier(.2,.9,.3,1.18) both;
+  backdrop-filter: blur(18px);
+}
+
+.review-thanks::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  pointer-events: none;
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 21px;
+}
+
+.review-thanks img {
+  width: 122px;
+  height: 122px;
+  align-self: end;
+  object-fit: contain;
+  object-position: center bottom;
+  filter: drop-shadow(0 9px 13px rgba(0,0,0,0.4));
+  animation: tigresa-wave 0.72s ease-in-out 0.55s 3 alternate;
+  transform-origin: 42% 85%;
+}
+
+.review-thanks > div:not(.review-thanks__sparkles) { position: relative; z-index: 2; min-width: 0; }
+.review-thanks small { display: block; margin-bottom: 3px; color: #ffad65; font-size: 0.7rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
+.review-thanks strong { display: block; color: #fff8f1; font-family: var(--font-title); font-size: 1.16rem; line-height: 1.18; }
+.review-thanks p { margin: 6px 0 0; color: #cdbed2; font-size: 0.76rem; line-height: 1.4; }
+
+.review-thanks__close {
+  position: absolute;
+  z-index: 4;
+  top: 8px;
+  right: 9px;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.07);
+  color: #e9dce9;
+  cursor: pointer;
+}
+
+.review-thanks__sparkles { position: absolute; inset: 0; pointer-events: none; }
+.review-thanks__sparkles span { position: absolute; color: #ff9b3f; animation: tigresa-sparkle 1.15s ease-in-out infinite alternate; }
+.review-thanks__sparkles span:nth-child(1) { top: 13px; left: 20px; }
+.review-thanks__sparkles span:nth-child(2) { top: 20px; left: 104px; color: #d48cff; animation-delay: .25s; }
+.review-thanks__sparkles span:nth-child(3) { bottom: 16px; left: 128px; animation-delay: .5s; }
+
+@keyframes tigresa-arrives {
+  from { opacity: 0; transform: translate3d(35px, 28px, 0) scale(.86); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes tigresa-wave {
+  from { transform: rotate(-2deg) translateY(0); }
+  to { transform: rotate(3deg) translateY(-4px); }
+}
+
+@keyframes tigresa-sparkle {
+  from { opacity: .25; transform: scale(.7) rotate(0); }
+  to { opacity: 1; transform: scale(1.2) rotate(18deg); }
+}
+
+@media (max-width: 600px) {
+  .review-thanks { right: 12px; bottom: 88px; grid-template-columns: 88px minmax(0, 1fr); width: calc(100vw - 24px); min-height: 116px; border-radius: 21px; padding: 13px 18px 13px 9px; }
+  .review-thanks img { width: 96px; height: 102px; }
+  .review-thanks strong { font-size: 1rem; }
+  .review-thanks p { font-size: 0.68rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .review-thanks,
+  .review-thanks img,
+  .review-thanks__sparkles span { animation: none; }
+}
+
 /* Organized administrator workspace */
 .admin-page { gap: 20px; }
 
