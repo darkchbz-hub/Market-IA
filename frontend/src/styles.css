@@ -5546,3 +5546,46 @@ section.auth-layout.auth-layout--halloween {
   .profile-overview__grid { grid-template-columns: 1fr; }
   .profile-overview__grid button { min-height: 132px; }
 }
+
+.profile-orders .customer-shipping-status {
+  border-color: rgba(82, 210, 196, 0.3);
+  background:
+    radial-gradient(circle at 8% 15%, rgba(71, 190, 181, 0.14), transparent 30%),
+    linear-gradient(135deg, rgba(35, 32, 55, 0.98), rgba(28, 23, 45, 0.98));
+  color: #fff8f1;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.035);
+}
+
+.profile-orders .customer-shipping-status__icon {
+  border-color: rgba(105, 224, 208, 0.34);
+  background: linear-gradient(135deg, rgba(54, 186, 178, 0.3), rgba(255, 139, 61, 0.2));
+  color: #dffff8;
+  box-shadow: 0 7px 18px rgba(3, 10, 16, 0.24);
+}
+
+.profile-orders .customer-shipping-status strong {
+  color: #fff9f2;
+  font-size: 0.94rem;
+  line-height: 1.35;
+}
+
+.profile-orders .customer-shipping-status p {
+  margin: 5px 0;
+  color: #eadfec;
+  font-size: 0.87rem;
+  line-height: 1.4;
+}
+
+.profile-orders .customer-shipping-status small {
+  max-width: 68ch;
+  color: #baaabd;
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.profile-orders .order-review-box__done {
+  border-color: rgba(70, 214, 179, 0.36);
+  background: rgba(24, 148, 121, 0.14);
+  color: #66e4c3;
+  line-height: 1.35;
+}
