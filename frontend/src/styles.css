@@ -1547,6 +1547,25 @@ textarea {
   flex: 0 0 auto;
 }
 
+.admin-order-time {
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+  margin-left: auto;
+  text-align: right;
+}
+
+.admin-order-time .status-pill { margin-left: 0; }
+.admin-order-time time {
+  color: var(--muted);
+  font-size: 0.66rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .admin-order-time time { font-size: 0.6rem; white-space: normal; }
+}
+
 .order-review-list,
 .order-review-box,
 .order-review-form {

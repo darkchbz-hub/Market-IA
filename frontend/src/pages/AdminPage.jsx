@@ -1394,7 +1394,10 @@ export function AdminPage() {
               <article key={order.id} className="order-card">
                 <div className="order-card__head">
                   <strong>{order.usuarioNombre}</strong>
-                  <span className={statusClass(order.estado)}>{statusLabel(order.estado)}</span>
+                  <div className="admin-order-time">
+                    <span className={statusClass(order.estado)}>{statusLabel(order.estado)}</span>
+                    <time dateTime={order.fecha || undefined}>{order.fecha ? formatMexicoDateTime(order.fecha) : "Fecha no disponible"}</time>
+                  </div>
                 </div>
                 <small>{order.usuarioEmail} · {order.usuarioTelefono || "Sin telefono"}</small>
                 <p>{order.proveedorPago || "Sin proveedor"} · ${order.total.toFixed(2)}</p>
