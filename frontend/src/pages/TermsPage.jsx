@@ -73,6 +73,12 @@ function LegalDocumentPage({ type }) {
           {document.sections.map(([title, content], index) => <article key={`${title}-${index}`}><span>{String(index + 1).padStart(2, "0")}</span><div><h2>{title}</h2><p>{content}</p></div></article>)}
         </div>
         <footer className="legal-help"><div><strong>¿Tienes una duda sobre este documento?</strong><p>Barban puede orientarte o dejar tu caso preparado para atención humana.</p></div><Link className="button button--primary" to="/chat">Hablar con soporte</Link></footer>
+        {type === "terms" && (
+          <div className="legal-signature">
+            <div><small>Documento respaldado por</small><strong>Gray C Shop</strong><span>Dirección y administración de la tienda</span></div>
+            <img src="/assets/gray-c-shop-signature.png" alt="Firma oficial de Gray C Shop" />
+          </div>
+        )}
       </section>
     </div>
   );
