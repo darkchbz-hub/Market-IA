@@ -686,23 +686,33 @@ export function AppShell() {
       )}
 
       <footer className="market-footer">
-        <div className="market-footer__brand">
-          <strong>{siteData.general.siteName || "Gray C Shop"}</strong>
-          <p>Productos digitales, tecnologia, hogar y suscripciones IA.</p>
+        <div className="market-footer__grid">
+          <div className="market-footer__brand">
+            <Link to="/" className="market-footer__brand-lockup">
+              <img src={siteData.general?.logoUrl || "/assets/gray-c-shop-logo.png?v=20260514-2"} alt="" />
+              <span><strong>{siteData.general.siteName || "Gray C Shop"}</strong><small>Eleva tu estilo de vida</small></span>
+            </Link>
+            <p>Productos digitales, tecnología, hogar y suscripciones IA en un solo lugar.</p>
+          </div>
+
+          <details className="market-footer__column" open>
+            <summary>Tienda</summary>
+            <div><Link to="/"><AppIcon name="home" />Inicio</Link><Link to="/catalogo"><AppIcon name="catalog" />Catálogo</Link><Link to="/sobre-nosotros"><AppIcon name="about" />Sobre nosotros</Link></div>
+          </details>
+
+          <details className="market-footer__column market-footer__column--help" open>
+            <summary>Ayuda</summary>
+            <div><Link to="/chat"><AppIcon name="support" />Centro de soporte</Link><a className="is-highlighted" href={footerWhatsappHref} target="_blank" rel="noreferrer"><AppIcon name="support" />WhatsApp</a><a href={`mailto:${supportEmail}`}><AppIcon name="support" />Correo de soporte</a></div>
+          </details>
+
+          <details className="market-footer__column" open>
+            <summary>Legal</summary>
+            <div><Link to="/terminos"><AppIcon name="about" />Términos y condiciones</Link><Link to="/terminos"><AppIcon name="about" />Política de privacidad</Link><Link to="/terminos"><AppIcon name="about" />Reembolsos</Link></div>
+          </details>
         </div>
-        <div className="market-footer__links">
-          <Link to="/sobre-nosotros"><AppIcon name="about" />Sobre nosotros</Link>
-          <Link to="/terminos"><AppIcon name="about" />Terminos</Link>
-          <a href={footerWhatsappHref} target="_blank" rel="noreferrer"><AppIcon name="support" />Soporte</a>
-          <Link to="/"><AppIcon name="home" />Inicio</Link>
-          <Link to="/catalogo"><AppIcon name="catalog" />Catalogo</Link>
-          <Link to="/terminos"><AppIcon name="about" />Terminos y condiciones</Link>
-          <Link to="/terminos"><AppIcon name="about" />Politica de privacidad</Link>
-          <Link to="/terminos"><AppIcon name="about" />Reembolsos</Link>
-          <a href={supportHref} target={supportIsExternal ? "_blank" : undefined} rel={supportIsExternal ? "noreferrer" : undefined}>
-            <AppIcon name="support" />WhatsApp
-          </a>
-          <a href={`mailto:${supportEmail}`}><AppIcon name="support" />Correo de soporte</a>
+        <div className="market-footer__bottom">
+          <span>© {new Date().getFullYear()} Gray C Shop. Todos los derechos reservados.</span>
+          <span>Pagos protegidos · Mercado Pago · PayPal · Tarjetas</span>
         </div>
       </footer>
     </div>

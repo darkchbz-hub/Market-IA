@@ -368,6 +368,157 @@
   .auth-layout--halloween .form-grid--wide { grid-template-columns: 1fr; }
 }
 
+/* Footer navigation: compact on desktop, collapsible on mobile. */
+body .market-footer {
+  display: block;
+  padding: 36px 0 26px;
+  border-top: 1px solid rgba(255, 164, 82, 0.2);
+  color: rgba(249, 237, 247, 0.72);
+}
+
+.market-footer__grid {
+  display: grid;
+  grid-template-columns: minmax(250px, 1.35fr) repeat(3, minmax(145px, 0.72fr));
+  gap: clamp(24px, 3.6vw, 54px);
+  align-items: start;
+  padding-right: clamp(0px, 6vw, 88px);
+}
+
+.market-footer__brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 13px;
+  color: #fff8f2;
+  text-decoration: none;
+}
+
+.market-footer__brand-lockup img {
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  border-radius: 13px;
+  object-fit: cover;
+  background: #050407;
+  box-shadow: 0 9px 24px rgba(0, 0, 0, 0.28);
+}
+
+.market-footer__brand-lockup span { display: grid; gap: 2px; }
+.market-footer__brand-lockup strong { font-size: 1.05rem; }
+.market-footer__brand-lockup small { color: #ffad62; font-size: 0.72rem; }
+
+.market-footer .market-footer__brand > p {
+  max-width: 310px;
+  margin: 15px 0 0;
+  line-height: 1.55;
+}
+
+.market-footer__column {
+  min-width: 0;
+  border: 0;
+}
+
+.market-footer__column > summary {
+  display: block;
+  margin-bottom: 13px;
+  color: #fff8f2;
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  list-style: none;
+  text-transform: uppercase;
+}
+
+.market-footer__column > summary::-webkit-details-marker { display: none; }
+.market-footer__column > div { display: grid; gap: 5px; }
+
+.market-footer__column a {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  min-height: 34px;
+  padding: 6px 0;
+  border: 0;
+  border-radius: 10px;
+  color: rgba(249, 237, 247, 0.72);
+  background: transparent;
+  text-decoration: none;
+  transition: color 160ms ease, transform 160ms ease;
+}
+
+.market-footer__column a svg { width: 16px; height: 16px; flex: 0 0 16px; }
+.market-footer__column a:hover { color: #ffad62; transform: translateX(3px); }
+.market-footer__column a.is-highlighted { color: #ffb46f; font-weight: 750; }
+
+.market-footer__bottom {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 27px;
+  padding-top: 18px;
+  padding-right: clamp(0px, 6vw, 88px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(249, 237, 247, 0.48);
+  font-size: 0.76rem;
+}
+
+@media (max-width: 800px) {
+  body .market-footer {
+    padding: 28px 2px 112px;
+  }
+
+  .market-footer__grid {
+    grid-template-columns: 1fr;
+    gap: 7px;
+    padding-right: 0;
+  }
+
+  .market-footer__brand {
+    padding: 0 8px 18px;
+  }
+
+  .market-footer__brand-lockup img {
+    width: 46px;
+    height: 46px;
+    flex-basis: 46px;
+  }
+
+  .market-footer .market-footer__brand > p { display: block; margin-top: 11px; font-size: 0.88rem; }
+
+  .market-footer__column {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .market-footer__column > summary {
+    position: relative;
+    margin: 0;
+    padding: 15px 36px 15px 8px;
+    cursor: pointer;
+  }
+
+  .market-footer__column > summary::after {
+    content: "−";
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    color: #ffad62;
+    font-size: 1.25rem;
+    transform: translateY(-50%);
+  }
+
+  .market-footer__column:not([open]) > summary::after { content: "+"; }
+  .market-footer__column > div { gap: 2px; padding: 0 8px 13px; }
+  .market-footer__column a { min-height: 40px; padding: 8px 0; }
+
+  .market-footer__bottom {
+    display: grid;
+    gap: 7px;
+    margin-top: 21px;
+    padding: 17px 8px 0;
+    text-align: center;
+  }
+}
+
 /* Coupon management and checkout */
 .checkout-coupon {
   display: grid;
