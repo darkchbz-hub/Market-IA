@@ -131,6 +131,7 @@ export function AppShell() {
   const [theme, setTheme] = useState(getInitialTheme);
   const audioRef = useRef(null);
   const isAuthPage = location.pathname === "/login" || location.pathname === "/register" || location.pathname === "/recuperar-contrasena";
+  const usesCatalogScrollHeader = location.pathname === "/catalogo" || location.pathname.startsWith("/producto/");
   const isDarkTheme = theme === DARK_THEME;
   const toggleTheme = () => {
     setTheme((current) => (current === DARK_THEME ? LIGHT_THEME : DARK_THEME));
@@ -240,6 +241,11 @@ export function AppShell() {
   }, []);
 
   useEffect(() => {
+    if (!usesCatalogScrollHeader) {
+      setHeaderHidden(false);
+      return () => {};
+    }
+
     let lastY = window.scrollY;
     let ticking = false;
 
@@ -269,7 +275,7 @@ export function AppShell() {
 
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [usesCatalogScrollHeader]);
 
   const handleSearchSubmit = (event) => {
     event.preventDefault();
@@ -432,7 +438,7 @@ export function AppShell() {
       <div className="halloween-desktop-host" aria-hidden="true">
         <img src="/assets/halloween-desktop-host.png" alt="" />
       </div>
-      <header className={`market-header${headerHidden ? " is-hidden" : ""}`}>
+      <header className={`market-header${usesCatalogScrollHeader ? " is-scroll-aware" : " is-static"}${headerHidden ? " is-hidden" : ""}`}>
         <div className="market-header__top">
           <Link to="/" className="brand">
             <span className="brand__badge">

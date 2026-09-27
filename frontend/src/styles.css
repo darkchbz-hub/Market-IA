@@ -656,6 +656,10 @@ textarea {
   transform: translateY(-105%);
 }
 
+.market-header.is-static {
+  position: relative;
+}
+
 .market-header__top,
 .market-nav,
 .market-footer {
