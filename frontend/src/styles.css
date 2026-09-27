@@ -6281,3 +6281,66 @@ section.auth-layout.auth-layout--halloween {
 @media (prefers-reduced-motion: reduce) {
   .about-loading span { animation: none; }
 }
+
+/* Keep the previous home fallback from flashing before live content arrives. */
+.home-loading { min-height: 72vh; }
+
+.home-loading__hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+  gap: 20px;
+  min-height: 390px;
+  padding: clamp(24px, 5vw, 64px);
+  overflow: hidden;
+  border: 1px solid rgba(255, 168, 84, 0.18);
+  border-radius: 28px;
+  background: linear-gradient(145deg, rgba(46, 27, 58, 0.96), rgba(20, 13, 30, 0.98));
+}
+
+.home-loading__copy { display: grid; align-content: center; gap: 13px; }
+.home-loading__hero span,
+.home-loading__strip span,
+.home-loading__cards span {
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 20%, rgba(255,173,98,0.15) 45%, rgba(255,255,255,0.05) 70%);
+  background-size: 240% 100%;
+  animation: about-loading-shimmer 1.25s ease-in-out infinite;
+}
+
+.home-loading__eyebrow { width: 118px; height: 12px; }
+.home-loading__title { width: min(540px, 90%); height: 42px; }
+.home-loading__title--short { width: min(390px, 68%); }
+.home-loading__text { width: min(580px, 95%); height: 14px; margin-top: 7px; }
+.home-loading__text--medium { width: min(460px, 76%); margin-top: -4px; }
+.home-loading__button { width: 144px; height: 44px; margin-top: 14px; }
+.home-loading__media { height: 100%; min-height: 260px; border-radius: 22px !important; }
+
+.home-loading__strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.home-loading__strip span { height: 18px; }
+
+.home-loading__cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.home-loading__cards span { height: 170px; border-radius: 18px; }
+
+@media (max-width: 800px) {
+  .home-loading__hero { grid-template-columns: 1fr; min-height: 520px; padding: 24px 18px; }
+  .home-loading__media { min-height: 220px; }
+  .home-loading__title { height: 30px; }
+  .home-loading__strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .home-loading__cards { grid-template-columns: 1fr; }
+  .home-loading__cards span:nth-child(n + 2) { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-loading__hero span,
+  .home-loading__strip span,
+  .home-loading__cards span { animation: none; }
+}

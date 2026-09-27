@@ -185,6 +185,33 @@ export function HomePage() {
     setSpotlightIndex(0);
   }, [home.banners]);
 
+  if (loading) {
+    return (
+      <div className="page-stack home-loading" aria-busy="true" aria-label="Cargando inicio de Gray C Shop">
+        <section className="home-loading__hero">
+          <div className="home-loading__copy">
+            <span className="home-loading__eyebrow" />
+            <span className="home-loading__title" />
+            <span className="home-loading__title home-loading__title--short" />
+            <span className="home-loading__text" />
+            <span className="home-loading__text home-loading__text--medium" />
+            <span className="home-loading__button" />
+          </div>
+          <span className="home-loading__media" />
+        </section>
+        <section className="section-card home-loading__strip">
+          <span />
+          <span />
+          <span />
+          <span />
+        </section>
+        <section className="section-card home-loading__cards">
+          {Array.from({ length: 3 }, (_, index) => <span key={index} />)}
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="page-stack">
       <div className="app-download-strip">
@@ -388,7 +415,6 @@ export function HomePage() {
         </section>
       )}
 
-      {loading && <p className="muted-text">Cargando contenido visual...</p>}
     </div>
   );
 }
