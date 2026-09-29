@@ -6933,8 +6933,9 @@ section.auth-layout.auth-layout--halloween {
   .legal-hero { grid-template-columns: auto minmax(0, 1fr); gap: 14px; min-height: 170px; padding: 21px 17px; }
   .legal-hero__moon { width: 64px; height: 64px; }
   .legal-hero__moon span { font-size: 1.45rem; }
-  .legal-hero__actions { grid-column: 1 / -1; grid-template-columns: 1fr auto; align-items: center; justify-items: start; width: 100%; }
+  .legal-hero__actions { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) auto; align-items: center; justify-items: start; width: 100%; }
   .legal-hero__stamp { max-width: none; }
+  .legal-pdf-button { min-height: 40px; padding: 8px 14px; white-space: nowrap; }
   .legal-switcher { display: flex; overflow-x: auto; scrollbar-width: none; }
   .legal-switcher a { min-width: max-content; flex: 1; }
   .legal-document { padding: 18px 13px; border-radius: 21px; }
@@ -6950,6 +6951,105 @@ section.auth-layout.auth-layout--halloween {
   .legal-help .button { width: 100%; }
   .legal-signature { grid-template-columns: 1fr; gap: 12px; padding-top: 22px; text-align: center; }
   .legal-signature img { width: min(100%, 360px); justify-self: center; }
+}
+
+/* Mobile account and support: compact, app-like navigation without changing desktop. */
+@media (max-width: 800px) {
+  .chat-layout--single .chat-main { gap: 10px; }
+  .chat-layout--single .chat-main > .section-heading {
+    align-items: flex-start;
+    gap: 7px;
+    margin-bottom: 0;
+  }
+  .chat-layout--single .chat-main > .section-heading h2 { font-size: 1.2rem; }
+  .chat-layout--single .chat-main > .section-heading .status-pill { padding: 5px 8px; font-size: .62rem; }
+  .chat-layout--single .support-shell--customer { gap: 10px; }
+  .chat-layout--single .support-bot-card {
+    gap: 9px;
+    border-radius: 18px;
+    padding: 11px;
+  }
+  .support-bot-card__head { flex-wrap: nowrap; }
+  .support-bot-card__head strong { font-size: .82rem; }
+  .support-bot-card__head .button { min-height: 32px; padding: 5px 9px; font-size: .65rem; white-space: nowrap; }
+  .support-bot-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+  .support-bot-option {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 5px;
+    border-radius: 14px;
+    padding: 8px 4px;
+    text-align: center;
+  }
+  .support-bot-option .cat-avatar--portrait { width: 48px; height: 48px; flex-basis: 48px; border-radius: 15px; }
+  .support-bot-option__meta strong { font-size: .72rem; }
+  .support-bot-option__meta small { display: none; }
+  .support-bot-card .pill-row {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+  .support-bot-card .pill-row::-webkit-scrollbar { display: none; }
+  .support-bot-card .pill--small { min-width: max-content; min-height: 34px; padding: 6px 10px; font-size: .66rem; }
+  .support-conversation-card { margin-inline: 0; border-radius: 18px; }
+  .support-chat-messages { min-height: 390px; max-height: 58vh; }
+  .chat-form--support {
+    position: sticky;
+    bottom: calc(68px + env(safe-area-inset-bottom));
+    z-index: 4;
+    border-radius: 0 0 18px 18px;
+    background: rgba(28, 16, 38, .97);
+    backdrop-filter: blur(14px);
+  }
+
+  .profile-page { gap: 11px; }
+  .profile-hero { gap: 14px; padding: 16px 13px; }
+  .profile-hero__identity { gap: 11px; }
+  .profile-hero__avatar { width: 54px; height: 54px; flex-basis: 54px; border-radius: 15px; }
+  .profile-hero__identity .section-label { font-size: .58rem; }
+  .profile-hero__identity h1 { font-size: 1.18rem; line-height: 1.18; }
+  .profile-hero__identity p:last-child { margin-top: 4px; font-size: .65rem; }
+  .profile-hero__metrics { gap: 6px; }
+  .profile-hero__metrics div { min-height: 54px; border-radius: 13px; }
+  .profile-sidebar {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    overflow: visible;
+    margin-bottom: 11px;
+    padding: 8px;
+  }
+  .profile-sidebar button {
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    min-width: 0;
+    gap: 4px;
+    min-height: 64px;
+    border-radius: 12px;
+    padding: 7px 3px;
+    text-align: center;
+  }
+  .profile-sidebar__icon { width: 27px; height: 27px; font-size: .9rem; }
+  .profile-sidebar button span:nth-child(2) strong { font-size: .64rem; line-height: 1.15; }
+  .profile-dashboard__panel { border-radius: 18px; padding: 15px 12px; }
+  .profile-dashboard__panel .section-heading h1,
+  .profile-dashboard__panel .section-heading h2 { font-size: 1.22rem; }
+  .profile-overview__grid { gap: 8px; }
+  .profile-overview__grid button {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 10px;
+    min-height: 0;
+    border-radius: 15px;
+    padding: 13px;
+  }
+  .profile-overview__grid button > span { width: 36px; height: 36px; margin: 0; grid-row: 1 / span 2; }
+  .profile-overview__grid button > b { grid-column: 2; margin: 0; padding-top: 6px; }
+  .profile-overview__recent { gap: 12px; margin-top: 10px; padding: 14px; }
 }
 
 @media print {
