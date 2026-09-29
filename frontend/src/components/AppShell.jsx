@@ -405,9 +405,11 @@ export function AppShell() {
   if (isAuthPage) {
     return (
       <div className="marketplace">
-        <div className="halloween-mobile-scene" aria-hidden="true">
-          <img src="/assets/halloween-ghost-bats.png" alt="" />
-        </div>
+        {location.pathname === "/" && (
+          <div className="halloween-mobile-scene" aria-hidden="true">
+            <img src="/assets/halloween-ghost-bats.png" alt="" />
+          </div>
+        )}
         <div className="halloween-desktop-host" aria-hidden="true">
           <img src="/assets/halloween-desktop-host.png" alt="" />
         </div>
@@ -424,9 +426,11 @@ export function AppShell() {
 
   return (
     <div className="marketplace">
-      <div className="halloween-mobile-scene" aria-hidden="true">
-        <img src="/assets/halloween-ghost-bats.png" alt="" />
-      </div>
+      {location.pathname === "/" && (
+        <div className="halloween-mobile-scene" aria-hidden="true">
+          <img src="/assets/halloween-ghost-bats.png" alt="" />
+        </div>
+      )}
       <div className="halloween-desktop-host" aria-hidden="true">
         <img src="/assets/halloween-desktop-host.png" alt="" />
       </div>

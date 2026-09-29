@@ -617,6 +617,71 @@ body .market-footer {
   .invoice-footer img { width: 92px; height: 100px; }
 }
 
+/* Final mobile readability pass for the seasonal dark panels. */
+@media (max-width: 800px) {
+  :root[data-theme="day"] .section-card,
+  :root[data-theme="day"] .hero-panel,
+  :root[data-theme="day"] .product-card,
+  :root[data-theme="day"] .detail-card,
+  :root[data-theme="day"] .purchase-panel,
+  :root[data-theme="day"] .chat-main,
+  :root[data-theme="day"] .chat-sidebar {
+    color: #fff5ec;
+  }
+
+  :root[data-theme="day"] .section-card h1,
+  :root[data-theme="day"] .section-card h2,
+  :root[data-theme="day"] .section-card h3,
+  :root[data-theme="day"] .section-card > p,
+  :root[data-theme="day"] .hero-panel h1,
+  :root[data-theme="day"] .hero-panel h2,
+  :root[data-theme="day"] .hero-panel p,
+  :root[data-theme="day"] .product-card__title,
+  :root[data-theme="day"] .product-card__price strong,
+  :root[data-theme="day"] .rating-row,
+  :root[data-theme="day"] .rating-row strong,
+  :root[data-theme="day"] .product-summary h1,
+  :root[data-theme="day"] .purchase-panel,
+  :root[data-theme="day"] .purchase-panel strong {
+    color: #fff5ec;
+  }
+
+  :root[data-theme="day"] .section-card .muted-text,
+  :root[data-theme="day"] .hero-panel .muted-text,
+  :root[data-theme="day"] .product-card__meta,
+  :root[data-theme="day"] .product-card__shipping,
+  :root[data-theme="day"] .product-card__footer,
+  :root[data-theme="day"] .product-summary .muted-text {
+    color: #d7c4da;
+  }
+
+  .home-ad-panel {
+    background:
+      linear-gradient(180deg, rgba(255, 132, 40, .08), rgba(24, 14, 34, .2)),
+      linear-gradient(145deg, rgba(48, 28, 62, .98), rgba(29, 19, 42, .98));
+  }
+  .home-ad-panel h2,
+  .home-ad-panel > p { position: relative; z-index: 3; color: #fff6ed !important; }
+  .home-ad-panel .muted-text { color: #dbc8df !important; }
+
+  .halloween-mobile-scene {
+    right: 4px;
+    bottom: calc(80px + env(safe-area-inset-bottom));
+    z-index: 1;
+    width: min(23vw, 88px);
+    opacity: .48;
+    filter: drop-shadow(0 6px 10px rgba(7, 2, 13, .25));
+  }
+
+  .market-header,
+  .market-main-shell,
+  .mobile-dock,
+  .magic-dock { position: relative; z-index: 2; }
+  .market-header { position: sticky; }
+  .mobile-dock,
+  .magic-dock { position: fixed; }
+}
+
 @media print {
   body { background: #fff !important; }
   .market-header,
@@ -2700,9 +2765,10 @@ textarea {
   }
 
   .catalog-category-toggle {
-    position: fixed;
-    top: 174px;
-    left: max(18px, calc((100vw - 1380px) / 2));
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    left: auto;
     z-index: 12;
     display: inline-flex;
     align-items: center;
@@ -3375,7 +3441,8 @@ textarea {
 
 .product-gallery__main {
   width: 100%;
-  min-height: clamp(420px, 54vw, 620px);
+  min-height: 390px;
+  max-height: 470px;
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -3390,7 +3457,7 @@ textarea {
 .product-gallery__main img {
   width: 100%;
   height: 100%;
-  max-height: clamp(390px, 50vw, 580px);
+  max-height: 450px;
   object-fit: contain;
   padding: 18px;
 }
@@ -6936,8 +7003,9 @@ section.auth-layout.auth-layout--halloween {
   .legal-hero__actions { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) auto; align-items: center; justify-items: start; width: 100%; }
   .legal-hero__stamp { max-width: none; }
   .legal-pdf-button { min-height: 40px; padding: 8px 14px; white-space: nowrap; }
-  .legal-switcher { display: flex; overflow-x: auto; scrollbar-width: none; }
-  .legal-switcher a { min-width: max-content; flex: 1; }
+  .legal-switcher { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; }
+  .legal-switcher a { min-width: 0; }
+  .legal-switcher a:last-child { grid-column: 1 / -1; }
   .legal-document { padding: 18px 13px; border-radius: 21px; }
   .legal-section-grid { grid-template-columns: 1fr; }
   .legal-section-grid article { min-height: 0; padding: 15px; }

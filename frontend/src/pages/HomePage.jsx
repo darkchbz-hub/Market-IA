@@ -125,6 +125,12 @@ export function HomePage() {
   }, [home.videos]);
   const activeVideoEmbed = getYouTubeEmbedUrl(activeVideo?.videoUrl);
   const dailyOfferProducts = useMemo(() => getDailyOfferProducts(home.offerProducts), [home.offerProducts]);
+  const cleanPromoCopy = (value, fallback = "") => String(value || fallback)
+    .replace(/aperturajj/gi, "una propuesta renovada")
+    .replace(/PROII/gi, "Pro")
+    .replace(/muy costosa la suscripcion pro de chatgpt\?/gi, "¿Buscas ChatGPT Pro a un mejor precio?")
+    .replace(/aprovecha nuestra gran oferta/gi, "aprovecha esta oferta especial")
+    .trim();
 
   const promoItems = useMemo(() => {
     const banners = (home.banners || []).slice(0, 5).map((banner) => banner.titulo).filter(Boolean);
@@ -148,8 +154,8 @@ export function HomePage() {
       (home.banners || []).slice(0, 3).map((banner, index) => ({
         id: `banner-${banner.id}`,
         eyebrow: index === 0 ? "Oferta destacada" : "Novedad visual",
-        title: banner.titulo || "Coleccion destacada",
-        description: banner.subtitulo || "Una forma mas limpia de destacar lo importante desde la portada.",
+        title: cleanPromoCopy(banner.titulo, "Coleccion destacada"),
+        description: cleanPromoCopy(banner.subtitulo, "Una forma mas limpia de destacar lo importante desde la portada."),
         cta: "Ver catalogo",
         image: banner.mediaUrl || "",
         action: () => navigate("/catalogo")
@@ -275,7 +281,7 @@ export function HomePage() {
           <p className="eyebrow">{activeVideo ? "Anuncio destacado" : "Tema visual"}</p>
           {activeVideo ? (
             <>
-              <h2>{activeVideo.titulo || "Anuncio de portada"}</h2>
+              <h2>{cleanPromoCopy(activeVideo.titulo, "Anuncio de portada")}</h2>
               <div className="home-ad-player">
                 {activeVideoEmbed ? (
                   <iframe
@@ -292,7 +298,7 @@ export function HomePage() {
                   </a>
                 )}
               </div>
-              {activeVideo.descripcion && <p className="muted-text">{activeVideo.descripcion}</p>}
+              {activeVideo.descripcion && <p className="muted-text">{cleanPromoCopy(activeVideo.descripcion)}</p>}
             </>
           ) : (
             <>
