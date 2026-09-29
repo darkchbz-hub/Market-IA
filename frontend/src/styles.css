@@ -664,6 +664,14 @@ body .market-footer {
   .home-ad-panel > p { position: relative; z-index: 3; color: #fff6ed !important; }
   .home-ad-panel .muted-text { color: #dbc8df !important; }
 
+  :root[data-theme="day"] .hero-panel--primary,
+  :root[data-theme="day"] .hero-panel--primary h1,
+  :root[data-theme="day"] .hero-panel--primary h2,
+  :root[data-theme="day"] .hero-panel--primary p {
+    color: #17202b;
+  }
+  :root[data-theme="day"] .hero-panel--primary .eyebrow { color: #687382; }
+
   .halloween-mobile-scene {
     right: 4px;
     bottom: calc(80px + env(safe-area-inset-bottom));
