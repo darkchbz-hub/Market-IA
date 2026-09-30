@@ -2796,10 +2796,10 @@ textarea {
 
   .catalog-category-drawer {
     position: fixed;
-    top: 156px;
+    top: 174px;
     bottom: 28px;
     left: max(18px, calc((100vw - 1380px) / 2));
-    z-index: 13;
+    z-index: 42;
     display: grid;
     align-content: start;
     gap: 7px;
