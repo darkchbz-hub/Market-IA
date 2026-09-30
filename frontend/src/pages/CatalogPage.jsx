@@ -63,6 +63,10 @@ export function CatalogPage() {
 
   const activeCategory = useMemo(() => searchParams.get("category") || "", [searchParams]);
   const activeSearch = useMemo(() => searchParams.get("search") || "", [searchParams]);
+  const activeCategoryName = useMemo(
+    () => categories.find((category) => category.slug === activeCategory)?.nombre || "",
+    [categories, activeCategory]
+  );
 
   useEffect(() => {
     apiFetch("/products/categories")
@@ -253,7 +257,8 @@ export function CatalogPage() {
         <div className="section-heading">
           <div>
             <p className="section-label">{activeSearch ? "Busqueda inteligente" : "Catalogo renovado"}</p>
-            <h1>{pagination.total ? productCountLabel(pagination.total) : "Muy pronto tendremos nuevos productos"}</h1>
+            <h1>{activeCategoryName || (pagination.total ? productCountLabel(pagination.total) : "Muy pronto tendremos nuevos productos")}</h1>
+            {activeCategoryName && <span className="catalog-title-count">{pagination.total ? productCountLabel(pagination.total) : "Productos disponibles"}</span>}
           </div>
           <button
             type="button"

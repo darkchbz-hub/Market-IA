@@ -2757,6 +2757,7 @@ textarea {
 }
 
 .catalog-category-toggle__mobile { display: none; }
+.catalog-title-count { display: block; margin-top: 5px; color: var(--muted); font-size: .86rem; font-weight: 700; }
 
 .catalog-desktop-product-grid,
 .catalog-desktop-product-scroll,
