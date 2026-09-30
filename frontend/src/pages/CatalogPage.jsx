@@ -274,12 +274,6 @@ export function CatalogPage() {
           <span aria-hidden="true">🦇</span>
         </div>
 
-        <p className="muted-text">
-          {activeSearch
-            ? `Resultados para "${activeSearch}". El buscador revisa nombre, marca, categoria, descripcion y tags.`
-            : "Explora productos publicados. Cuando una categoria aun no tenga productos, aparecera como proximamente."}
-        </p>
-
         <div className="pill-row">
           <button type="button" className={`pill${!activeCategory ? " is-active" : ""}`} onClick={() => updateCategory("")}>
             Todas las categorias
