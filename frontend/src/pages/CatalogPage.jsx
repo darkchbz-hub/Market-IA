@@ -220,17 +220,6 @@ export function CatalogPage() {
 
   return (
     <div className={`catalog-shell catalog-shell--empty${categoryMenuOpen ? " catalog-shell--menu-open" : ""}`}>
-      <button
-        type="button"
-        className="catalog-category-toggle"
-        onClick={() => setCategoryMenuOpen(true)}
-        aria-expanded={categoryMenuOpen}
-        aria-controls="catalog-category-drawer"
-      >
-        <span aria-hidden="true">☰</span>
-        Categorias
-      </button>
-
       <aside id="catalog-category-drawer" className="catalog-category-drawer" aria-label="Categorias del catalogo">
         <div className="catalog-category-drawer__head">
           <div>
@@ -266,6 +255,17 @@ export function CatalogPage() {
             <p className="section-label">{activeSearch ? "Busqueda inteligente" : "Catalogo renovado"}</p>
             <h1>{pagination.total ? productCountLabel(pagination.total) : "Muy pronto tendremos nuevos productos"}</h1>
           </div>
+          <button
+            type="button"
+            className="catalog-category-toggle"
+            onClick={() => setCategoryMenuOpen(true)}
+            aria-expanded={categoryMenuOpen}
+            aria-controls="catalog-category-drawer"
+          >
+            <span aria-hidden="true">☰</span>
+            <span className="catalog-category-toggle__desktop">Explorar categorías</span>
+            <span className="catalog-category-toggle__mobile">Categorías</span>
+          </button>
         </div>
 
         <div className="halloween-mobile-banner" aria-label="Temporada de Halloween">

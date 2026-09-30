@@ -2756,6 +2756,8 @@ textarea {
   display: none;
 }
 
+.catalog-category-toggle__mobile { display: none; }
+
 .catalog-desktop-product-grid,
 .catalog-desktop-product-scroll,
 .catalog-desktop-load-more {
@@ -2773,24 +2775,23 @@ textarea {
   }
 
   .catalog-category-toggle {
-    position: absolute;
-    top: 18px;
-    right: 18px;
-    left: auto;
+    position: static;
+    flex: 0 0 auto;
     z-index: 12;
     display: inline-flex;
     align-items: center;
     gap: 8px;
     border: 1px solid rgba(255, 177, 99, 0.38);
-    border-radius: 999px;
-    padding: 10px 14px;
-    background: rgba(42, 24, 53, 0.94);
+    border-radius: 14px;
+    padding: 11px 15px;
+    background: linear-gradient(135deg, rgba(255, 126, 31, .18), rgba(151, 76, 181, .14));
     color: #fff3e8;
-    box-shadow: 0 10px 22px rgba(6, 2, 10, 0.28);
+    box-shadow: inset 0 1px rgba(255,255,255,.04), 0 8px 20px rgba(6, 2, 10, 0.2);
     font-weight: 800;
   }
 
   .catalog-category-toggle span { color: #ffae59; font-size: 1.1rem; }
+  .catalog-category-toggle__desktop { color: inherit !important; font-size: inherit !important; }
   .catalog-shell--menu-open .catalog-category-toggle { display: none; }
 
   .catalog-category-drawer {
@@ -2863,7 +2864,7 @@ textarea {
   }
 
   .catalog-shell .section-card--spotlight > .pill-row { display: none; }
-  .catalog-shell .section-card--spotlight > .muted-text { padding-left: 132px; }
+  .catalog-shell .section-card--spotlight > .muted-text { max-width: 760px; padding-left: 0; }
 
   .catalog-mobile-products { display: none; }
 
@@ -2939,10 +2940,17 @@ textarea {
 
   .catalog-desktop-product-row__track {
     display: grid;
-    grid-template-columns: repeat(10, minmax(240px, 285px));
+    grid-template-columns: repeat(10, minmax(225px, 260px));
     gap: 16px;
     width: max-content;
   }
+
+  .catalog-desktop-product-row .product-card { min-height: 0; }
+  .catalog-desktop-product-row .product-card__image {
+    height: 205px;
+    aspect-ratio: auto;
+  }
+  .catalog-desktop-product-row .product-card__image img { padding: 10px; }
 
   .catalog-desktop-load-more {
     display: grid;
@@ -3449,8 +3457,8 @@ textarea {
 
 .product-gallery__main {
   width: 100%;
-  min-height: 390px;
-  max-height: 470px;
+  min-height: clamp(420px, 54vw, 620px);
+  max-height: none;
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -3465,7 +3473,7 @@ textarea {
 .product-gallery__main img {
   width: 100%;
   height: 100%;
-  max-height: 450px;
+  max-height: clamp(390px, 50vw, 580px);
   object-fit: contain;
   padding: 18px;
 }
@@ -4684,6 +4692,8 @@ textarea {
   }
 
   .catalog-category-toggle span { font-size: 1.15rem; }
+  .catalog-category-toggle__desktop { display: none; }
+  .catalog-category-toggle__mobile { display: inline; color: inherit !important; font-size: inherit !important; }
   .catalog-shell--menu-open .catalog-category-toggle { display: none; }
 
   .catalog-category-drawer {
